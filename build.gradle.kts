@@ -30,6 +30,9 @@ dependencies {
 	implementation(Dependencies.SpringBoot.VALIDATION)
 	implementation(Dependencies.SpringBoot.WEB)
 
+	// Database
+	runtimeOnly(Dependencies.Database.H2)
+
 	// Swagger / OpenAPI
 	implementation(Dependencies.Swagger.SPRINGDOC)
 

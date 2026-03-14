@@ -20,6 +20,10 @@ object Dependencies {
         const val LOMBOK = "org.projectlombok:lombok"
     }
 
+    object Database {
+        const val H2 = "com.h2database:h2"
+    }
+
     object Test {
         const val JUNIT_LAUNCHER = "org.junit.platform:junit-platform-launcher"
     }
