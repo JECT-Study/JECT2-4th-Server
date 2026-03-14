@@ -1,5 +1,5 @@
 {
-  "name": "@ject/vs-server-api-client",
+  "name": "@ject-4-vs-team/api-client",
   "version": "0.0.0",
   "description": "VS Server API client generated from OpenAPI spec",
   "main": "dist/index.js",

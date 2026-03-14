@@ -22,7 +22,7 @@ abstract class PublishApiClientTask : DefaultTask() {
         runNpm("publish", "--access", "public")
 
         val version = project.version.toString().removeSuffix("-SNAPSHOT")
-        logger.lifecycle("Published @ject/vs-server-api-client@$version")
+        logger.lifecycle("Published @ject-4-vs-team/api-client@$version")
     }
 
     private fun runNpm(vararg args: String) {
