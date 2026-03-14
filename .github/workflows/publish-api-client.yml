@@ -1,0 +1,33 @@
+name: Publish API Client
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'corretto'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Grant execute permission for Gradle
+        run: chmod +x gradlew
+
+      - name: Publish API Client
+        run: ./gradlew publishApiClient
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
