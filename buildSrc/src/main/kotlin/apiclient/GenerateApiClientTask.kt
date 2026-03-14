@@ -41,7 +41,8 @@ abstract class GenerateApiClientTask : DefaultTask() {
         }
         DefaultGenerator().opts(config.toClientOptInput()).generate()
 
-        val version = project.version.toString().removeSuffix("-SNAPSHOT")
+        val version = project.findProperty("apiClientVersion")?.toString()
+            ?: project.version.toString().removeSuffix("-SNAPSHOT")
 
         // Copy template files with version substitution
         File(templatesDir, "package.json").readText()

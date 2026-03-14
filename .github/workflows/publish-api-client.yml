@@ -1,9 +1,13 @@
 name: Publish API Client
 
 on:
-  push:
-    branches: [ main ]
+  release:
+    types: [ published ]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish'
+        required: true
 
 jobs:
   publish:
@@ -24,10 +28,19 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Grant execute permission for Gradle
         run: chmod +x gradlew
 
       - name: Publish API Client
-        run: ./gradlew publishApiClient
+        run: ./gradlew publishApiClient -PapiClientVersion=${{ steps.version.outputs.version }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,33 @@
+name: Create Release
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine next version
+        id: version
+        run: |
+          TODAY=$(date -u +"%Y.%m%d")
+          EXISTING=$(gh release list --json tagName -q "[.[] | select(.tagName | startswith(\"v${TODAY}\"))] | length" 2>/dev/null || echo "0")
+          NEXT_VERSION="${TODAY}.$((EXISTING + 1))"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $NEXT_VERSION"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        run: gh release create "v${{ steps.version.outputs.version }}" --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
