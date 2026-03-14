@@ -1,9 +1,10 @@
 plugins {
     `kotlin-dsl`
+    kotlin("jvm") version "2.1.21"
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 repositories {
