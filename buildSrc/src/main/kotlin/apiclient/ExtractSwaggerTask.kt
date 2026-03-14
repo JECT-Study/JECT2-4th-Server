@@ -26,7 +26,7 @@ abstract class ExtractSwaggerTask : DefaultTask() {
             ?.firstOrNull { it.name.endsWith(".jar") && !it.name.contains("plain") }
             ?: throw RuntimeException("Boot jar not found. Run bootJar first.")
 
-        val server = ProcessBuilder("java", "-jar", jarFile.absolutePath)
+        val server = ProcessBuilder("java", "-Dspring.profiles.active=openapi", "-jar", jarFile.absolutePath)
             .directory(project.projectDir)
             .redirectErrorStream(true)
             .start()
