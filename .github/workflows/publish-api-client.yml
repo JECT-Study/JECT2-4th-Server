@@ -3,6 +3,8 @@ name: Publish API Client
 on:
   release:
     types: [ published ]
+  push:
+    branches: [ feat/add-open-api-generator ]
   workflow_dispatch:
     inputs:
       version:
@@ -33,6 +35,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "version=$(date -u +'%Y.%m%d.%H%M%S')" >> "$GITHUB_OUTPUT"
           else
             echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           fi
