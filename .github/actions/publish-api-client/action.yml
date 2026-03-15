@@ -47,7 +47,7 @@ runs:
           -d "{
             \"embeds\": [{
               \"title\": \"🚀 v${{ inputs.version }} 배포 완료\",
-              \"description\": \"API 클라이언트가 npm에 배포되었습니다.\",
+              \"description\": \"API 클라이언트가 npm에 배포되었습니다.\\n\\n\`\`\`\\nnpm install @ject-4-vs-team/api-client@${{ inputs.version }}\\n\`\`\`\",
               \"color\": 5763719,
               \"fields\": [
                 { \"name\": \"Version\", \"value\": \"\`v${{ inputs.version }}\`\", \"inline\": true },
