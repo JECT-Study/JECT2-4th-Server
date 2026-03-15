@@ -77,7 +77,16 @@ jobs:
             --base main \
             --head develop \
             --title "release: develop → main" \
-            --body "${{ steps.body.outputs.content }}" \
-            --reviewer Junhyukkkk,KII1ua,tlarbals824
+            --body "${{ steps.body.outputs.content }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add reviewers
+        if: steps.check.outputs.existing_pr == ''
+        run: |
+          PR_NUMBER=$(gh pr list --base main --head develop --state open --json number -q '.[0].number')
+          for reviewer in Junhyukkkk KII1ua tlarbals824; do
+            gh pr edit "$PR_NUMBER" --add-reviewer "$reviewer" || echo "Failed to add reviewer: $reviewer"
+          done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
