@@ -78,7 +78,8 @@ jobs:
             --base main \
             --head develop \
             --title "release: develop → main" \
-            --body "${{ steps.body.outputs.content }}")
+            --body "${{ steps.body.outputs.content }}" \
+            --label release)
           PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
         env:
