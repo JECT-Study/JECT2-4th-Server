@@ -71,12 +71,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release PR
+        id: create
         if: steps.check.outputs.existing_pr == ''
         run: |
-          gh pr create \
+          PR_URL=$(gh pr create \
             --base main \
             --head develop \
             --title "release: develop → main" \
-            --body "${{ steps.body.outputs.content }}"
+            --body "${{ steps.body.outputs.content }}")
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add reviewers
+        if: steps.create.outputs.pr_number != ''
+        run: |
+          gh api repos/${{ github.repository }}/pulls/${{ steps.create.outputs.pr_number }}/requested_reviewers \
+            --method POST \
+            -f "reviewers[]=Junhyukkkk" -f "reviewers[]=KII1ua" -f "reviewers[]=tlarbals824" || echo "Failed to add reviewers"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
