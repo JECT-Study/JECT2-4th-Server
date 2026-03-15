@@ -8,6 +8,12 @@ inputs:
   node-auth-token:
     description: "NPM 토큰"
     required: true
+  discord-webhook-url:
+    description: "Discord Webhook URL"
+    required: true
+  github-repository:
+    description: "GitHub 리포지토리 (owner/repo)"
+    required: true
 
 runs:
   using: composite
@@ -33,3 +39,21 @@ runs:
       run: ./gradlew publishApiClient -PapiClientVersion=${{ inputs.version }}
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}
+
+    - name: Notify Discord
+      shell: bash
+      run: |
+        curl -H "Content-Type: application/json" \
+          -d "{
+            \"embeds\": [{
+              \"title\": \"🚀 v${{ inputs.version }} 배포 완료\",
+              \"description\": \"API 클라이언트가 npm에 배포되었습니다.\\n\\n\`\`\`\\nnpm install @ject-4-vs-team/api-client@${{ inputs.version }}\\n\`\`\`\",
+              \"color\": 5763719,
+              \"fields\": [
+                { \"name\": \"Version\", \"value\": \"\`v${{ inputs.version }}\`\", \"inline\": true },
+                { \"name\": \"Package\", \"value\": \"[@ject-4-vs-team/api-client](https://www.npmjs.com/package/@ject-4-vs-team/api-client)\", \"inline\": true },
+                { \"name\": \"Release\", \"value\": \"[GitHub Release](https://github.com/${{ inputs.github-repository }}/releases/tag/v${{ inputs.version }})\", \"inline\": true }
+              ]
+            }]
+          }" \
+          ${{ inputs.discord-webhook-url }}
