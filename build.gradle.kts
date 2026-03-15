@@ -25,17 +25,35 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("org.springframework.boot:spring-boot-starter-security")
-	implementation("org.springframework.boot:spring-boot-starter-validation")
-	implementation("org.springframework.boot:spring-boot-starter-web")
-	compileOnly("org.projectlombok:lombok")
-	annotationProcessor("org.projectlombok:lombok")
-	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	testImplementation("org.springframework.security:spring-security-test")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	implementation(Dependencies.SpringBoot.DATA_JPA)
+	implementation(Dependencies.SpringBoot.SECURITY)
+	implementation(Dependencies.SpringBoot.VALIDATION)
+	implementation(Dependencies.SpringBoot.WEB)
+
+	// Database
+	runtimeOnly(Dependencies.Database.H2)
+
+	// Swagger / OpenAPI
+	implementation(Dependencies.Swagger.SPRINGDOC)
+
+	compileOnly(Dependencies.Lombok.LOMBOK)
+	annotationProcessor(Dependencies.Lombok.LOMBOK)
+	testImplementation(Dependencies.SpringBoot.TEST)
+	testImplementation(Dependencies.SpringSecurity.TEST)
+	testRuntimeOnly(Dependencies.Test.JUNIT_LAUNCHER)
 }
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+// API Client Generation Tasks
+val extractSwagger by tasks.registering(apiclient.ExtractSwaggerTask::class)
+
+val generateApiClient by tasks.registering(apiclient.GenerateApiClientTask::class) {
+	dependsOn(extractSwagger)
+}
+
+val publishApiClient by tasks.registering(apiclient.PublishApiClientTask::class) {
+	dependsOn(generateApiClient)
 }

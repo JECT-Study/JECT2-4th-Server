@@ -1,0 +1,19 @@
+{
+  "name": "@ject-4-vs-team/api-client",
+  "version": "0.0.0",
+  "description": "VS Server API client generated from OpenAPI spec",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  },
+  "license": "MIT"
+}
