@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### API Client Generation ###
+swagger.json
+generated-api-client/
+node_modules/
+package-lock.json

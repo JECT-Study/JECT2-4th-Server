@@ -1,0 +1,95 @@
+name: Create Release PR
+
+on:
+  push:
+    branches: [ develop ]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for existing release PR
+        id: check
+        run: |
+          EXISTING_PR=$(gh pr list --base main --head develop --state open --json number -q '.[0].number' 2>/dev/null || echo "")
+          echo "existing_pr=$EXISTING_PR" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            LOG=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
+          else
+            MAIN_HEAD=$(git rev-parse origin/main 2>/dev/null || echo "")
+            if [ -n "$MAIN_HEAD" ]; then
+              LOG=$(git log "origin/main..HEAD" --pretty=format:"- %s" --no-merges)
+            else
+              LOG=$(git log --pretty=format:"- %s" --no-merges -20)
+            fi
+          fi
+
+          {
+            echo "log<<EOF"
+            echo "$LOG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build PR body
+        id: body
+        run: |
+          {
+            echo "content<<EOF"
+            echo "## Release: develop → main"
+            echo ""
+            echo "develop 브랜치의 변경사항을 main으로 배포합니다."
+            echo "버전은 main 머지 시점에 자동으로 확정됩니다."
+            echo ""
+            echo "### Changes"
+            echo "${{ steps.changelog.outputs.log }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update existing PR
+        if: steps.check.outputs.existing_pr != ''
+        run: |
+          gh pr edit ${{ steps.check.outputs.existing_pr }} \
+            --title "release: develop → main" \
+            --body "${{ steps.body.outputs.content }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release PR
+        id: create
+        if: steps.check.outputs.existing_pr == ''
+        run: |
+          PR_URL=$(gh pr create \
+            --base main \
+            --head develop \
+            --title "release: develop → main" \
+            --body "${{ steps.body.outputs.content }}" \
+            --label release)
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add reviewers
+        if: steps.create.outputs.pr_number != ''
+        run: |
+          gh api repos/${{ github.repository }}/pulls/${{ steps.create.outputs.pr_number }}/requested_reviewers \
+            --method POST \
+            -f "reviewers[]=Junhyukkkk" -f "reviewers[]=KII1ua" -f "reviewers[]=tlarbals824" || echo "Failed to add reviewers"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
