@@ -17,10 +17,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Calculate version
-        id: version
-        uses: ./.github/actions/calculate-version
-
       - name: Check for existing release PR
         id: check
         run: |
@@ -55,9 +51,10 @@ jobs:
         run: |
           {
             echo "content<<EOF"
-            echo "## Release v${{ steps.version.outputs.version }}"
+            echo "## Release: develop → main"
             echo ""
             echo "develop 브랜치의 변경사항을 main으로 배포합니다."
+            echo "버전은 main 머지 시점에 자동으로 확정됩니다."
             echo ""
             echo "### Changes"
             echo "${{ steps.changelog.outputs.log }}"
@@ -68,7 +65,7 @@ jobs:
         if: steps.check.outputs.existing_pr != ''
         run: |
           gh pr edit ${{ steps.check.outputs.existing_pr }} \
-            --title "release: v${{ steps.version.outputs.version }}" \
+            --title "release: develop → main" \
             --body "${{ steps.body.outputs.content }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,7 +76,7 @@ jobs:
           gh pr create \
             --base main \
             --head develop \
-            --title "release: v${{ steps.version.outputs.version }}" \
+            --title "release: develop → main" \
             --body "${{ steps.body.outputs.content }}" \
             --reviewer Junhyukkkk,KII1ua,tlarbals824
         env:
