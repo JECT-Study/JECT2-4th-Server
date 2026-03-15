@@ -80,6 +80,7 @@ jobs:
             --base main \
             --head develop \
             --title "release: v${{ steps.version.outputs.version }}" \
-            --body "${{ steps.body.outputs.content }}"
+            --body "${{ steps.body.outputs.content }}" \
+            --reviewer Junhyukkkk,KII1ua,tlarbals824
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
