@@ -1,9 +1,8 @@
-name: CI/CD - Release
+name: CI/CD - Deploy
 
 on:
-  release:
-    types:
-      - published
+  push:
+    branches: [ main ]
 
 jobs:
   build-and-deploy:
@@ -44,7 +43,7 @@ jobs:
       - name: Docker 이미지 빌드 & 푸시
         run: |
           IMAGE=${{ secrets.DOCKER_HUB_USERNAME }}/vs-server
-          TAG=${{ github.event.release.tag_name }}
+          TAG=${{ github.sha }}
 
           docker build -t $IMAGE:$TAG .
           docker build -t $IMAGE:latest .
@@ -59,4 +58,4 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/app
-            ./deploy.sh ${{ secrets.DOCKER_HUB_USERNAME }}/vs-server:${{ github.event.release.tag_name }}
+            ./deploy.sh ${{ secrets.DOCKER_HUB_USERNAME }}/vs-server:${{ github.sha }}
