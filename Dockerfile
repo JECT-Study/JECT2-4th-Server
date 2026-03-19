@@ -1,5 +1,5 @@
 # ===== 빌드 스테이지 =====
-FROM gradle:8.14-jdk25 AS build
+FROM gradle:jdk25 AS build
 WORKDIR /app
 
 # 의존성 먼저 복사 (캐싱 활용)
