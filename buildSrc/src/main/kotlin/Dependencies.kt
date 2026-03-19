@@ -1,6 +1,7 @@
 object Dependencies {
 
     object SpringBoot {
+        const val ACTUATOR = "org.springframework.boot:spring-boot-starter-actuator"
         const val DATA_JPA = "org.springframework.boot:spring-boot-starter-data-jpa"
         const val SECURITY = "org.springframework.boot:spring-boot-starter-security"
         const val VALIDATION = "org.springframework.boot:spring-boot-starter-validation"

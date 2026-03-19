@@ -29,6 +29,7 @@ dependencies {
 	implementation(Dependencies.SpringBoot.SECURITY)
 	implementation(Dependencies.SpringBoot.VALIDATION)
 	implementation(Dependencies.SpringBoot.WEB)
+	implementation(Dependencies.SpringBoot.ACTUATOR)
 
 	// Database
 	runtimeOnly(Dependencies.Database.H2)
