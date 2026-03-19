@@ -17,5 +17,8 @@ FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 
+HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=10 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
