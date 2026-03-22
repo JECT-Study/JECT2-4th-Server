@@ -1,16 +1,25 @@
 name: CI/CD - Deploy
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Create Release"]
+    types:
+      - completed
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Repository 접근
         uses: actions/checkout@v4
+
+      - name: 최신 릴리즈 태그 가져오기
+        id: release
+        run: echo "tag=$(gh release view --json tagName -q '.tagName')" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker Hub 로그인
         uses: docker/login-action@v3
@@ -21,7 +30,7 @@ jobs:
       - name: Docker 이미지 빌드 & 푸시
         run: |
           IMAGE=${{ secrets.DOCKER_HUB_USERNAME }}/vs-server
-          TAG=${{ github.sha }}
+          TAG=${{ steps.release.outputs.tag }}
 
           docker build -t $IMAGE:$TAG .
           docker tag $IMAGE:$TAG $IMAGE:latest
@@ -36,4 +45,4 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/deploy.sh \
-              | bash -s ${{ secrets.DOCKER_HUB_USERNAME }}/vs-server:${{ github.sha }}
+              | bash -s ${{ secrets.DOCKER_HUB_USERNAME }}/vs-server:${{ steps.release.outputs.tag }}
