@@ -8,8 +8,10 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  calculate-version:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -20,15 +22,33 @@ jobs:
         id: version
         uses: ./.github/actions/calculate-version
 
+  release:
+    needs: calculate-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Create GitHub Release
-        run: gh release create "v${{ steps.version.outputs.version }}" --generate-notes
+        run: gh release create "v${{ needs.calculate-version.outputs.version }}" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-api-client:
+    needs: calculate-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Publish API Client
         uses: ./.github/actions/publish-api-client
         with:
-          version: ${{ steps.version.outputs.version }}
+          version: ${{ needs.calculate-version.outputs.version }}
           node-auth-token: ${{ secrets.NPM_TOKEN }}
           discord-webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
           github-repository: ${{ github.repository }}
