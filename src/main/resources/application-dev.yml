@@ -3,3 +3,6 @@ app:
     secret: "ject-2team-secret"
     access-token-expiration-seconds: 3600
     refresh-token-expiration-seconds: 86400
+  oauth2:
+    # 로그인 후 리다이렉트 주소
+    redirect-success-url: "http://localhost:3000/oauth2/redirect"
