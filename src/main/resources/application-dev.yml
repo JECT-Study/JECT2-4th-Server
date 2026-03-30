@@ -1,0 +1,5 @@
+app:
+  jwt:
+    secret: "ject-2team-secret"
+    access-token-expiration-seconds: 3600
+    refresh-token-expiration-seconds: 86400
