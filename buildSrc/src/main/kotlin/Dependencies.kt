@@ -7,6 +7,13 @@ object Dependencies {
         const val VALIDATION = "org.springframework.boot:spring-boot-starter-validation"
         const val WEB = "org.springframework.boot:spring-boot-starter-web"
         const val TEST = "org.springframework.boot:spring-boot-starter-test"
+        const val OAUTH2_CLIENT = "org.springframework.boot:spring-boot-starter-oauth2-client"
+    }
+
+    object Jwt {
+        const val API = "io.jsonwebtoken:jjwt-api:0.12.6"
+        const val IMPL = "io.jsonwebtoken:jjwt-impl:0.12.6"
+        const val JACKSON = "io.jsonwebtoken:jjwt-jackson:0.12.6"
     }
 
     object SpringSecurity {
