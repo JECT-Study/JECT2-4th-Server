@@ -29,7 +29,7 @@ public class AuthService {
         String accessTokenId = UUID.randomUUID().toString();
         String refreshTokenId = UUID.randomUUID().toString();
 
-        String accessToken = jwtProvider.createAccesssToken(user.getId(), accessTokenId);
+        String accessToken = jwtProvider.createAccessToken(user.getId(), accessTokenId);
         String refreshToken = jwtProvider.createRefreshToken(user.getId(), refreshTokenId);
 
         LocalDateTime accessExpiresAt = jwtProvider.getClaims(accessToken)

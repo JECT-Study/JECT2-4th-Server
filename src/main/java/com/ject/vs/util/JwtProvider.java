@@ -27,7 +27,7 @@ public class JwtProvider {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createAccesssToken(Long userId, String tokenId) {
+    public String createAccessToken(Long userId, String tokenId) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(jwtProperties.accessTokenExpirationSeconds());
 
