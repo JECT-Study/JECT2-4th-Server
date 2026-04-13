@@ -10,3 +10,4 @@ public class LoginTokenResponse {
     private String accessToken;
     private String refreshToken;
 }
+

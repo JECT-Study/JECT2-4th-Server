@@ -28,6 +28,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${app.oauth2.redirect-success-url}")
     private String redirectSuccessUrl;
 
+    @Value("${app.cookie.secure:true")      // 운영 상황에서는 true로 변경 https 사용할 경우
+    private boolean secureCookie;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -49,18 +52,18 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", tokenResponse.getAccessToken())
                 .httpOnly(true)
-                .secure(true)          // HTTPS 환경에서만 true
+                .secure(secureCookie)
                 .path("/")
-                .sameSite("None")      // 프론트/백엔드 도메인이 다르면 보통 None 필요
-                .maxAge(Duration.ofMinutes(30))
+                .sameSite("None")
+                .maxAge(60 * 30)
                 .build();
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", tokenResponse.getRefreshToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(secureCookie)
                 .path("/")
                 .sameSite("None")
-                .maxAge(Duration.ofDays(14))
+                .maxAge(60 * 60 * 24 * 14)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());

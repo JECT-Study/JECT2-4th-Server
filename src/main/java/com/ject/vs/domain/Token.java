@@ -10,17 +10,15 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor
-@Table(name = "Token", indexes = @Index(name = "idx_token_id", columnList = "tokenId"))
+@Table(name = "Token", indexes = @Index(name = "idx_token_value", columnList = "tokenValue"))
 public class Token {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String tokenId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
-    @Lob
+    @Column(length = 1024)
     private String tokenValue;
 
     @Enumerated(EnumType.STRING)
@@ -31,8 +29,7 @@ public class Token {
     private boolean revoked;
 
     @Builder
-    public Token(String tokenId, User user, String tokenValue, TokenType tokenType, LocalDateTime expiresAt, boolean revoked) {
-        this.tokenId = tokenId;
+    public Token(User user, String tokenValue, TokenType tokenType, LocalDateTime expiresAt, boolean revoked) {
         this.user = user;
         this.tokenValue = tokenValue;
         this.tokenType = tokenType;

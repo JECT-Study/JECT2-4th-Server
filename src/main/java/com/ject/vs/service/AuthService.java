@@ -4,6 +4,7 @@ import com.ject.vs.domain.Token;
 import com.ject.vs.domain.TokenType;
 import com.ject.vs.domain.User;
 import com.ject.vs.dto.LoginTokenResponse;
+import com.ject.vs.dto.TokenInfo;
 import com.ject.vs.repository.TokenRepository;
 import com.ject.vs.util.JwtProvider;
 import jakarta.transaction.Transactional;
@@ -26,49 +27,57 @@ public class AuthService {
     public LoginTokenResponse socialLogin(String sub) {
         User user = userService.findOrCreate(sub);
 
-        String accessTokenId = UUID.randomUUID().toString();
-        String refreshTokenId = UUID.randomUUID().toString();
+        TokenInfo accessTokenInfo = jwtProvider.createAccessToken(user.getId());
+        TokenInfo refreshTokenInfo = jwtProvider.createRefreshToken(user.getId());
 
-        String accessToken = jwtProvider.createAccessToken(user.getId(), accessTokenId);
-        String refreshToken = jwtProvider.createRefreshToken(user.getId(), refreshTokenId);
-
-        LocalDateTime accessExpiresAt = jwtProvider.getClaims(accessToken)
-                .getExpiration()
-                .toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-
-        LocalDateTime refreshExpiresAt = jwtProvider.getClaims(refreshToken)
-                .getExpiration()
-                .toInstant()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-
-        Token accesTk = Token.builder()
-                .tokenId(accessTokenId)
+        Token accessToken = Token.builder()
                 .user(user)
-                .tokenValue(accessToken)
-                .tokenType(TokenType.ACCESS)
-                .expiresAt(accessExpiresAt)
+                .tokenValue(accessTokenInfo.getTokenValue())
+                .tokenType(accessTokenInfo.getTokenType())
+                .expiresAt(accessTokenInfo.getExpiresAt())
                 .revoked(false)
                 .build();
 
-        Token refreshTk = Token.builder()
-                .tokenId(refreshTokenId)
+        Token refreshToken = Token.builder()
                 .user(user)
-                .tokenValue(refreshToken)
-                .tokenType(TokenType.REFRESH)
-                .expiresAt(refreshExpiresAt)
+                .tokenValue(refreshTokenInfo.getTokenValue())
+                .tokenType(refreshTokenInfo.getTokenType())
+                .expiresAt(refreshTokenInfo.getExpiresAt())
                 .revoked(false)
                 .build();
 
-        tokenRepository.save(accesTk);
-        tokenRepository.save(refreshTk);
+        tokenRepository.save(refreshToken);
 
         return LoginTokenResponse.builder()
                 .userId(user.getId())
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
+                .accessToken(accessToken.getTokenValue())
+                .refreshToken(refreshToken.getTokenValue())
                 .build();
+    }
+
+    public TokenInfo reissueAccessToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new IllegalArgumentException("토큰이 없습니다.");
+        }
+
+        if (!jwtProvider.validationToken(refreshToken)) {
+            throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
+        }
+
+        String tokenType = jwtProvider.getTokenType(refreshToken);
+        if (!TokenType.REFRESH.name().equals(tokenType)) {
+            throw new IllegalArgumentException("지정된 토큰 타입이 아닙니다.");
+        }
+
+        Token savedRefreshToken = tokenRepository.findByTokenValueAndTokenType(refreshToken, TokenType.REFRESH)
+                .orElseThrow(() -> new IllegalArgumentException("저장된 토큰이 없습니다."));
+
+        if (savedRefreshToken.isRevoked()) {
+            throw new IllegalArgumentException("만료된 토큰입니다.");
+        }
+
+        Long userId = jwtProvider.getUserId(refreshToken);
+
+        return jwtProvider.createAccessToken(userId);
     }
 }

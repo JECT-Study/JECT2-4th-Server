@@ -2,6 +2,7 @@ package com.ject.vs.util;
 
 import com.ject.vs.config.JwtProperties;
 import com.ject.vs.domain.TokenType;
+import com.ject.vs.dto.TokenInfo;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 @Component
@@ -22,37 +25,39 @@ public class JwtProvider {
     private SecretKey secretKey;
 
     @PostConstruct
-    public void Init() {        // secretkey 값을 읽어 디코딩 하여 바이트 배열로 변환 후 hmac으로 암호화
+    public void init() {        // secretkey 값을 읽어 디코딩 하여 바이트 배열로 변환 후 hmac으로 암호화
         byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.secret());
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createAccessToken(Long userId, String tokenId) {
+    public TokenInfo createAccessToken(Long userId) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(jwtProperties.accessTokenExpirationSeconds());
 
-        return Jwts.builder()
+        String token = Jwts.builder()
                 .subject(String.valueOf(userId))
-                .id(tokenId)
                 .claim("type", TokenType.ACCESS.name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiresAt))
                 .signWith(secretKey)
                 .compact();
+
+        return new TokenInfo(token, TokenType.ACCESS, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()));
     }
 
-    public String createRefreshToken(Long userId, String tokenId) {
+    public TokenInfo createRefreshToken(Long userId) {
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(jwtProperties.refreshTokenExpirationSeconds());
 
-        return Jwts.builder()
+        String token = Jwts.builder()
                 .subject(String.valueOf(userId))
-                .id(tokenId)
                 .claim("type", TokenType.REFRESH.name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiresAt))
                 .signWith(secretKey)
                 .compact();
+
+        return new TokenInfo(token, TokenType.REFRESH, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()));
     }
 
     public boolean validationToken(String token) {
@@ -77,10 +82,6 @@ public class JwtProvider {
 
     public Long getUserId(String token) {
         return Long.parseLong(getClaims(token).getSubject());
-    }
-
-    public String getTokenId(String token) {
-        return getClaims(token).getId();
     }
 
     public String getTokenType(String token) {

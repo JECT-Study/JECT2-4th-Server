@@ -5,3 +5,5 @@ app:
     refresh-token-expiration-seconds: 86400
   oauth2:
     redirect-success-url: http://localhost:3000/oauth2/redirect
+  cookie:
+    secure: false
