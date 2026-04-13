@@ -8,14 +8,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -45,13 +47,25 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         LoginTokenResponse tokenResponse = authService.socialLogin(attributes.getSub());
 
-        String targetUrl = UriComponentsBuilder.fromUriString(redirectSuccessUrl)
-                .queryParam("userId", tokenResponse.getUserId())
-                .queryParam("accessToken", tokenResponse.getAccessToken())
-                .queryParam("refreshToken", tokenResponse.getRefreshToken())
-                .build()
-                .toUriString();
+        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", tokenResponse.getAccessToken())
+                .httpOnly(true)
+                .secure(true)          // HTTPS 환경에서만 true
+                .path("/")
+                .sameSite("None")      // 프론트/백엔드 도메인이 다르면 보통 None 필요
+                .maxAge(Duration.ofMinutes(30))
+                .build();
 
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", tokenResponse.getRefreshToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("None")
+                .maxAge(Duration.ofDays(14))
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+        getRedirectStrategy().sendRedirect(request, response, redirectSuccessUrl);
     }
 }

@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor
+@Table(name = "Token", indexes = @Index(name = "idx_token_id", columnList = "tokenId"))
 public class Token {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
