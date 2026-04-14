@@ -21,7 +21,8 @@ public class SecurityConfig {
                                 "/api/**",
                                 "/actuator/health",
                                 "/",
-                                "/error"
+                                "/error",
+                                "/auth/reissue"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

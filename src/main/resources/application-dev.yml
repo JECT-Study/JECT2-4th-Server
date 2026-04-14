@@ -1,7 +1,7 @@
 app:
   jwt:
     secret: NHk7ya+qk5IVD/24BO7/BLFfdpqrZ6bSw/J9EyQDP7uCHtoF9NxD7OUwiHpiqt+MsxQd5eOcCknYJhvF+N8AVg==
-    access-token-expiration-seconds: 3600
+    access-token-expiration-seconds: 10
     refresh-token-expiration-seconds: 86400
   oauth2:
     redirect-success-url: http://localhost:3000/oauth2/redirect

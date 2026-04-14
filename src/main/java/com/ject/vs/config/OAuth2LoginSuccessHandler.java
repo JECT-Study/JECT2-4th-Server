@@ -28,7 +28,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${app.oauth2.redirect-success-url}")
     private String redirectSuccessUrl;
 
-    @Value("${app.cookie.secure:true")      // 운영 상황에서는 true로 변경 https 사용할 경우
+    @Value("${app.cookie.secure:false}")      // 운영 상황에서는 true로 변경 https 사용할 경우
     private boolean secureCookie;
 
     @Override
@@ -54,7 +54,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/")
-                .sameSite("None")
+                .sameSite("Lax")
                 .maxAge(60 * 30)
                 .build();
 
@@ -62,7 +62,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/")
-                .sameSite("None")
+                .sameSite("Lax")
                 .maxAge(60 * 60 * 24 * 14)
                 .build();
 
