@@ -24,11 +24,17 @@ public class AuthController {
 
     @PostMapping("/auth/reissue")
     public ResponseEntity<Void> reissue(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = cookieUtil.getCookieValue(request, "refresh_token");
+        String refreshToken = cookieUtil.getCookieValue(
+                request,
+                CookieUtil.CookieType.REFRESH_TOKEN
+        );
 
         TokenInfo newAccessTokenInfo = authService.reissueAccessToken(refreshToken);
 
-        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", newAccessTokenInfo.tokenValue())
+        ResponseCookie accessTokenCookie = ResponseCookie.from(
+                        CookieUtil.CookieType.ACCESS_TOKEN,
+                        newAccessTokenInfo.tokenValue()
+                )
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/")
