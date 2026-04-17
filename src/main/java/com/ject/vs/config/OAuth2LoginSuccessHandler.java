@@ -3,6 +3,7 @@ package com.ject.vs.config;
 import com.ject.vs.dto.LoginTokenResponse;
 import com.ject.vs.dto.OAuthAttributes;
 import com.ject.vs.service.AuthService;
+import com.ject.vs.util.CookieUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,7 +18,6 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -50,7 +50,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         LoginTokenResponse tokenResponse = authService.socialLogin(attributes.getSub());
 
-        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", tokenResponse.getAccessToken())
+        ResponseCookie accessTokenCookie = ResponseCookie.from(CookieUtil.CookieType.ACCESS_TOKEN, tokenResponse.getAccessToken())
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/")
@@ -58,7 +58,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .maxAge(60 * 30)
                 .build();
 
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", tokenResponse.getRefreshToken())
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(CookieUtil.CookieType.REFRESH_TOKEN, tokenResponse.getRefreshToken())
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/")
