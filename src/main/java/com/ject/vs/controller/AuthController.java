@@ -1,11 +1,8 @@
 package com.ject.vs.controller;
 
-import com.ject.vs.dto.LoginTokenResponse;
-import com.ject.vs.dto.OAuthAttributes;
 import com.ject.vs.dto.TokenInfo;
 import com.ject.vs.service.AuthService;
 import com.ject.vs.util.CookieUtil;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -13,13 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.io.IOException;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,7 +28,7 @@ public class AuthController {
 
         TokenInfo newAccessTokenInfo = authService.reissueAccessToken(refreshToken);
 
-        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", newAccessTokenInfo.getTokenValue())
+        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", newAccessTokenInfo.tokenValue())
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/")

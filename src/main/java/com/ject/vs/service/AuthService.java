@@ -9,12 +9,7 @@ import com.ject.vs.repository.TokenRepository;
 import com.ject.vs.util.JwtProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,17 +27,17 @@ public class AuthService {
 
         Token accessToken = Token.builder()
                 .user(user)
-                .tokenValue(accessTokenInfo.getTokenValue())
-                .tokenType(accessTokenInfo.getTokenType())
-                .expiresAt(accessTokenInfo.getExpiresAt())
+                .tokenValue(accessTokenInfo.tokenValue())
+                .tokenType(accessTokenInfo.tokenType())
+                .expiresAt(accessTokenInfo.expiresAt())
                 .revoked(false)
                 .build();
 
         Token refreshToken = Token.builder()
                 .user(user)
-                .tokenValue(refreshTokenInfo.getTokenValue())
-                .tokenType(refreshTokenInfo.getTokenType())
-                .expiresAt(refreshTokenInfo.getExpiresAt())
+                .tokenValue(refreshTokenInfo.tokenValue())
+                .tokenType(refreshTokenInfo.tokenType())
+                .expiresAt(refreshTokenInfo.expiresAt())
                 .revoked(false)
                 .build();
 

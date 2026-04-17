@@ -42,7 +42,7 @@ public class JwtProvider {
                 .signWith(secretKey)
                 .compact();
 
-        return new TokenInfo(token, TokenType.ACCESS, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()));
+        return new TokenInfo(token, TokenType.ACCESS, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()), userId);
     }
 
     public TokenInfo createRefreshToken(Long userId) {
@@ -57,7 +57,7 @@ public class JwtProvider {
                 .signWith(secretKey)
                 .compact();
 
-        return new TokenInfo(token, TokenType.REFRESH, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()));
+        return new TokenInfo(token, TokenType.REFRESH, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()), userId);
     }
 
     public boolean validationToken(String token) {
@@ -87,5 +87,12 @@ public class JwtProvider {
     public String getTokenType(String token) {
         Object type = getClaims(token).get("type");
         return type == null ? null : type.toString();
+    }
+
+    public TokenInfo parseToken(String token) {
+        Claims claims = getClaims(token);
+        String type = claims.get("type").toString();
+        Long userId = Long.parseLong(claims.getSubject());
+        return new TokenInfo(token, TokenType.valueOf(type), LocalDateTime.now(), userId);
     }
 }

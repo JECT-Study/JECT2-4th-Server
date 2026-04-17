@@ -19,4 +19,9 @@ public class CookieUtil {
 
         return null;
     }
+
+    public static class CookieType{
+        public static final String REFRESH_TOKEN = "refreshToken";
+        public static final String ACCESS_TOKEN = "accessToken";
+    }
 }

@@ -28,18 +28,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        String accessToken = cookieUtil.getCookieValue(request, "access_token");
+        String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
+
+        var tokenInfo = jwtProvider.parseToken(accessToken);
 
         if (accessToken != null
-                && jwtProvider.validationToken(accessToken)
-                && "ACCESS".equals(jwtProvider.getTokenType(accessToken))
+                && tokenInfo.isAccessToken()
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            Long userId = jwtProvider.getUserId(accessToken);       // accesstoken으로 사용자 확인
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            userId,
+                            tokenInfo.userId(),
                             null,
                             AuthorityUtils.NO_AUTHORITIES
                     );
