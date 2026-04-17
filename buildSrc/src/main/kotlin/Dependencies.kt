@@ -30,6 +30,7 @@ object Dependencies {
 
     object Database {
         const val H2 = "com.h2database:h2"
+        const val FLYWAY = "org.flywaydb:flyway-core"
     }
 
     object Test {

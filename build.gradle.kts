@@ -39,6 +39,7 @@ dependencies {
 
 	// Database
 	runtimeOnly(Dependencies.Database.H2)
+	implementation(Dependencies.Database.FLYWAY)
 
 	// Swagger / OpenAPI
 	implementation(Dependencies.Swagger.SPRINGDOC)
