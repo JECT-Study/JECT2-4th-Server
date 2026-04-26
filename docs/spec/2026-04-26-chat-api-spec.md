@@ -61,8 +61,8 @@ CREATE TABLE chat_room_unread (
 
 ```sql
 ALTER TABLE users
-    ADD COLUMN nickname          VARCHAR(50),
-    ADD COLUMN profile_icon_type VARCHAR(50);
+    ADD COLUMN nickname           VARCHAR(50),
+    ADD COLUMN profile_icon_url   VARCHAR(512);
 ```
 
 ---
@@ -183,7 +183,7 @@ ALTER TABLE users
       "content": "당연히 오르죠",
       "sentAt": "2026-04-26T14:23:00",
       "senderNickname": "슈퍼강아지_485",
-      "senderProfileIcon": "dog",
+      "senderProfileIcon": "https://cdn.example.com/icons/dog.png",
       "senderVoteOption": "A",
       "isMine": false
     }
@@ -214,7 +214,7 @@ ALTER TABLE users
   "content": "당연히 오르죠 ㅠㅠ 요즘 장보기가 너무 힘들어요",
   "sentAt": "2026-04-26T14:24:00",
   "senderNickname": "슈퍼강아지_485",
-  "senderProfileIcon": "dog",
+  "senderProfileIcon": "https://cdn.example.com/icons/dog.png",
   "senderVoteOption": "A",
   "isMine": true
 }
@@ -264,7 +264,7 @@ ALTER TABLE users
   "content": "당연히 오르죠",
   "sentAt": "2026-04-26T14:23:00",
   "senderNickname": "슈퍼강아지_485",
-  "senderProfileIcon": "dog",
+  "senderProfileIcon": "https://cdn.example.com/icons/dog.png",
   "senderVoteOption": "A",
   "isMine": false
 }
