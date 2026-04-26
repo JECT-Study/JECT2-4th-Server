@@ -11,7 +11,6 @@ fi
 APP_DIR="${APP_DIR:-/home/ubuntu/app}"
 NETWORK="${NETWORK:-app-network}"
 NGINX_CONTAINER="${NGINX_CONTAINER:-nginx}"
-ENV_FILE="${ENV_FILE:-$APP_DIR/.env}"
 HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-180}"
 HEALTH_LOG_INTERVAL_SECONDS="${HEALTH_LOG_INTERVAL_SECONDS:-10}"
 
@@ -28,19 +27,10 @@ cleanup_new_container() {
 
 mkdir -p "$APP_DIR"
 
-if [ -f "$ENV_FILE" ]; then
-  log "환경 변수 파일 로드: $ENV_FILE"
-  set -a
-  # shellcheck disable=SC1090
-  . "$ENV_FILE"
-  set +a
-fi
-
 REQUIRED_ENV_VARS=(
   APP_JWT_SECRET
   APP_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS
   APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS
-  APP_OAUTH2_REDIRECT_SUCCESS_URL
 )
 
 MISSING_ENV_VARS=()
@@ -52,7 +42,7 @@ done
 
 if [ "${#MISSING_ENV_VARS[@]}" -gt 0 ]; then
   echo ">>> 필수 운영 환경 변수가 없습니다: ${MISSING_ENV_VARS[*]}" >&2
-  echo ">>> $ENV_FILE 파일에 값을 설정한 뒤 다시 배포하세요." >&2
+  echo ">>> GitHub Actions secrets 또는 환경 변수로 값을 설정한 뒤 다시 배포하세요." >&2
   exit 1
 fi
 
@@ -100,7 +90,6 @@ docker run -d --name "$NEW_CONTAINER" \
   -e APP_JWT_SECRET \
   -e APP_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS \
   -e APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS \
-  -e APP_OAUTH2_REDIRECT_SUCCESS_URL \
   --health-cmd="curl -f http://localhost:8080/actuator/health || exit 1" \
   --health-interval=10s \
   --health-timeout=5s \
