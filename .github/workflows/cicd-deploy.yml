@@ -44,5 +44,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/setup-docker-nginx.sh \
+              | bash
             curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/deploy.sh \
               | bash -s ${{ secrets.DOCKER_HUB_USERNAME }}/vs-server:${{ steps.release.outputs.tag }}
