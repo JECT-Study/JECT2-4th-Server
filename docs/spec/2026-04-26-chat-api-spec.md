@@ -139,7 +139,10 @@ ALTER TABLE users
   "voteId": 1,
   "title": "올해 물가가 더 오를까요 안 오를까요",
   "status": "ONGOING",
-  "participantCount": 25
+  "participantCount": 25,
+  "optionA": "오른다",
+  "optionB": "떨어진다",
+  "endAt": "2026-04-26T18:00:00"
 }
 ```
 
@@ -245,16 +248,10 @@ ALTER TABLE users
 
 ─ 채팅 메시지 ──────────────────────────────────────
 구독: /topic/chat/{voteId}         ← 새 메시지 수신 (모든 참여자)
-발행: /app/chat/{voteId}/send      ← 메시지 전송 (투표 참여자만)
 
 ─ 읽지 않은 메시지 뱃지 ────────────────────────────
 구독: /topic/chat/{voteId}/unread  ← 새 메시지 도착 시 unreadCount 갱신
                                       (채팅 목록 화면에서 실시간 반영)
-```
-
-**발행 Payload (`/app/chat/{voteId}/send`):**
-```json
-{ "content": "당연히 오르죠 ㅠㅠ 요즘 장보기가 너무 힘들어요" }
 ```
 
 **수신 Payload (`/topic/chat/{voteId}`):**
@@ -276,9 +273,9 @@ ALTER TABLE users
 ```
 
 > **REST vs WebSocket 역할 분리**
-> - 최초 진입 시 과거 메시지 → REST `GET /api/chats/{voteId}/messages`
-> - 이후 실시간 수신 → WebSocket 구독
-> - 전송도 WebSocket 발행으로 통일 (REST POST는 fallback)
+> - 메시지 전송 → REST `POST /api/chats/{voteId}/messages`
+> - 최초 진입 시 과거 메시지 조회 → REST `GET /api/chats/{voteId}/messages`
+> - 실시간 메시지 수신 → WebSocket 구독 전용
 
 ---
 
