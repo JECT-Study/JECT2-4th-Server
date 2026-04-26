@@ -14,11 +14,7 @@ public class UserService {
 
     public User findOrCreate(String sub) {
         return userRepository.findBySub(sub)
-                .orElseGet(() -> {
-                    User user = new User();
-                    user.setSub(sub);
-                    return userRepository.save(user);
-                });
+                .orElseGet(() -> userRepository.save(User.createWithSub(sub)));
     }
 
     public User getBySub(String sub) {      // 추후에 예외처리 통합
