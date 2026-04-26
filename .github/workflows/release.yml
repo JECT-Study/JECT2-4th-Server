@@ -36,6 +36,42 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-and-deploy:
+    needs: [ calculate-version, release ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository 접근
+        uses: actions/checkout@v4
+
+      - name: Docker Hub 로그인
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Docker 이미지 빌드 & 푸시
+        run: |
+          IMAGE=${{ secrets.DOCKER_HUB_USERNAME }}/vs-server
+          TAG=v${{ needs.calculate-version.outputs.version }}
+
+          docker build -t $IMAGE:$TAG .
+          docker tag $IMAGE:$TAG $IMAGE:latest
+          docker push $IMAGE:$TAG
+          docker push $IMAGE:latest
+
+      - name: 서버 배포
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/setup-docker-nginx.sh \
+              | bash
+            curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/deploy.sh \
+              | bash -s ${{ secrets.DOCKER_HUB_USERNAME }}/vs-server:v${{ needs.calculate-version.outputs.version }}
+
   publish-api-client:
     needs: calculate-version
     runs-on: ubuntu-latest
