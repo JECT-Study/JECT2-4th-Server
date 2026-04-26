@@ -11,6 +11,8 @@ fi
 APP_DIR="${APP_DIR:-/home/ubuntu/app}"
 NETWORK="${NETWORK:-app-network}"
 NGINX_CONTAINER="${NGINX_CONTAINER:-nginx}"
+HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-180}"
+HEALTH_LOG_INTERVAL_SECONDS="${HEALTH_LOG_INTERVAL_SECONDS:-10}"
 
 log() {
   echo ">>> $*"
@@ -24,6 +26,25 @@ cleanup_new_container() {
 }
 
 mkdir -p "$APP_DIR"
+
+REQUIRED_ENV_VARS=(
+  APP_JWT_SECRET
+  APP_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS
+  APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS
+)
+
+MISSING_ENV_VARS=()
+for ENV_VAR in "${REQUIRED_ENV_VARS[@]}"; do
+  if [ -z "${!ENV_VAR:-}" ]; then
+    MISSING_ENV_VARS+=("$ENV_VAR")
+  fi
+done
+
+if [ "${#MISSING_ENV_VARS[@]}" -gt 0 ]; then
+  echo ">>> 필수 운영 환경 변수가 없습니다: ${MISSING_ENV_VARS[*]}" >&2
+  echo ">>> GitHub Actions secrets 또는 환경 변수로 값을 설정한 뒤 다시 배포하세요." >&2
+  exit 1
+fi
 
 docker network inspect "$NETWORK" >/dev/null 2>&1 || docker network create "$NETWORK" >/dev/null
 
@@ -66,35 +87,51 @@ fi
 log "새 컨테이너($NEW_CONTAINER) 실행 중"
 docker run -d --name "$NEW_CONTAINER" \
   -e SPRING_PROFILES_ACTIVE=prod \
+  -e APP_JWT_SECRET \
+  -e APP_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS \
+  -e APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS \
   --health-cmd="curl -f http://localhost:8080/actuator/health || exit 1" \
-  --health-interval=5s \
-  --health-timeout=3s \
-  --health-start-period=30s \
-  --health-retries=10 \
+  --health-interval=10s \
+  --health-timeout=5s \
+  --health-start-period=90s \
+  --health-retries=18 \
   "$IMAGE" >/dev/null
 
 # 헬스체크 (docker inspect로 healthy 상태 확인)
-log "헬스체크 시작"
-for i in $(seq 1 60); do
-  STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$NEW_CONTAINER" 2>/dev/null || echo "missing")
+# Docker health status가 start-period 직후 일시적으로 unhealthy가 될 수 있어
+# unhealthy 즉시 실패 대신 전체 타임아웃까지 여유 있게 대기한다.
+log "헬스체크 시작 (최대 ${HEALTH_TIMEOUT_SECONDS}초)"
+HEALTH_PASSED=false
+for i in $(seq 1 "$HEALTH_TIMEOUT_SECONDS"); do
+  RUNNING=$(docker inspect --format='{{.State.Running}}' "$NEW_CONTAINER" 2>/dev/null || echo "false")
+  STATUS=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}unknown{{end}}' "$NEW_CONTAINER" 2>/dev/null || echo "missing")
+
+  if [ "$RUNNING" != "true" ]; then
+    echo ">>> 새 컨테이너가 실행 중이 아닙니다. 롤백합니다." >&2
+    docker logs --tail=100 "$NEW_CONTAINER" >&2 || true
+    cleanup_new_container
+    exit 1
+  fi
+
   if [ "$STATUS" = "healthy" ]; then
     log "헬스체크 통과! (${i}초)"
+    HEALTH_PASSED=true
     break
   fi
-  if [ "$STATUS" = "unhealthy" ]; then
-    echo ">>> 헬스체크 unhealthy. 롤백합니다." >&2
-    docker logs --tail=100 "$NEW_CONTAINER" >&2 || true
-    cleanup_new_container
-    exit 1
+
+  if [ $((i % HEALTH_LOG_INTERVAL_SECONDS)) -eq 0 ]; then
+    log "헬스체크 대기 중... status=$STATUS (${i}/${HEALTH_TIMEOUT_SECONDS}초)"
   fi
-  if [ "$i" -eq 60 ]; then
-    echo ">>> 헬스체크 타임아웃. 롤백합니다." >&2
-    docker logs --tail=100 "$NEW_CONTAINER" >&2 || true
-    cleanup_new_container
-    exit 1
-  fi
+
   sleep 1
 done
+
+if [ "$HEALTH_PASSED" != "true" ]; then
+  echo ">>> 헬스체크 타임아웃. 롤백합니다." >&2
+  docker logs --tail=100 "$NEW_CONTAINER" >&2 || true
+  cleanup_new_container
+  exit 1
+fi
 
 # 새 컨테이너를 네트워크에 연결 (app alias 부여 → 이 순간 트래픽 전환)
 log "트래픽 전환 중"
