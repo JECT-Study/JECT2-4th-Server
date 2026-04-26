@@ -13,6 +13,13 @@ spring:
   flyway:
     enabled: true
 
+app:
+  oauth2:
+    # 운영 도메인 확정 후 실제 URL로 교체 필요 (관련 이슈: #43)
+    redirect-success-url: https://example.com/oauth2/redirect
+  cookie:
+    secure: true
+
 management:
   endpoints:
     web:
