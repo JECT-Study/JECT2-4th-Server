@@ -11,6 +11,7 @@ com.ject.vs
 ├── common
 │   └── domain
 │       ├── BaseEntity.java          # @MappedSuperclass — id 공통 정의
+│       ├── BaseTimeEntity.java      # extends BaseEntity, implements TimeTrackable
 │       └── TimeTrackable.java       # interface — createdAt/updatedAt 계약
 │
 ├── vote                             # Vote Bounded Context
@@ -55,6 +56,16 @@ com.ject.vs
 
 ## 2. 공통 기반
 
+상속 계층:
+```
+BaseEntity (id)
+    └── BaseTimeEntity (id + createdAt + updatedAt)  implements TimeTrackable
+```
+
+엔티티는 필요에 따라 둘 중 하나를 상속:
+- 시간 추적 불필요 → `extends BaseEntity`
+- 시간 추적 필요 → `extends BaseTimeEntity`
+
 ### BaseEntity
 ```java
 @MappedSuperclass
@@ -67,7 +78,7 @@ public abstract class BaseEntity {
 ```
 
 ### TimeTrackable
-createdAt / updatedAt이 필요한 엔티티만 구현. JPA Auditing으로 자동 주입.
+createdAt / updatedAt 계약 인터페이스. 서비스 레이어에서 타입 제약 또는 공통 처리 시 활용.
 
 ```java
 public interface TimeTrackable {
@@ -76,17 +87,28 @@ public interface TimeTrackable {
 }
 ```
 
+### BaseTimeEntity
+`@EntityListeners`와 Auditing 어노테이션을 한 곳에 정의. 각 엔티티는 상속만으로 적용.
+
 ```java
-// 사용 예시
-@Entity
+@MappedSuperclass
+@Getter
 @EntityListeners(AuditingEntityListener.class)
-public class ChatMessage extends BaseEntity implements TimeTrackable {
+public abstract class BaseTimeEntity extends BaseEntity implements TimeTrackable {
     @CreatedDate
     private LocalDateTime createdAt;
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
 }
+```
+
+```java
+// 시간 추적 불필요
+public class Vote extends BaseEntity { ... }
+
+// 시간 추적 필요
+public class ChatMessage extends BaseTimeEntity { ... }
 ```
 
 ---
@@ -148,15 +170,14 @@ public interface VoteParticipationRepository {
 **ChatMessage 도메인 핵심**
 ```java
 @Entity
-public class ChatMessage extends BaseEntity implements TimeTrackable {
+public class ChatMessage extends BaseTimeEntity {
     private Long voteId;
     private Long senderId;
 
     @Column(nullable = false)
     private String content;
 
-    @CreatedDate
-    private LocalDateTime createdAt;   // = sentAt
+    // createdAt = sentAt (BaseTimeEntity에서 자동 주입)
 
     // 팩토리
     public static ChatMessage of(Long voteId, Long senderId, String content) { ... }
