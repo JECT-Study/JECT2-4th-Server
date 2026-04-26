@@ -92,15 +92,17 @@ ALTER TABLE users
       "optionB": "떨어진다",
       "participantCount": 25,
       "lastMessage": "당연히 오르죠 ㅠㅠ",
-      "lastMessageAt": "14:23",
-      "remainingTime": "00:00",
+      "lastMessageAt": "2026-04-26T14:23:00",
+      "endAt": "2026-04-26T18:00:00",
       "unreadCount": 2
     }
   ]
 }
 ```
 
-**Response (ENDED):** `endDate` 추가, `remainingTime` / `unreadCount` 제외
+> `remainingTime`은 내려주지 않음. 프론트에서 `endAt` 기준으로 직접 계산.
+
+**Response (ENDED)**
 ```json
 {
   "chats": [
@@ -112,8 +114,9 @@ ALTER TABLE users
       "optionB": "같이 먹는 게 맞다",
       "participantCount": 23,
       "lastMessage": "팀끼리먹는다거나...",
-      "lastMessageAt": "19:51",
-      "endDate": "04.20"
+      "lastMessageAt": "2026-04-20T19:51:00",
+      "endAt": "2026-04-20T18:00:00",
+      "unreadCount": 0
     }
   ]
 }
@@ -178,7 +181,7 @@ ALTER TABLE users
     {
       "messageId": 1234,
       "content": "당연히 오르죠",
-      "sentAt": "14:23",
+      "sentAt": "2026-04-26T14:23:00",
       "senderNickname": "슈퍼강아지_485",
       "senderProfileIcon": "dog",
       "senderVoteOption": "A",
@@ -209,7 +212,7 @@ ALTER TABLE users
 {
   "messageId": 1235,
   "content": "당연히 오르죠 ㅠㅠ 요즘 장보기가 너무 힘들어요",
-  "sentAt": "14:24",
+  "sentAt": "2026-04-26T14:24:00",
   "senderNickname": "슈퍼강아지_485",
   "senderProfileIcon": "dog",
   "senderVoteOption": "A",
@@ -259,7 +262,7 @@ ALTER TABLE users
 {
   "messageId": 1234,
   "content": "당연히 오르죠",
-  "sentAt": "14:23",
+  "sentAt": "2026-04-26T14:23:00",
   "senderNickname": "슈퍼강아지_485",
   "senderProfileIcon": "dog",
   "senderVoteOption": "A",
