@@ -50,6 +50,10 @@ com.ject.vs
         └── web
             ├── ChatController.java
             └── ChatWebSocketHandler.java
+│
+└── config
+    ├── WebSocketConfig.java             # STOMP 엔드포인트 및 브로커 설정
+    └── WebSocketAuthInterceptor.java    # STOMP CONNECT 시 JWT 인증
 ```
 
 ---
@@ -305,17 +309,15 @@ public class ChatCommandService implements ChatCommandUseCase {
 
 ---
 
-### STEP 5 — Presentation Layer
+### STEP 5 — Presentation Layer (REST)
 
-**목표:** REST Controller + WebSocket Handler 연결
+**목표:** REST Controller 구현
 
 **구현 파일**
 
 | 파일 | 내용 |
 |------|------|
 | `chat/infrastructure/web/ChatController.java` | REST — UseCase 주입, DTO 변환 |
-| `config/WebSocketConfig.java` | STOMP 설정 (`/ws`, `/topic`, `/app`) |
-| `chat/infrastructure/web/ChatWebSocketHandler.java` | `/app/chat/{voteId}/send` 발행 처리 |
 
 **ChatController 구조**
 ```java
@@ -323,21 +325,34 @@ public class ChatCommandService implements ChatCommandUseCase {
 @RequestMapping("/api/chats")
 @RequiredArgsConstructor
 public class ChatController {
-    private final ChatQueryUseCase chatQueryUseCase;    // 인터페이스로 주입
+    private final ChatQueryUseCase chatQueryUseCase;
     private final ChatCommandUseCase chatCommandUseCase;
 
     @GetMapping
-    public ChatListResponse getChatList(...) { ... }
+    public ChatListResponse getChatList(@AuthenticationPrincipal Long userId,
+                                        @RequestParam VoteStatus status) { ... }
+
+    @GetMapping("/{voteId}")
+    public ChatRoomResponse getChatRoom(@PathVariable Long voteId) { ... }
+
+    @GetMapping("/{voteId}/gauge")
+    public GaugeResponse getGauge(@PathVariable Long voteId) { ... }
 
     @GetMapping("/{voteId}/messages")
-    public MessagePageResponse getMessages(...) { ... }
+    public MessagePageResponse getMessages(@PathVariable Long voteId,
+                                           @RequestParam(required = false) Long cursor,
+                                           @RequestParam(defaultValue = "30") int size) { ... }
 
     @PostMapping("/{voteId}/messages")
-    public MessageResponse sendMessage(...) { ... }
+    public MessageResponse sendMessage(@PathVariable Long voteId,
+                                       @AuthenticationPrincipal Long userId,
+                                       @RequestBody SendMessageRequest request) { ... }
 
     @PostMapping("/{voteId}/read")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void markAsRead(...) { ... }
+    public void markAsRead(@PathVariable Long voteId,
+                           @AuthenticationPrincipal Long userId,
+                           @RequestBody MarkAsReadRequest request) { ... }
 }
 ```
 
@@ -346,22 +361,145 @@ public class ChatController {
 
 ---
 
-### STEP 6 — WebSocket 실시간 + unreadCount 갱신
+### STEP 6 — WebSocket 구현
 
-**목표:** 메시지 전송 시 `/topic/chat/{voteId}` broadcast + unread 갱신
+**목표:** STOMP 기반 실시간 메시지 수신/전송 + unreadCount 갱신
 
-**흐름**
+---
+
+#### 6-1. WebSocketConfig
+
+STOMP 엔드포인트 및 메시지 브로커 설정.
+
+```java
+@Configuration
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws")
+                .setAllowedOriginPatterns("*")
+                .withSockJS();           // SockJS fallback
+    }
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic");   // 구독 prefix
+        registry.setApplicationDestinationPrefixes("/app"); // 발행 prefix
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(webSocketAuthInterceptor); // JWT 인증 인터셉터 등록
+    }
+}
 ```
-클라이언트 발행 (/app/chat/{voteId}/send)
-  → ChatWebSocketHandler
-    → ChatCommandUseCase.sendMessage()
-      → DB 저장
-      → SimpMessagingTemplate.convertAndSend("/topic/chat/{voteId}", payload)
-      → SimpMessagingTemplate.convertAndSend("/topic/chat/{voteId}/unread", unreadPayload)
+
+---
+
+#### 6-2. WebSocketAuthInterceptor
+
+STOMP CONNECT frame 수신 시 `Authorization` 헤더에서 JWT를 추출해 인증 처리.  
+이후 메시지에서 `accessor.getUser()`로 인증 정보 참조 가능.
+
+```java
+@Component
+@RequiredArgsConstructor
+public class WebSocketAuthInterceptor implements ChannelInterceptor {
+
+    private final JwtProvider jwtProvider;
+
+    @Override
+    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+        StompHeaderAccessor accessor =
+                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String token = accessor.getFirstNativeHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                Long userId = jwtProvider.extractUserId(token.substring(7));
+                accessor.setUser(() -> String.valueOf(userId));  // Principal 설정
+            }
+        }
+        return message;
+    }
+}
 ```
 
-**테스트**
-- `ChatWebSocketIntegrationTest`: `StompClient` 연결 → 발행 → 수신 검증
+---
+
+#### 6-3. ChatWebSocketHandler
+
+`/app/chat/{voteId}/send` 발행 수신 → UseCase 위임 → broadcast.
+
+```java
+@Controller
+@RequiredArgsConstructor
+public class ChatWebSocketHandler {
+
+    private final ChatCommandUseCase chatCommandUseCase;
+
+    @MessageMapping("/chat/{voteId}/send")
+    public void sendMessage(@DestinationVariable Long voteId,
+                            @Payload SendMessageRequest request,
+                            Principal principal) {
+        Long senderId = Long.parseLong(principal.getName());
+        chatCommandUseCase.sendMessage(voteId, senderId, request.content());
+        // broadcast은 ChatCommandService 내부에서 SimpMessagingTemplate으로 처리
+    }
+}
+```
+
+---
+
+#### 6-4. broadcast 흐름
+
+```
+클라이언트 STOMP 발행
+  /app/chat/{voteId}/send  { "content": "..." }
+        │
+        ▼
+  WebSocketAuthInterceptor  ← CONNECT 시 JWT 검증, Principal 설정
+        │
+        ▼
+  ChatWebSocketHandler.sendMessage()
+        │
+        ▼
+  ChatCommandService.sendMessage()
+    ├─ VoteParticipationRepository: 참여 여부 검증
+    ├─ ChatMessage.of(): 도메인 객체 생성 + 공백 검증
+    ├─ ChatMessagePort.save(): DB 저장
+    ├─ SimpMessagingTemplate → /topic/chat/{voteId}
+    │     payload: { messageId, content, sentAt, senderNickname, senderVoteOption, isMine }
+    └─ SimpMessagingTemplate → /topic/chat/{voteId}/unread
+          payload: { unreadCount }
+```
+
+---
+
+#### 6-5. 구현 파일
+
+| 파일 | 내용 |
+|------|------|
+| `config/WebSocketConfig.java` | STOMP 엔드포인트 및 브로커 설정 |
+| `config/WebSocketAuthInterceptor.java` | CONNECT 시 JWT 인증, Principal 주입 |
+| `chat/infrastructure/web/ChatWebSocketHandler.java` | `@MessageMapping` 핸들러 |
+
+---
+
+#### 6-6. 테스트
+
+- `WebSocketAuthInterceptorTest`: CONNECT 시 유효/무효 토큰 처리 검증
+- `ChatWebSocketHandlerTest`: Mockito로 UseCase mocking — 핸들러 위임 검증
+- `ChatWebSocketIntegrationTest`: `StompClient`로 실제 연결 → 발행 → `/topic` 수신 검증
+  ```java
+  // 통합 테스트 흐름 예시
+  StompSession session = stompClient.connect(url, headers).get();
+  session.subscribe("/topic/chat/1", new TestStompFrameHandler());
+  session.send("/app/chat/1/send", new SendMessageRequest("테스트 메시지"));
+  // 수신된 payload 검증
+  ```
 
 ---
 
@@ -389,10 +527,14 @@ public class ChatController {
 ## 6. 구현 순서 요약
 
 ```
-STEP 1  BaseEntity / TimeTrackable / Vote BC (도메인 + port + JPA)
+STEP 1  BaseEntity / BaseTimeEntity / TimeTrackable / Vote BC (도메인 + port + JPA)
 STEP 2  ChatMessage / ChatRoomUnread 도메인
 STEP 3  Outbound ports + Persistence Adapters
 STEP 4  Inbound ports (UseCase) + Application Services
-STEP 5  REST Controller + WebSocket Config
-STEP 6  WebSocket broadcast + unreadCount 실시간 갱신
+STEP 5  REST Controller
+STEP 6  WebSocket 구현
+          6-1. WebSocketConfig (STOMP 엔드포인트 + 브로커)
+          6-2. WebSocketAuthInterceptor (JWT 인증)
+          6-3. ChatWebSocketHandler (@MessageMapping)
+          6-4. broadcast 흐름 연결 (SimpMessagingTemplate)
 ```
