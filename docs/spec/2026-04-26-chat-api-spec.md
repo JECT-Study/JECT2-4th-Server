@@ -70,6 +70,7 @@ ALTER TABLE users
 ## 2. REST API
 
 > 모든 엔드포인트 공통 Header: `Authorization: Bearer {accessToken}`
+> 모든 시간 필드는 **KST (UTC+9)** 기준 ISO 8601 형식으로 반환. (예: `2026-04-26T14:23:00+09:00`)
 
 ---
 
@@ -92,8 +93,8 @@ ALTER TABLE users
       "optionB": "떨어진다",
       "participantCount": 25,
       "lastMessage": "당연히 오르죠 ㅠㅠ",
-      "lastMessageAt": "2026-04-26T14:23:00",
-      "endAt": "2026-04-26T18:00:00",
+      "lastMessageAt": "2026-04-26T14:23:00+09:00",
+      "endAt": "2026-04-26T18:00:00+09:00",
       "unreadCount": 2
     }
   ]
@@ -114,8 +115,8 @@ ALTER TABLE users
       "optionB": "같이 먹는 게 맞다",
       "participantCount": 23,
       "lastMessage": "팀끼리먹는다거나...",
-      "lastMessageAt": "2026-04-20T19:51:00",
-      "endAt": "2026-04-20T18:00:00",
+      "lastMessageAt": "2026-04-20T19:51:00+09:00",
+      "endAt": "2026-04-20T18:00:00+09:00",
       "unreadCount": 0
     }
   ]
@@ -142,7 +143,7 @@ ALTER TABLE users
   "participantCount": 25,
   "optionA": "오른다",
   "optionB": "떨어진다",
-  "endAt": "2026-04-26T18:00:00"
+  "endAt": "2026-04-26T18:00:00+09:00"
 }
 ```
 
@@ -184,7 +185,7 @@ ALTER TABLE users
     {
       "messageId": 1234,
       "content": "당연히 오르죠",
-      "sentAt": "2026-04-26T14:23:00",
+      "sentAt": "2026-04-26T14:23:00+09:00",
       "senderNickname": "슈퍼강아지_485",
       "senderProfileIcon": "https://cdn.example.com/icons/dog.png",
       "senderVoteOption": "A",
@@ -215,7 +216,7 @@ ALTER TABLE users
 {
   "messageId": 1235,
   "content": "당연히 오르죠 ㅠㅠ 요즘 장보기가 너무 힘들어요",
-  "sentAt": "2026-04-26T14:24:00",
+  "sentAt": "2026-04-26T14:24:00+09:00",
   "senderNickname": "슈퍼강아지_485",
   "senderProfileIcon": "https://cdn.example.com/icons/dog.png",
   "senderVoteOption": "A",
@@ -259,7 +260,7 @@ ALTER TABLE users
 {
   "messageId": 1234,
   "content": "당연히 오르죠",
-  "sentAt": "2026-04-26T14:23:00",
+  "sentAt": "2026-04-26T14:23:00+09:00",
   "senderNickname": "슈퍼강아지_485",
   "senderProfileIcon": "https://cdn.example.com/icons/dog.png",
   "senderVoteOption": "A",
