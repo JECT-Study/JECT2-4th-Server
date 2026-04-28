@@ -34,4 +34,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: 프로젝트 빌드
+        env:
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
         run: ./gradlew build
