@@ -93,3 +93,5 @@ jobs:
           node-auth-token: ${{ secrets.NPM_TOKEN }}
           discord-webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
           github-repository: ${{ github.repository }}
+          google-client-id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          google-client-secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
