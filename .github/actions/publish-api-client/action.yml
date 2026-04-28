@@ -39,6 +39,8 @@ runs:
       run: ./gradlew publishApiClient -PapiClientVersion=${{ inputs.version }}
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}
+        GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+        GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET}}
 
     - name: Notify Discord
       shell: bash
