@@ -1,6 +1,6 @@
 package com.ject.vs.chat.adapter.web.dto;
 
-import com.ject.vs.chat.port.in.GaugeResult;
+import com.ject.vs.chat.port.in.dto.GaugeResult;
 
 public record GaugeResponse(int optionARatio, int optionBRatio, int participantCount) {
 

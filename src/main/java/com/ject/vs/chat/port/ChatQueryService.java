@@ -4,6 +4,7 @@ import com.ject.vs.chat.domain.ChatMessage;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.port.in.*;
+import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.domain.User;
 import com.ject.vs.repository.UserRepository;
 import com.ject.vs.vote.domain.VoteParticipation;
@@ -27,7 +28,7 @@ public class ChatQueryService implements ChatQueryUseCase {
 
     @Override
     public List<ChatListItemResult> getChatList(Long userId, VoteStatus status) {
-        List<VoteParticipation> participations = voteParticipationRepository.findByUserId(userId);
+        List<VoteParticipation> participations = voteParticipationRepository.findAllByUserId(userId);
 
         return participations.stream()
                 .map(participation -> {

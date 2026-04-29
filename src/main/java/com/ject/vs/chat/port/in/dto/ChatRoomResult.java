@@ -1,4 +1,4 @@
-package com.ject.vs.chat.port.in;
+package com.ject.vs.chat.port.in.dto;
 
 import java.time.LocalDateTime;
 

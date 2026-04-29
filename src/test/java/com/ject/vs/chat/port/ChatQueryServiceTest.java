@@ -3,7 +3,7 @@ package com.ject.vs.chat.port;
 import com.ject.vs.chat.domain.ChatMessage;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
-import com.ject.vs.chat.port.in.MessagePageResult;
+import com.ject.vs.chat.port.in.dto.MessagePageResult;
 import com.ject.vs.repository.UserRepository;
 import com.ject.vs.vote.domain.VoteParticipationRepository;
 import org.junit.jupiter.api.Nested;

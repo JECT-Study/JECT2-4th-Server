@@ -2,6 +2,7 @@ package com.ject.vs.chat.adapter.web;
 
 import com.ject.vs.chat.adapter.web.dto.*;
 import com.ject.vs.chat.port.in.*;
+import com.ject.vs.chat.port.in.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface VoteParticipationRepository extends JpaRepository<VoteParticipation, Long> {
     boolean existsByVoteIdAndUserId(Long voteId, Long userId);
-    List<VoteParticipation> findByUserId(Long userId);
+    List<VoteParticipation> findAllByUserId(Long userId);
     List<VoteParticipation> findByVoteId(Long voteId);
     long countByVoteId(Long voteId);
 }

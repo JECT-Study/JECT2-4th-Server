@@ -1,6 +1,6 @@
 package com.ject.vs.chat.adapter.web.dto;
 
-import com.ject.vs.chat.port.in.ChatListItemResult;
+import com.ject.vs.chat.port.in.dto.ChatListItemResult;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;

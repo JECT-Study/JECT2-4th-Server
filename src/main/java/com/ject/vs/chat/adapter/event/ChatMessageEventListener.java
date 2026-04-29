@@ -4,7 +4,7 @@ import com.ject.vs.chat.domain.ChatMessage;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
-import com.ject.vs.chat.port.in.MessageResult;
+import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.domain.User;
 import com.ject.vs.repository.UserRepository;
 import com.ject.vs.vote.domain.VoteParticipation;
