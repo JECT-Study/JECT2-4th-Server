@@ -11,4 +11,8 @@ import static lombok.AccessLevel.PROTECTED;
 @Table(name = "vote")
 @NoArgsConstructor(access = PROTECTED)
 public class Vote extends BaseEntity {
+
+    public static Vote createForTest() {
+        return new Vote();
+    }
 }

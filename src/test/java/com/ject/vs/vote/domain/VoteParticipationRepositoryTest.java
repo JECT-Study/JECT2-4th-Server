@@ -23,7 +23,7 @@ class VoteParticipationRepositoryTest {
     @Test
     void 저장_후_existsByVoteIdAndUserId가_true를_반환한다() {
         User user = entityManager.persistAndFlush(User.createWithSub("test-sub"));
-        Vote vote = voteRepository.save(new Vote());
+        Vote vote = voteRepository.save(Vote.createForTest());
         VoteParticipation voteParticipation = VoteParticipation.of(vote.getId(), user.getId());
         voteParticipationRepository.save(voteParticipation);
 

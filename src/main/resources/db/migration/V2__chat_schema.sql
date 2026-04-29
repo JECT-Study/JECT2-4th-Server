@@ -17,11 +17,12 @@ CREATE TABLE chat_message (
     vote_id    BIGINT NOT NULL REFERENCES vote(id),
     sender_id  BIGINT NOT NULL REFERENCES users(id),
     content    TEXT NOT NULL,
-    sent_at    TIMESTAMP NOT NULL DEFAULT now()
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 -- 채팅방별 최신 메시지 조회 및 커서 페이지네이션 최적화
-CREATE INDEX idx_chat_message_vote_id ON chat_message (vote_id, sent_at DESC);
+CREATE INDEX idx_chat_message_vote_id ON chat_message (vote_id, created_at DESC);
 
 -- 사용자별 읽음 상태 추적 (안 읽은 메시지 뱃지용)
 CREATE TABLE chat_room_unread (
