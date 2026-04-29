@@ -13,7 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -37,23 +36,17 @@ public class ChatQueryService implements ChatQueryUseCase {
 
                     ChatMessage lastMsg = chatMessageRepository.findFirstByVoteIdOrderByIdDesc(voteId).orElse(null);
                     String lastMessage = lastMsg != null ? lastMsg.getContent() : null;
-                    LocalDateTime lastMessageAt = lastMsg != null ? lastMsg.getCreatedAt() : null;
 
                     int unreadCount = chatRoomUnreadRepository
                             .findByIdUserIdAndIdVoteId(userId, voteId)
                             .map(unread -> (int) chatMessageRepository.countByVoteIdAndIdGreaterThan(voteId, unread.getLastReadMessageId()))
                             .orElse(0);
 
-                    return new ChatListItemResult(
+                    return ChatListItemResult.of(
                             voteId,
-                            "투표 #" + voteId,
-                            null,
-                            "옵션 A",
-                            "옵션 B",
                             (int) participantCount,
                             lastMessage,
-                            lastMessageAt,
-                            LocalDateTime.now().plusDays(1),
+                            lastMsg != null ? lastMsg.getCreatedAt() : null,
                             unreadCount
                     );
                 })
@@ -63,19 +56,12 @@ public class ChatQueryService implements ChatQueryUseCase {
     @Override
     public ChatRoomResult getChatRoom(Long voteId) {
         long participantCount = voteParticipationRepository.countByVoteId(voteId);
-        return new ChatRoomResult(
-                voteId,
-                "투표 #" + voteId,
-                VoteStatus.ONGOING,
-                (int) participantCount,
-                "옵션 A",
-                "옵션 B",
-                LocalDateTime.now().plusDays(1)
-        );
+        return ChatRoomResult.of(voteId, (int) participantCount);
     }
 
     @Override
     public GaugeResult getGauge(Long voteId) {
+        // TODO: Vote 도메인 연동 후 실제 득표율로 교체
         long participantCount = voteParticipationRepository.countByVoteId(voteId);
         return new GaugeResult(50, 50, (int) participantCount);
     }
@@ -93,7 +79,6 @@ public class ChatQueryService implements ChatQueryUseCase {
 
         boolean hasNext = messages.size() > size;
         List<ChatMessage> pageMessages = hasNext ? messages.subList(0, size) : messages;
-
         Long nextCursor = hasNext ? pageMessages.get(pageMessages.size() - 1).getId() : null;
 
         List<MessageResult> results = pageMessages.stream()
@@ -105,8 +90,8 @@ public class ChatQueryService implements ChatQueryUseCase {
                             msg.getContent(),
                             msg.getCreatedAt(),
                             senderNickname,
-                            null,
-                            "A",
+                            null,   // TODO: Vote 도메인 연동 후 senderVoteOption 채워야 함
+                            null,   // TODO: Vote 도메인 연동 후 senderProfileIconUrl 채워야 함
                             msg.getSenderId().equals(userId)
                     );
                 })

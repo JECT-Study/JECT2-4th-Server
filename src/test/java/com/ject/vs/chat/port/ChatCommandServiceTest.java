@@ -10,7 +10,6 @@ import com.ject.vs.chat.port.in.MarkAsReadCommand;
 import com.ject.vs.chat.port.in.MessageResult;
 import com.ject.vs.chat.port.in.SendMessageCommand;
 import com.ject.vs.repository.UserRepository;
-import com.ject.vs.vote.domain.VoteParticipation;
 import com.ject.vs.vote.domain.VoteParticipationRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,16 +17,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ChatCommandServiceTest {
@@ -43,9 +40,6 @@ class ChatCommandServiceTest {
 
     @Mock
     private ChatRoomUnreadRepository chatRoomUnreadRepository;
-
-    @Mock
-    private SimpMessagingTemplate messagingTemplate;
 
     @Mock
     private UserRepository userRepository;
@@ -74,15 +68,12 @@ class ChatCommandServiceTest {
         }
 
         @Test
-        void 정상_메시지는_저장되고_broadcast된다() {
+        void 정상_메시지는_저장되고_MessageResult를_반환한다() {
             // given
             given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
             ChatMessage savedMessage = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
             given(userRepository.findById(2L)).willReturn(Optional.empty());
-            given(voteParticipationRepository.findByVoteId(1L)).willReturn(List.of(VoteParticipation.of(1L, 2L)));
-            given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(anyLong(), anyLong())).willReturn(Optional.empty());
-            given(chatMessageRepository.countByVoteIdAndIdGreaterThan(anyLong(), anyLong())).willReturn(1L);
 
             // when
             MessageResult result = chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
@@ -91,7 +82,6 @@ class ChatCommandServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.content()).isEqualTo("hello");
             verify(chatMessageRepository).save(any(ChatMessage.class));
-            verify(messagingTemplate).convertAndSend(eq("/topic/chat/1"), any(Object.class));
         }
     }
 
