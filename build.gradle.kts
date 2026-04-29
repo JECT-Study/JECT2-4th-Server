@@ -31,6 +31,7 @@ dependencies {
 	implementation(Dependencies.SpringBoot.WEB)
 	implementation(Dependencies.SpringBoot.ACTUATOR)
 	implementation(Dependencies.SpringBoot.OAUTH2_CLIENT)
+	implementation(Dependencies.SpringBoot.WEBSOCKET)
 
 	// Jwt
 	implementation(Dependencies.Jwt.API)

@@ -8,6 +8,7 @@ object Dependencies {
         const val WEB = "org.springframework.boot:spring-boot-starter-web"
         const val TEST = "org.springframework.boot:spring-boot-starter-test"
         const val OAUTH2_CLIENT = "org.springframework.boot:spring-boot-starter-oauth2-client"
+        const val WEBSOCKET = "org.springframework.boot:spring-boot-starter-websocket"
     }
 
     object Jwt {
