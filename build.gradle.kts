@@ -30,9 +30,16 @@ dependencies {
 	implementation(Dependencies.SpringBoot.VALIDATION)
 	implementation(Dependencies.SpringBoot.WEB)
 	implementation(Dependencies.SpringBoot.ACTUATOR)
+	implementation(Dependencies.SpringBoot.OAUTH2_CLIENT)
+
+	// Jwt
+	implementation(Dependencies.Jwt.API)
+	runtimeOnly(Dependencies.Jwt.IMPL)
+	runtimeOnly(Dependencies.Jwt.JACKSON)
 
 	// Database
 	runtimeOnly(Dependencies.Database.H2)
+	implementation(Dependencies.Database.FLYWAY)
 
 	// Swagger / OpenAPI
 	implementation(Dependencies.Swagger.SPRINGDOC)

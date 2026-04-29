@@ -14,6 +14,12 @@ inputs:
   github-repository:
     description: "GitHub 리포지토리 (owner/repo)"
     required: true
+  google-client-id:
+    description: "Google OAuth Client ID"
+    required: true
+  google-client-secret:
+    description: "Google OAuth Client Secret"
+    required: true
 
 runs:
   using: composite
@@ -36,9 +42,11 @@ runs:
 
     - name: Publish API Client
       shell: bash
-      run: ./gradlew publishApiClient -PapiClientVersion=${{ inputs.version }}
+      run: ./gradlew publishApiClient -PapiClientVersion=${{ inputs.version }} --info
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}
+        GOOGLE_OAUTH_CLIENT_ID: ${{ inputs.GOOGLE_OAUTH_CLIENT_ID }}
+        GOOGLE_OAUTH_CLIENT_SECRET: ${{ inputs.GOOGLE_OAUTH_CLIENT_SECRET}}
 
     - name: Notify Discord
       shell: bash
