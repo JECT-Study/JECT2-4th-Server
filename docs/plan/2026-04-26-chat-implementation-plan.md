@@ -30,8 +30,9 @@ com.ject.vs
     │   ├── ChatMessageRepository.java       # Spring Data JPA
     │   └── ChatRoomUnreadRepository.java    # Spring Data JPA
     ├── port
-    │   ├── ChatQueryUseCase.java             # inbound port (interface)
-    │   ├── ChatCommandUseCase.java           # inbound port (interface)
+    │   ├── in
+    │   │   ├── ChatQueryUseCase.java         # inbound port (interface)
+    │   │   └── ChatCommandUseCase.java       # inbound port (interface)
     │   ├── ChatQueryService.java             # implements ChatQueryUseCase
     │   └── ChatCommandService.java           # implements ChatCommandUseCase
     └── adapter
@@ -237,8 +238,8 @@ public class ChatCommandService implements ChatCommandUseCase {
 
 | 파일 | 내용 |
 |------|------|
-| `chat/port/ChatQueryUseCase.java` | inbound port |
-| `chat/port/ChatCommandUseCase.java` | inbound port |
+| `chat/port/in/ChatQueryUseCase.java` | inbound port (interface) |
+| `chat/port/in/ChatCommandUseCase.java` | inbound port (interface) |
 | `chat/port/ChatQueryService.java` | implements ChatQueryUseCase |
 | `chat/port/ChatCommandService.java` | implements ChatCommandUseCase |
 
