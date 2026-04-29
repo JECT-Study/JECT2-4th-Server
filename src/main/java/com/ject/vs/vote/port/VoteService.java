@@ -2,6 +2,8 @@ package com.ject.vs.vote.port;
 
 import com.ject.vs.vote.domain.VoteParticipationRepository;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
+import com.ject.vs.vote.port.in.VoteQueryUseCase;
+import com.ject.vs.vote.port.in.dto.VoteStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,7 +13,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class VoteParticipationQueryService implements VoteParticipationQueryUseCase {
+public class VoteService implements VoteParticipationQueryUseCase, VoteQueryUseCase {
 
     private final VoteParticipationRepository voteParticipationRepository;
 
@@ -34,5 +36,11 @@ public class VoteParticipationQueryService implements VoteParticipationQueryUseC
                 .stream()
                 .map(p -> p.getUserId())
                 .toList();
+    }
+
+    @Override
+    public List<Long> findAllVoteIdsByStatus(List<Long> voteIds, VoteStatus status) {
+        // TODO: Vote 도메인 연동 후 실제 status 기반 필터링으로 교체
+        return voteIds;
     }
 }
