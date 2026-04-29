@@ -1,8 +1,8 @@
 package com.ject.vs.common.domain;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface TimeTrackable {
-    LocalDateTime getCreatedAt();
-    LocalDateTime getUpdatedAt();
+    Instant getCreatedAt();
+    Instant getUpdatedAt();
 }

@@ -1,6 +1,6 @@
 package com.ject.vs.chat.port.in.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record ChatListItemResult(
         Long voteId,
@@ -10,15 +10,15 @@ public record ChatListItemResult(
         String optionB,         // TODO: Vote 도메인 연동 후 채워야 함
         int participantCount,
         String lastMessage,
-        LocalDateTime lastMessageAt,
-        LocalDateTime endAt,    // TODO: Vote 도메인 연동 후 채워야 함
+        Instant lastMessageAt,
+        Instant endAt,          // TODO: Vote 도메인 연동 후 채워야 함
         int unreadCount
 ) {
     public static ChatListItemResult of(
             Long voteId,
             int participantCount,
             String lastMessage,
-            LocalDateTime lastMessageAt,
+            Instant lastMessageAt,
             int unreadCount
     ) {
         return new ChatListItemResult(

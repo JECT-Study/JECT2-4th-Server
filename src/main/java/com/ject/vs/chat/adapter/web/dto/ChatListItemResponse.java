@@ -1,9 +1,8 @@
 package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.port.in.dto.ChatListItemResult;
-import com.ject.vs.common.util.TimeUtils;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 public record ChatListItemResponse(
         Long voteId,
@@ -13,8 +12,8 @@ public record ChatListItemResponse(
         String optionB,
         int participantCount,
         String lastMessage,
-        OffsetDateTime lastMessageAt,
-        OffsetDateTime endAt,
+        Instant lastMessageAt,
+        Instant endAt,
         int unreadCount
 ) {
     public static ChatListItemResponse from(ChatListItemResult result) {
@@ -26,8 +25,8 @@ public record ChatListItemResponse(
                 result.optionB(),
                 result.participantCount(),
                 result.lastMessage(),
-                TimeUtils.toKstOffsetDateTime(result.lastMessageAt()),
-                TimeUtils.toKstOffsetDateTime(result.endAt()),
+                result.lastMessageAt(),
+                result.endAt(),
                 result.unreadCount()
         );
     }

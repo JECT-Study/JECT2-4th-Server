@@ -1,10 +1,9 @@
 package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.port.in.dto.ChatRoomResult;
-import com.ject.vs.common.util.TimeUtils;
 import com.ject.vs.vote.port.in.dto.VoteStatus;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 public record ChatRoomResponse(
         Long voteId,
@@ -13,7 +12,7 @@ public record ChatRoomResponse(
         int participantCount,
         String optionA,
         String optionB,
-        OffsetDateTime endAt
+        Instant endAt
 ) {
     public static ChatRoomResponse from(ChatRoomResult result) {
         return new ChatRoomResponse(
@@ -23,7 +22,7 @@ public record ChatRoomResponse(
                 result.participantCount(),
                 result.optionA(),
                 result.optionB(),
-                TimeUtils.toKstOffsetDateTime(result.endAt())
+                result.endAt()
         );
     }
 }

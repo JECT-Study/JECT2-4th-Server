@@ -1,7 +1,8 @@
 package com.ject.vs.chat.port.in.dto;
 
 import com.ject.vs.vote.port.in.dto.VoteStatus;
-import java.time.LocalDateTime;
+
+import java.time.Instant;
 
 public record ChatRoomResult(
         Long voteId,
@@ -10,7 +11,7 @@ public record ChatRoomResult(
         int participantCount,
         String optionA,     // TODO: Vote 도메인 연동 후 채워야 함
         String optionB,     // TODO: Vote 도메인 연동 후 채워야 함
-        LocalDateTime endAt // TODO: Vote 도메인 연동 후 채워야 함
+        Instant endAt       // TODO: Vote 도메인 연동 후 채워야 함
 ) {
     public static ChatRoomResult of(Long voteId, int participantCount) {
         return new ChatRoomResult(

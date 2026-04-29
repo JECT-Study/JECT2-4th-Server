@@ -1,14 +1,13 @@
 package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.port.in.dto.MessageResult;
-import com.ject.vs.common.util.TimeUtils;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 public record MessageResponse(
         Long messageId,
         String content,
-        OffsetDateTime sentAt,
+        Instant sentAt,
         String senderNickname,
         String senderProfileIconUrl,
         String senderVoteOption,
@@ -18,7 +17,7 @@ public record MessageResponse(
         return new MessageResponse(
                 result.messageId(),
                 result.content(),
-                TimeUtils.toKstOffsetDateTime(result.sentAt()),
+                result.sentAt(),
                 result.senderNickname(),
                 result.senderProfileIconUrl(),
                 result.senderVoteOption(),

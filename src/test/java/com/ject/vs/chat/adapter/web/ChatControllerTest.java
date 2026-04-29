@@ -18,7 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -85,7 +85,7 @@ class ChatControllerTest {
         void 정상_요청이면_200을_반환한다() throws Exception {
             // given
             given(chatQueryUseCase.getChatRoom(1L)).willReturn(
-                    new ChatRoomResult(1L, "투표 #1", VoteStatus.ONGOING, 5, "옵션 A", "옵션 B", LocalDateTime.now().plusDays(1))
+                    new ChatRoomResult(1L, "투표 #1", VoteStatus.ONGOING, 5, "옵션 A", "옵션 B", Instant.now().plus(java.time.Duration.ofDays(1)))
             );
 
             // when & then
@@ -133,7 +133,7 @@ class ChatControllerTest {
         @WithMockUser
         void 정상이면_201을_반환한다() throws Exception {
             // given
-            MessageResult result = new MessageResult(1L, "hello", LocalDateTime.now(), "nick", null, "A", true);
+            MessageResult result = new MessageResult(1L, "hello", Instant.now(), "nick", null, "A", true);
             given(chatCommandUseCase.sendMessage(any(SendMessageCommand.class))).willReturn(result);
 
             // when & then
