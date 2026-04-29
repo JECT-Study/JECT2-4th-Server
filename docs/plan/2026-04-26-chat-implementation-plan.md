@@ -400,7 +400,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 #### 6-2. WebSocketAuthInterceptor
 
 STOMP CONNECT frame 수신 시 `Authorization` 헤더에서 JWT를 추출해 인증 처리.  
-이후 메시지에서 `accessor.getUser()`로 인증 정보 참조 가능.
+`accessor.setUser()`로 설정한 `Principal`은 이후 두 가지 역할을 한다.
+
+1. **서버 → 클라이언트 전송**: `convertAndSendToUser(userId, ...)` 호출 시 Spring이 해당 userId의 세션을 찾아 메시지를 라우팅.
+2. **클라이언트 구독 라우팅**: 클라이언트가 `/user/topic/...`으로 구독하면 Spring이 내부적으로 `/user/{userId}/topic/...`으로 매핑. `WebSocketConfig`의 `setUserDestinationPrefix("/user")`가 이 매핑을 활성화.
 
 ```java
 @Component
