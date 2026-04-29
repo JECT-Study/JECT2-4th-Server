@@ -384,8 +384,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic");   // 구독 prefix
-        registry.setApplicationDestinationPrefixes("/app"); // 발행 prefix
+        registry.enableSimpleBroker("/topic");      // 구독 prefix
+        registry.setUserDestinationPrefix("/user"); // 사용자별 개인 채널 prefix
     }
 
     @Override
@@ -444,10 +444,10 @@ REST POST /api/chats/{voteId}/messages  { "content": "..." }
     ├─ VoteParticipationRepository: 참여 여부 검증
     ├─ ChatMessage.of(): 도메인 객체 생성 + 공백 검증
     ├─ ChatMessagePort.save(): DB 저장
-    ├─ SimpMessagingTemplate → /topic/chat/{voteId}
+    ├─ SimpMessagingTemplate.convertAndSend("/topic/chat/{voteId}")
     │     payload: { messageId, content, sentAt, senderNickname, senderVoteOption, isMine }
-    └─ SimpMessagingTemplate → /topic/chat/{voteId}/unread
-          payload: { unreadCount }
+    └─ SimpMessagingTemplate.convertAndSendToUser(userId, "/topic/chat/{voteId}/unread")
+          payload: { unreadCount }  ← 사용자마다 다른 값이므로 개인 채널로 전송
 ```
 
 ---
