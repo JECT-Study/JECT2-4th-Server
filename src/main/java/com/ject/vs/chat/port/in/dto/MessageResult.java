@@ -7,7 +7,7 @@ public record MessageResult(
         String content,
         Instant sentAt,
         String senderNickname,
-        String senderProfileIconUrl,
+        String senderProfileIcon,
         String senderVoteOption,
         boolean isMine
 ) {}

@@ -29,7 +29,8 @@ public class ChatController {
     }
 
     @GetMapping("/{voteId}")
-    public ChatRoomResponse getChatRoom(@PathVariable Long voteId) {
+    public ChatRoomResponse getChatRoom(@AuthenticationPrincipal Long userId,
+                                        @PathVariable Long voteId) {
         return ChatRoomResponse.from(chatQueryUseCase.getChatRoom(voteId));
     }
 

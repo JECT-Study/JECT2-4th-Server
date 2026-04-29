@@ -9,7 +9,7 @@ public record MessageResponse(
         String content,
         Instant sentAt,
         String senderNickname,
-        String senderProfileIconUrl,
+        String senderProfileIcon,
         String senderVoteOption,
         boolean isMine
 ) {
@@ -19,7 +19,7 @@ public record MessageResponse(
                 result.content(),
                 result.sentAt(),
                 result.senderNickname(),
-                result.senderProfileIconUrl(),
+                result.senderProfileIcon(),
                 result.senderVoteOption(),
                 result.isMine()
         );
