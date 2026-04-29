@@ -17,36 +17,25 @@ com.ject.vs
 ├── vote                             # Vote Bounded Context
 │   ├── domain
 │   │   ├── Vote.java
-│   │   └── VoteParticipation.java
-│   └── port
-│       └── out
-│           ├── VoteRepository.java
-│           └── VoteParticipationRepository.java
-│   └── infrastructure
-│       └── persistence
-│           ├── VoteJpaRepository.java
-│           └── VoteParticipationJpaRepository.java
+│   │   ├── VoteParticipation.java
+│   │   ├── VoteRepository.java              # Spring Data JPA
+│   │   └── VoteParticipationRepository.java # Spring Data JPA
+│   └── application
+│       └── (Vote 담당자 구현 예정)
 │
 └── chat                             # Chat Bounded Context
     ├── domain
     │   ├── ChatMessage.java
-    │   └── ChatRoomUnread.java
+    │   ├── ChatRoomUnread.java
+    │   ├── ChatMessageRepository.java       # Spring Data JPA
+    │   └── ChatRoomUnreadRepository.java    # Spring Data JPA
     ├── port
-    │   ├── in
-    │   │   ├── ChatQueryUseCase.java     # inbound port (interface)
-    │   │   └── ChatCommandUseCase.java   # inbound port (interface)
-    │   └── out
-    │       ├── ChatMessagePort.java      # outbound port (interface)
-    │       └── ChatRoomUnreadPort.java   # outbound port (interface)
-    ├── application
-    │   ├── ChatQueryService.java         # implements ChatQueryUseCase
-    │   └── ChatCommandService.java       # implements ChatCommandUseCase
-    └── infrastructure
-        ├── persistence
-        │   ├── ChatMessageJpaRepository.java
-        │   ├── ChatMessagePersistenceAdapter.java   # implements ChatMessagePort
-        │   ├── ChatRoomUnreadJpaRepository.java
-        │   └── ChatRoomUnreadPersistenceAdapter.java # implements ChatRoomUnreadPort
+    │   └── in
+    │       ├── ChatQueryUseCase.java         # inbound port (interface)
+    │       ├── ChatCommandUseCase.java       # inbound port (interface)
+    │       ├── ChatQueryService.java         # implements ChatQueryUseCase
+    │       └── ChatCommandService.java       # implements ChatCommandUseCase
+    └── adapter
         └── web
             └── ChatController.java
 │
@@ -132,30 +121,19 @@ public class ChatMessage extends BaseTimeEntity { ... }
 | `common/domain/TimeTrackable.java` | 시간 추적 인터페이스 |
 | `vote/domain/Vote.java` | extends BaseEntity, id만 관리 |
 | `vote/domain/VoteParticipation.java` | extends BaseEntity, voteId + userId |
-| `vote/port/out/VoteRepository.java` | `existsById(Long voteId)` |
-| `vote/port/out/VoteParticipationRepository.java` | `existsByVoteIdAndUserId(Long, Long)` |
-| `vote/infrastructure/persistence/VoteJpaRepository.java` | JPA 구현 |
-| `vote/infrastructure/persistence/VoteParticipationJpaRepository.java` | JPA 구현 |
+| `vote/domain/VoteRepository.java` | Spring Data JPA — `existsById` |
+| `vote/domain/VoteParticipationRepository.java` | Spring Data JPA — `existsByVoteIdAndUserId` |
 | `db/migration/V2__chat_schema.sql` | vote, vote_participation, chat_message, chat_room_unread |
 
 **VoteParticipation 도메인 핵심 함수**
 ```java
-// 도메인 팩토리
 public static VoteParticipation of(Long voteId, Long userId) { ... }
-```
-
-**VoteParticipationRepository 인터페이스 (outbound port)**
-```java
-public interface VoteParticipationRepository {
-    boolean existsByVoteIdAndUserId(Long voteId, Long userId);
-    VoteParticipation save(VoteParticipation participation);
-}
 ```
 
 **테스트**
 - `VoteTest`: 도메인 객체 생성 검증
 - `VoteParticipationTest`: `of()` 팩토리 검증
-- `VoteParticipationJpaRepositoryTest`: `@DataJpaTest` — 저장 / 존재 여부 조회
+- `VoteParticipationRepositoryTest`: `@DataJpaTest` — 저장 / 존재 여부 조회
 
 ---
 
@@ -167,8 +145,10 @@ public interface VoteParticipationRepository {
 
 | 파일 | 내용 |
 |------|------|
-| `chat/domain/ChatMessage.java` | extends BaseEntity, implements TimeTrackable |
+| `chat/domain/ChatMessage.java` | extends BaseTimeEntity |
 | `chat/domain/ChatRoomUnread.java` | 복합 PK (userId + voteId), BaseEntity 미사용 |
+| `chat/domain/ChatMessageRepository.java` | Spring Data JPA |
+| `chat/domain/ChatRoomUnreadRepository.java` | Spring Data JPA |
 
 **ChatMessage 도메인 핵심**
 ```java
@@ -211,46 +191,7 @@ public class ChatRoomUnread {
 
 ---
 
-### STEP 3 — Outbound Ports + Persistence Adapters
-
-**목표:** DB I/O 인터페이스 정의 및 JPA 구현
-
-**ChatMessagePort (outbound port)**
-```java
-public interface ChatMessagePort {
-    ChatMessage save(ChatMessage message);
-    List<ChatMessage> findByVoteIdWithCursor(Long voteId, Long cursor, int size);
-    Optional<ChatMessage> findLatestByVoteId(Long voteId);
-    long countByVoteIdAfter(Long voteId, Long lastReadMessageId);
-}
-```
-
-**ChatRoomUnreadPort (outbound port)**
-```java
-public interface ChatRoomUnreadPort {
-    void upsert(ChatRoomUnread unread);
-    Optional<ChatRoomUnread> findByUserIdAndVoteId(Long userId, Long voteId);
-}
-```
-
-**구현 파일**
-
-| 파일 | 내용 |
-|------|------|
-| `chat/port/out/ChatMessagePort.java` | outbound port |
-| `chat/port/out/ChatRoomUnreadPort.java` | outbound port |
-| `chat/infrastructure/persistence/ChatMessageJpaRepository.java` | Spring Data JPA |
-| `chat/infrastructure/persistence/ChatMessagePersistenceAdapter.java` | implements ChatMessagePort |
-| `chat/infrastructure/persistence/ChatRoomUnreadJpaRepository.java` | Spring Data JPA |
-| `chat/infrastructure/persistence/ChatRoomUnreadPersistenceAdapter.java` | implements ChatRoomUnreadPort |
-
-**테스트**
-- `ChatMessagePersistenceAdapterTest`: `@DataJpaTest` — 커서 페이지네이션, 최신 메시지 조회
-- `ChatRoomUnreadPersistenceAdapterTest`: `@DataJpaTest` — upsert 멱등성 검증
-
----
-
-### STEP 4 — Inbound Ports + Application Services
+### STEP 3 — Inbound Ports + Application Services
 
 **목표:** UseCase 인터페이스 정의 + 비즈니스 로직 구현
 
@@ -286,7 +227,7 @@ public class ChatCommandService implements ChatCommandUseCase {
         ChatMessage message = ChatMessage.of(voteId, senderId, content);
         if (message.isBlank()) throw new InvalidMessageException();
         // 3. 저장 + WebSocket broadcast
-        ChatMessage saved = chatMessagePort.save(message);
+        ChatMessage saved = chatMessageRepository.save(message);
         messagingTemplate.convertAndSend("/topic/chat/" + voteId, toPayload(saved));
         return MessageResult.from(saved);
     }
@@ -299,16 +240,16 @@ public class ChatCommandService implements ChatCommandUseCase {
 |------|------|
 | `chat/port/in/ChatQueryUseCase.java` | inbound port |
 | `chat/port/in/ChatCommandUseCase.java` | inbound port |
-| `chat/application/ChatQueryService.java` | implements ChatQueryUseCase |
-| `chat/application/ChatCommandService.java` | implements ChatCommandUseCase |
+| `chat/port/in/ChatQueryService.java` | implements ChatQueryUseCase |
+| `chat/port/in/ChatCommandService.java` | implements ChatCommandUseCase |
 
 **테스트**
-- `ChatCommandServiceTest`: Mockito로 port mocking — 참여 검증 실패 / 성공 / 공백 메시지 케이스
+- `ChatCommandServiceTest`: `@DataJpaTest` — 참여 검증 실패 / 성공 / 공백 메시지 케이스
 - `ChatQueryServiceTest`: 목록 정렬, 커서 페이지네이션, unreadCount 계산 검증
 
 ---
 
-### STEP 5 — Presentation Layer (REST)
+### STEP 4 — Presentation Layer (REST)
 
 **목표:** REST Controller 구현
 
@@ -316,7 +257,7 @@ public class ChatCommandService implements ChatCommandUseCase {
 
 | 파일 | 내용 |
 |------|------|
-| `chat/infrastructure/web/ChatController.java` | REST — UseCase 주입, DTO 변환 |
+| `chat/adapter/web/ChatController.java` | REST — UseCase 주입, DTO 변환 |
 
 **ChatController 구조**
 ```java
@@ -360,13 +301,13 @@ public class ChatController {
 
 ---
 
-### STEP 6 — WebSocket 구현
+### STEP 5 — WebSocket 구현
 
 **목표:** STOMP 기반 실시간 메시지 수신/전송 + unreadCount 갱신
 
 ---
 
-#### 6-1. WebSocketConfig
+#### 5-1. WebSocketConfig
 
 STOMP 엔드포인트 및 메시지 브로커 설정.
 
@@ -397,7 +338,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
 ---
 
-#### 6-2. WebSocketAuthInterceptor
+#### 5-2. WebSocketAuthInterceptor
 
 STOMP CONNECT frame 수신 시 `Authorization` 헤더에서 JWT를 추출해 인증 처리.  
 `accessor.setUser()`로 설정한 `Principal`은 이후 두 가지 역할을 한다.
@@ -431,7 +372,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 ---
 
-#### 6-3. broadcast 흐름
+#### 5-3. broadcast 흐름
 
 메시지 전송은 REST를 통해 이루어지며, `ChatCommandService` 내부에서 `SimpMessagingTemplate`으로 broadcast.  
 `@MessageMapping` 핸들러(`ChatWebSocketHandler`)는 불필요.
@@ -455,7 +396,7 @@ REST POST /api/chats/{voteId}/messages  { "content": "..." }
 
 ---
 
-#### 6-4. 구현 파일
+#### 5-4. 구현 파일
 
 | 파일 | 내용 |
 |------|------|
@@ -464,7 +405,7 @@ REST POST /api/chats/{voteId}/messages  { "content": "..." }
 
 ---
 
-#### 6-5. 테스트
+#### 5-5. 테스트
 
 - `WebSocketAuthInterceptorTest`: CONNECT 시 유효/무효 토큰 처리 검증
 - `ChatWebSocketIntegrationTest`: REST POST 후 `/topic/chat/{voteId}` 수신 검증
@@ -503,13 +444,12 @@ REST POST /api/chats/{voteId}/messages  { "content": "..." }
 ## 6. 구현 순서 요약
 
 ```
-STEP 1  BaseEntity / BaseTimeEntity / TimeTrackable / Vote BC (도메인 + port + JPA)
-STEP 2  ChatMessage / ChatRoomUnread 도메인
-STEP 3  Outbound ports + Persistence Adapters
-STEP 4  Inbound ports (UseCase) + Application Services
-STEP 5  REST Controller
-STEP 6  WebSocket 구현
-          6-1. WebSocketConfig (STOMP 엔드포인트 + 브로커)
-          6-2. WebSocketAuthInterceptor (JWT 인증)
-          6-3. broadcast 흐름 (REST → ChatCommandService → SimpMessagingTemplate)
+STEP 1  BaseEntity / BaseTimeEntity / TimeTrackable / Vote BC (도메인 + JPA Repository)
+STEP 2  ChatMessage / ChatRoomUnread 도메인 + JPA Repository
+STEP 3  Inbound ports (UseCase) + Service 구현 (port/in 하위)
+STEP 4  REST Controller (adapter/web)
+STEP 5  WebSocket 구현
+          5-1. WebSocketConfig (STOMP 엔드포인트 + 브로커)
+          5-2. WebSocketAuthInterceptor (JWT 인증)
+          5-3. broadcast 흐름 (REST → ChatCommandService → SimpMessagingTemplate)
 ```
