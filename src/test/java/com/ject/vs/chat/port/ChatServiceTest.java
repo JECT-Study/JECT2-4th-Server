@@ -10,8 +10,6 @@ import com.ject.vs.chat.port.in.dto.MarkAsReadCommand;
 import com.ject.vs.chat.port.in.dto.MessagePageResult;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.SendMessageCommand;
-import com.ject.vs.repository.UserRepository;
-import com.ject.vs.vote.domain.VoteParticipationRepository;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import org.junit.jupiter.api.Nested;
@@ -39,9 +37,6 @@ class ChatServiceTest {
     private ChatService chatService;
 
     @Mock
-    private VoteParticipationRepository voteParticipationRepository;
-
-    @Mock
     private VoteParticipationQueryUseCase voteParticipationQueryUseCase;
 
     @Mock
@@ -53,16 +48,13 @@ class ChatServiceTest {
     @Mock
     private ChatRoomUnreadRepository chatRoomUnreadRepository;
 
-    @Mock
-    private UserRepository userRepository;
-
     @Nested
     class sendMessage {
 
         @Test
         void 미참여자는_ChatForbiddenException이_발생한다() {
             // given
-            given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(false);
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(false);
 
             // when & then
             assertThatThrownBy(() -> chatService.sendMessage(new SendMessageCommand(1L, 2L, "hello")))
@@ -72,7 +64,7 @@ class ChatServiceTest {
         @Test
         void 공백_내용은_InvalidMessageException이_발생한다() {
             // given
-            given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
 
             // when & then
             assertThatThrownBy(() -> chatService.sendMessage(new SendMessageCommand(1L, 2L, "   ")))
@@ -82,10 +74,9 @@ class ChatServiceTest {
         @Test
         void 정상_메시지는_저장되고_MessageResult를_반환한다() {
             // given
-            given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
             ChatMessage savedMessage = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
-            given(userRepository.findById(2L)).willReturn(Optional.empty());
 
             // when
             MessageResult result = chatService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
@@ -93,6 +84,7 @@ class ChatServiceTest {
             // then
             assertThat(result).isNotNull();
             assertThat(result.content()).isEqualTo("hello");
+            assertThat(result.senderNickname()).isEqualTo("User#2");
             verify(chatMessageRepository).save(any(ChatMessage.class));
         }
     }
@@ -123,7 +115,6 @@ class ChatServiceTest {
 
             // then
             assertThat(existing.getLastReadMessageId()).isEqualTo(20L);
-            verify(chatRoomUnreadRepository).save(existing);
         }
     }
 
@@ -136,7 +127,6 @@ class ChatServiceTest {
             ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
-            given(userRepository.findById(2L)).willReturn(Optional.empty());
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, null, 30);
@@ -153,7 +143,6 @@ class ChatServiceTest {
             ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.findAllByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
-            given(userRepository.findById(2L)).willReturn(Optional.empty());
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, 100L, 30);

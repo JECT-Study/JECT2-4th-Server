@@ -1,6 +1,5 @@
 package com.ject.vs.vote.port;
 
-import com.ject.vs.vote.domain.VoteParticipation;
 import com.ject.vs.vote.domain.VoteParticipationRepository;
 import com.ject.vs.vote.port.in.dto.VoteStatus;
 import org.junit.jupiter.api.Nested;
@@ -26,13 +25,40 @@ class VoteServiceTest {
     private VoteParticipationRepository voteParticipationRepository;
 
     @Nested
+    class isParticipant {
+
+        @Test
+        void 참여한_사용자는_true를_반환한다() {
+            // given
+            given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
+
+            // when
+            boolean result = voteService.isParticipant(1L, 2L);
+
+            // then
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        void 참여하지_않은_사용자는_false를_반환한다() {
+            // given
+            given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(false);
+
+            // when
+            boolean result = voteService.isParticipant(1L, 2L);
+
+            // then
+            assertThat(result).isFalse();
+        }
+    }
+
+    @Nested
     class findAllVoteIdsByUserId {
 
         @Test
         void 유저가_참여한_voteId_목록을_반환한다() {
             // given
-            given(voteParticipationRepository.findAllByUserId(1L))
-                    .willReturn(List.of(VoteParticipation.of(10L, 1L), VoteParticipation.of(20L, 1L)));
+            given(voteParticipationRepository.findAllVoteIdsByUserId(1L)).willReturn(List.of(10L, 20L));
 
             // when
             List<Long> result = voteService.findAllVoteIdsByUserId(1L);
@@ -44,7 +70,7 @@ class VoteServiceTest {
         @Test
         void 참여한_투표가_없으면_빈_목록을_반환한다() {
             // given
-            given(voteParticipationRepository.findAllByUserId(1L)).willReturn(List.of());
+            given(voteParticipationRepository.findAllVoteIdsByUserId(1L)).willReturn(List.of());
 
             // when
             List<Long> result = voteService.findAllVoteIdsByUserId(1L);
@@ -77,8 +103,7 @@ class VoteServiceTest {
         @Test
         void 투표에_참여한_userId_목록을_반환한다() {
             // given
-            given(voteParticipationRepository.findAllByVoteId(1L))
-                    .willReturn(List.of(VoteParticipation.of(1L, 100L), VoteParticipation.of(1L, 200L)));
+            given(voteParticipationRepository.findAllUserIdsByVoteId(1L)).willReturn(List.of(100L, 200L));
 
             // when
             List<Long> result = voteService.findAllUserIdsByVoteId(1L);

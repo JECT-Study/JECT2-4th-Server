@@ -18,11 +18,13 @@ public class VoteService implements VoteParticipationQueryUseCase, VoteQueryUseC
     private final VoteParticipationRepository voteParticipationRepository;
 
     @Override
+    public boolean isParticipant(Long voteId, Long userId) {
+        return voteParticipationRepository.existsByVoteIdAndUserId(voteId, userId);
+    }
+
+    @Override
     public List<Long> findAllVoteIdsByUserId(Long userId) {
-        return voteParticipationRepository.findAllByUserId(userId)
-                .stream()
-                .map(p -> p.getVoteId())
-                .toList();
+        return voteParticipationRepository.findAllVoteIdsByUserId(userId);
     }
 
     @Override
@@ -32,10 +34,7 @@ public class VoteService implements VoteParticipationQueryUseCase, VoteQueryUseC
 
     @Override
     public List<Long> findAllUserIdsByVoteId(Long voteId) {
-        return voteParticipationRepository.findAllByVoteId(voteId)
-                .stream()
-                .map(p -> p.getUserId())
-                .toList();
+        return voteParticipationRepository.findAllUserIdsByVoteId(voteId);
     }
 
     @Override

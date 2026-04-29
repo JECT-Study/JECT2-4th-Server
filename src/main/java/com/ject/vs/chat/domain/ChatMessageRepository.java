@@ -15,4 +15,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     Optional<ChatMessage> findFirstByVoteIdOrderByIdDesc(Long voteId);
 
     long countByVoteIdAndIdGreaterThan(Long voteId, Long lastReadMessageId);
+
+    long countByVoteId(Long voteId);
 }

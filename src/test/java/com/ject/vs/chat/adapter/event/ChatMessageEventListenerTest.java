@@ -5,8 +5,8 @@ import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnread;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
-import com.ject.vs.domain.User;
-import com.ject.vs.repository.UserRepository;
+import com.ject.vs.chat.port.in.dto.MessageResult;
+import com.ject.vs.chat.port.in.dto.UnreadPayload;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,9 +35,6 @@ class ChatMessageEventListenerTest {
     private SimpMessagingTemplate messagingTemplate;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
     private VoteParticipationQueryUseCase voteParticipationQueryUseCase;
 
     @Mock
@@ -54,8 +50,8 @@ class ChatMessageEventListenerTest {
         void 메시지를_채팅방_토픽으로_broadcast한다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userRepository.findById(2L)).willReturn(Optional.empty());
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
+            given(chatMessageRepository.countByVoteId(1L)).willReturn(0L);
 
             // when
             listener.handle(new ChatMessageSentEvent(message));
@@ -65,36 +61,19 @@ class ChatMessageEventListenerTest {
         }
 
         @Test
-        void 발신자를_찾을_수_없으면_닉네임을_unknown으로_설정한다() {
+        void 닉네임은_userId_기반_플레이스홀더로_설정된다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userRepository.findById(2L)).willReturn(Optional.empty());
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
+            given(chatMessageRepository.countByVoteId(1L)).willReturn(0L);
 
             // when
             listener.handle(new ChatMessageSentEvent(message));
 
             // then
-            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            ArgumentCaptor<MessageResult> captor = ArgumentCaptor.forClass(MessageResult.class);
             verify(messagingTemplate).convertAndSend(eq("/topic/chat/1"), captor.capture());
-            assertThat(captor.getValue().toString()).contains("unknown");
-        }
-
-        @Test
-        void 발신자가_존재하면_sub을_닉네임으로_사용한다() {
-            // given
-            ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            User sender = User.createWithSub("슈퍼강아지_485");
-            given(userRepository.findById(2L)).willReturn(Optional.of(sender));
-            given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
-
-            // when
-            listener.handle(new ChatMessageSentEvent(message));
-
-            // then
-            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
-            verify(messagingTemplate).convertAndSend(eq("/topic/chat/1"), captor.capture());
-            assertThat(captor.getValue().toString()).contains("슈퍼강아지_485");
+            assertThat(captor.getValue().senderNickname()).isEqualTo("User#2");
         }
     }
 
@@ -102,40 +81,39 @@ class ChatMessageEventListenerTest {
     class broadcastUnreadCount {
 
         @Test
-        void 참여자별로_unread_count를_개인_채널로_전송한다() {
+        void 읽음_기록이_없는_참여자에게는_전체_메시지_수를_전송한다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userRepository.findById(2L)).willReturn(Optional.empty());
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of(3L));
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(3L, 1L)).willReturn(Optional.empty());
-            given(chatMessageRepository.countByVoteIdAndIdGreaterThan(1L, 0L)).willReturn(5L);
+            given(chatMessageRepository.countByVoteId(1L)).willReturn(5L);
 
             // when
             listener.handle(new ChatMessageSentEvent(message));
 
             // then
-            ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
+            ArgumentCaptor<UnreadPayload> captor = ArgumentCaptor.forClass(UnreadPayload.class);
             verify(messagingTemplate).convertAndSendToUser(eq("3"), eq("/topic/chat/1/unread"), captor.capture());
-            assertThat(captor.getValue().get("unreadCount")).isEqualTo(5L);
+            assertThat(captor.getValue().unreadCount()).isEqualTo(5L);
         }
 
         @Test
         void 읽음_기록이_있으면_lastReadMessageId_이후_메시지_수를_전송한다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userRepository.findById(2L)).willReturn(Optional.empty());
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of(3L));
             ChatRoomUnread unread = ChatRoomUnread.of(3L, 1L, 10L);
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(3L, 1L)).willReturn(Optional.of(unread));
+            given(chatMessageRepository.countByVoteId(1L)).willReturn(10L);
             given(chatMessageRepository.countByVoteIdAndIdGreaterThan(1L, 10L)).willReturn(2L);
 
             // when
             listener.handle(new ChatMessageSentEvent(message));
 
             // then
-            ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
+            ArgumentCaptor<UnreadPayload> captor = ArgumentCaptor.forClass(UnreadPayload.class);
             verify(messagingTemplate).convertAndSendToUser(eq("3"), eq("/topic/chat/1/unread"), captor.capture());
-            assertThat(captor.getValue().get("unreadCount")).isEqualTo(2L);
+            assertThat(captor.getValue().unreadCount()).isEqualTo(2L);
         }
     }
 }
