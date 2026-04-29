@@ -6,6 +6,7 @@ import com.ject.vs.chat.adapter.web.dto.SendMessageRequest;
 import com.ject.vs.chat.exception.ChatForbiddenException;
 import com.ject.vs.chat.port.in.*;
 import com.ject.vs.chat.port.in.dto.*;
+import com.ject.vs.vote.port.in.dto.VoteStatus;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import org.junit.jupiter.api.Nested;

@@ -1,5 +1,6 @@
 package com.ject.vs.chat.port.in.dto;
 
+import com.ject.vs.vote.port.in.dto.VoteStatus;
 import java.time.LocalDateTime;
 
 public record ChatRoomResult(

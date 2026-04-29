@@ -1,7 +1,7 @@
 package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.port.in.dto.ChatRoomResult;
-import com.ject.vs.chat.port.in.dto.VoteStatus;
+import com.ject.vs.vote.port.in.dto.VoteStatus;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;

@@ -7,8 +7,7 @@ import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.domain.User;
 import com.ject.vs.repository.UserRepository;
-import com.ject.vs.vote.domain.VoteParticipation;
-import com.ject.vs.vote.domain.VoteParticipationRepository;
+import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,7 @@ public class ChatMessageEventListener {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
-    private final VoteParticipationRepository voteParticipationRepository;
+    private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
 
@@ -51,9 +50,7 @@ public class ChatMessageEventListener {
     }
 
     private void broadcastUnreadCount(ChatMessage message) {
-        for (VoteParticipation participant : voteParticipationRepository.findByVoteId(message.getVoteId())) {
-            Long participantUserId = participant.getUserId();
-
+        for (Long participantUserId : voteParticipationQueryUseCase.findUserIdsByVoteId(message.getVoteId())) {
             long unreadCount = chatRoomUnreadRepository
                     .findByIdUserIdAndIdVoteId(participantUserId, message.getVoteId())
                     .map(unread -> chatMessageRepository.countByVoteIdAndIdGreaterThan(

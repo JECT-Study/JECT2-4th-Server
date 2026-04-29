@@ -3,12 +3,17 @@ package com.ject.vs.chat.port;
 import com.ject.vs.chat.domain.ChatMessage;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
-import com.ject.vs.chat.port.in.*;
-import com.ject.vs.chat.port.in.dto.*;
+import com.ject.vs.chat.port.in.ChatQueryUseCase;
+import com.ject.vs.chat.port.in.dto.ChatListItemResult;
+import com.ject.vs.chat.port.in.dto.ChatRoomResult;
+import com.ject.vs.chat.port.in.dto.GaugeResult;
+import com.ject.vs.chat.port.in.dto.MessagePageResult;
+import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.domain.User;
 import com.ject.vs.repository.UserRepository;
-import com.ject.vs.vote.domain.VoteParticipation;
-import com.ject.vs.vote.domain.VoteParticipationRepository;
+import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
+import com.ject.vs.vote.port.in.VoteQueryUseCase;
+import com.ject.vs.vote.port.in.dto.VoteStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -21,19 +26,20 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ChatQueryService implements ChatQueryUseCase {
 
-    private final VoteParticipationRepository voteParticipationRepository;
+    private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
+    private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
     private final UserRepository userRepository;
 
     @Override
     public List<ChatListItemResult> getChatList(Long userId, VoteStatus status) {
-        List<VoteParticipation> participations = voteParticipationRepository.findAllByUserId(userId);
+        List<Long> voteIds = voteParticipationQueryUseCase.findVoteIdsByUserId(userId);
+        List<Long> filteredVoteIds = voteQueryUseCase.filterVoteIdsByStatus(voteIds, status);
 
-        return participations.stream()
-                .map(participation -> {
-                    Long voteId = participation.getVoteId();
-                    long participantCount = voteParticipationRepository.countByVoteId(voteId);
+        return filteredVoteIds.stream()
+                .map(voteId -> {
+                    long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
 
                     ChatMessage lastMsg = chatMessageRepository.findFirstByVoteIdOrderByIdDesc(voteId).orElse(null);
                     String lastMessage = lastMsg != null ? lastMsg.getContent() : null;
@@ -56,14 +62,14 @@ public class ChatQueryService implements ChatQueryUseCase {
 
     @Override
     public ChatRoomResult getChatRoom(Long voteId) {
-        long participantCount = voteParticipationRepository.countByVoteId(voteId);
+        long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
         return ChatRoomResult.of(voteId, (int) participantCount);
     }
 
     @Override
     public GaugeResult getGauge(Long voteId) {
         // TODO: Vote 도메인 연동 후 실제 득표율로 교체
-        long participantCount = voteParticipationRepository.countByVoteId(voteId);
+        long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
         return new GaugeResult(50, 50, (int) participantCount);
     }
 

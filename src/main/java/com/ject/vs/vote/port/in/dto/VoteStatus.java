@@ -1,4 +1,4 @@
-package com.ject.vs.chat.port.in.dto;
+package com.ject.vs.vote.port.in.dto;
 
 public enum VoteStatus {
     ONGOING, ENDED
