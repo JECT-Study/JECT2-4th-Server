@@ -2,15 +2,16 @@ package com.ject.vs.chat.port;
 
 import com.ject.vs.chat.domain.ChatMessage;
 import com.ject.vs.chat.domain.ChatMessageRepository;
+import com.ject.vs.chat.domain.ChatRoomUnread;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
+import com.ject.vs.chat.exception.ChatForbiddenException;
+import com.ject.vs.chat.exception.InvalidMessageException;
+import com.ject.vs.chat.port.in.ChatCommandUseCase;
 import com.ject.vs.chat.port.in.ChatQueryUseCase;
-import com.ject.vs.chat.port.in.dto.ChatListItemResult;
-import com.ject.vs.chat.port.in.dto.ChatRoomResult;
-import com.ject.vs.chat.port.in.dto.GaugeResult;
-import com.ject.vs.chat.port.in.dto.MessagePageResult;
-import com.ject.vs.chat.port.in.dto.MessageResult;
+import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.domain.User;
 import com.ject.vs.repository.UserRepository;
+import com.ject.vs.vote.domain.VoteParticipationRepository;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import com.ject.vs.vote.port.in.dto.VoteStatus;
@@ -23,9 +24,10 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class ChatQueryService implements ChatQueryUseCase {
+@Transactional
+public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
+    private final VoteParticipationRepository voteParticipationRepository;
     private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
     private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
@@ -33,6 +35,49 @@ public class ChatQueryService implements ChatQueryUseCase {
     private final UserRepository userRepository;
 
     @Override
+    public MessageResult sendMessage(SendMessageCommand command) {
+        if (!voteParticipationRepository.existsByVoteIdAndUserId(command.voteId(), command.senderId())) {
+            throw new ChatForbiddenException();
+        }
+
+        ChatMessage message = ChatMessage.of(command.voteId(), command.senderId(), command.content());
+        if (message.isBlank()) {
+            throw new InvalidMessageException();
+        }
+
+        ChatMessage saved = chatMessageRepository.save(message);
+
+        User sender = userRepository.findById(command.senderId()).orElse(null);
+        String senderNickname = sender != null ? sender.getSub() : "unknown";
+
+        return new MessageResult(
+                saved.getId(),
+                saved.getContent(),
+                saved.getCreatedAt(),
+                senderNickname,
+                null,
+                "A",
+                true
+        );
+    }
+
+    @Override
+    public void markAsRead(MarkAsReadCommand command) {
+        chatRoomUnreadRepository
+                .findByIdUserIdAndIdVoteId(command.userId(), command.voteId())
+                .ifPresentOrElse(
+                        unread -> {
+                            unread.updateLastRead(command.lastReadMessageId());
+                            chatRoomUnreadRepository.save(unread);
+                        },
+                        () -> chatRoomUnreadRepository.save(
+                                ChatRoomUnread.of(command.userId(), command.voteId(), command.lastReadMessageId())
+                        )
+                );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ChatListItemResult> getChatList(Long userId, VoteStatus status) {
         List<Long> voteIds = voteParticipationQueryUseCase.findVoteIdsByUserId(userId);
         List<Long> filteredVoteIds = voteQueryUseCase.filterVoteIdsByStatus(voteIds, status);
@@ -61,12 +106,14 @@ public class ChatQueryService implements ChatQueryUseCase {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ChatRoomResult getChatRoom(Long voteId) {
         long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
         return ChatRoomResult.of(voteId, (int) participantCount);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GaugeResult getGauge(Long voteId) {
         // TODO: Vote 도메인 연동 후 실제 득표율로 교체
         long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
@@ -74,6 +121,7 @@ public class ChatQueryService implements ChatQueryUseCase {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public MessagePageResult getMessages(Long voteId, Long userId, Long cursor, int size) {
         PageRequest pageRequest = PageRequest.of(0, size + 1);
 

@@ -7,33 +7,45 @@ import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.exception.ChatForbiddenException;
 import com.ject.vs.chat.exception.InvalidMessageException;
 import com.ject.vs.chat.port.in.dto.MarkAsReadCommand;
+import com.ject.vs.chat.port.in.dto.MessagePageResult;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.SendMessageCommand;
 import com.ject.vs.repository.UserRepository;
 import com.ject.vs.vote.domain.VoteParticipationRepository;
+import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
+import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class ChatCommandServiceTest {
+class ChatServiceTest {
 
     @InjectMocks
-    private ChatCommandService chatCommandService;
+    private ChatService chatService;
 
     @Mock
     private VoteParticipationRepository voteParticipationRepository;
+
+    @Mock
+    private VoteParticipationQueryUseCase voteParticipationQueryUseCase;
+
+    @Mock
+    private VoteQueryUseCase voteQueryUseCase;
 
     @Mock
     private ChatMessageRepository chatMessageRepository;
@@ -53,7 +65,7 @@ class ChatCommandServiceTest {
             given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(false);
 
             // when & then
-            assertThatThrownBy(() -> chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "hello")))
+            assertThatThrownBy(() -> chatService.sendMessage(new SendMessageCommand(1L, 2L, "hello")))
                     .isInstanceOf(ChatForbiddenException.class);
         }
 
@@ -63,7 +75,7 @@ class ChatCommandServiceTest {
             given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
 
             // when & then
-            assertThatThrownBy(() -> chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "   ")))
+            assertThatThrownBy(() -> chatService.sendMessage(new SendMessageCommand(1L, 2L, "   ")))
                     .isInstanceOf(InvalidMessageException.class);
         }
 
@@ -76,7 +88,7 @@ class ChatCommandServiceTest {
             given(userRepository.findById(2L)).willReturn(Optional.empty());
 
             // when
-            MessageResult result = chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
+            MessageResult result = chatService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
 
             // then
             assertThat(result).isNotNull();
@@ -94,7 +106,7 @@ class ChatCommandServiceTest {
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(1L, 10L)).willReturn(Optional.empty());
 
             // when
-            chatCommandService.markAsRead(new MarkAsReadCommand(10L, 1L, 5L));
+            chatService.markAsRead(new MarkAsReadCommand(10L, 1L, 5L));
 
             // then
             verify(chatRoomUnreadRepository).save(any(ChatRoomUnread.class));
@@ -107,11 +119,49 @@ class ChatCommandServiceTest {
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(1L, 10L)).willReturn(Optional.of(existing));
 
             // when
-            chatCommandService.markAsRead(new MarkAsReadCommand(10L, 1L, 20L));
+            chatService.markAsRead(new MarkAsReadCommand(10L, 1L, 20L));
 
             // then
             assertThat(existing.getLastReadMessageId()).isEqualTo(20L);
             verify(chatRoomUnreadRepository).save(existing);
+        }
+    }
+
+    @Nested
+    class getMessages {
+
+        @Test
+        void cursor가_null이면_최신부터_조회한다() {
+            // given
+            ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
+            given(chatMessageRepository.findByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class)))
+                    .willReturn(List.of(msg));
+            given(userRepository.findById(2L)).willReturn(Optional.empty());
+
+            // when
+            MessagePageResult result = chatService.getMessages(1L, 2L, null, 30);
+
+            // then
+            assertThat(result.messages()).hasSize(1);
+            assertThat(result.hasNext()).isFalse();
+            verify(chatMessageRepository).findByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class));
+        }
+
+        @Test
+        void cursor가_있으면_cursor_이전_메시지를_조회한다() {
+            // given
+            ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
+            given(chatMessageRepository.findByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class)))
+                    .willReturn(List.of(msg));
+            given(userRepository.findById(2L)).willReturn(Optional.empty());
+
+            // when
+            MessagePageResult result = chatService.getMessages(1L, 2L, 100L, 30);
+
+            // then
+            assertThat(result.messages()).hasSize(1);
+            assertThat(result.hasNext()).isFalse();
+            verify(chatMessageRepository).findByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class));
         }
     }
 }
