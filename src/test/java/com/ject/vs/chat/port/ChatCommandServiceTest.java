@@ -9,10 +9,10 @@ import com.ject.vs.chat.exception.InvalidMessageException;
 import com.ject.vs.chat.port.in.MarkAsReadCommand;
 import com.ject.vs.chat.port.in.MessageResult;
 import com.ject.vs.chat.port.in.SendMessageCommand;
-import com.ject.vs.domain.User;
 import com.ject.vs.repository.UserRepository;
 import com.ject.vs.vote.domain.VoteParticipation;
 import com.ject.vs.vote.domain.VoteParticipationRepository;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -50,58 +50,78 @@ class ChatCommandServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Test
-    void sendMessage_미참여자는_ChatForbiddenException이_발생한다() {
-        given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(false);
+    @Nested
+    class sendMessage {
 
-        assertThatThrownBy(() -> chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "hello")))
-                .isInstanceOf(ChatForbiddenException.class);
+        @Test
+        void 미참여자는_ChatForbiddenException이_발생한다() {
+            // given
+            given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(false);
+
+            // when & then
+            assertThatThrownBy(() -> chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "hello")))
+                    .isInstanceOf(ChatForbiddenException.class);
+        }
+
+        @Test
+        void 공백_내용은_InvalidMessageException이_발생한다() {
+            // given
+            given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
+
+            // when & then
+            assertThatThrownBy(() -> chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "   ")))
+                    .isInstanceOf(InvalidMessageException.class);
+        }
+
+        @Test
+        void 정상_메시지는_저장되고_broadcast된다() {
+            // given
+            given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
+            ChatMessage savedMessage = ChatMessage.of(1L, 2L, "hello");
+            given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
+            given(userRepository.findById(2L)).willReturn(Optional.empty());
+            given(voteParticipationRepository.findByVoteId(1L)).willReturn(List.of(VoteParticipation.of(1L, 2L)));
+            given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(anyLong(), anyLong())).willReturn(Optional.empty());
+            given(chatMessageRepository.countByVoteIdAndIdGreaterThan(anyLong(), anyLong())).willReturn(1L);
+
+            // when
+            MessageResult result = chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.content()).isEqualTo("hello");
+            verify(chatMessageRepository).save(any(ChatMessage.class));
+            verify(messagingTemplate).convertAndSend(eq("/topic/chat/1"), any(Object.class));
+        }
     }
 
-    @Test
-    void sendMessage_공백_내용은_InvalidMessageException이_발생한다() {
-        given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
+    @Nested
+    class markAsRead {
 
-        assertThatThrownBy(() -> chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "   ")))
-                .isInstanceOf(InvalidMessageException.class);
-    }
+        @Test
+        void 신규인_경우_새로_생성된다() {
+            // given
+            given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(1L, 10L)).willReturn(Optional.empty());
 
-    @Test
-    void sendMessage_정상_메시지는_저장되고_broadcast된다() {
-        given(voteParticipationRepository.existsByVoteIdAndUserId(1L, 2L)).willReturn(true);
+            // when
+            chatCommandService.markAsRead(new MarkAsReadCommand(10L, 1L, 5L));
 
-        ChatMessage savedMessage = ChatMessage.of(1L, 2L, "hello");
-        given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
-        given(userRepository.findById(2L)).willReturn(Optional.empty());
-        given(voteParticipationRepository.findByVoteId(1L)).willReturn(List.of(VoteParticipation.of(1L, 2L)));
-        given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(anyLong(), anyLong())).willReturn(Optional.empty());
-        given(chatMessageRepository.countByVoteIdAndIdGreaterThan(anyLong(), anyLong())).willReturn(1L);
+            // then
+            verify(chatRoomUnreadRepository).save(any(ChatRoomUnread.class));
+        }
 
-        MessageResult result = chatCommandService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
+        @Test
+        void 기존_있으면_updateLastRead가_호출된다() {
+            // given
+            ChatRoomUnread existing = ChatRoomUnread.of(1L, 10L, 3L);
+            given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(1L, 10L)).willReturn(Optional.of(existing));
 
-        assertThat(result).isNotNull();
-        assertThat(result.content()).isEqualTo("hello");
-        verify(chatMessageRepository).save(any(ChatMessage.class));
-        verify(messagingTemplate).convertAndSend(eq("/topic/chat/1"), any(Object.class));
-    }
+            // when
+            chatCommandService.markAsRead(new MarkAsReadCommand(10L, 1L, 20L));
 
-    @Test
-    void markAsRead_신규인_경우_새로_생성된다() {
-        given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(1L, 10L)).willReturn(Optional.empty());
-
-        chatCommandService.markAsRead(new MarkAsReadCommand(10L, 1L, 5L));
-
-        verify(chatRoomUnreadRepository).save(any(ChatRoomUnread.class));
-    }
-
-    @Test
-    void markAsRead_기존_있으면_updateLastRead가_호출된다() {
-        ChatRoomUnread existing = ChatRoomUnread.of(1L, 10L, 3L);
-        given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(1L, 10L)).willReturn(Optional.of(existing));
-
-        chatCommandService.markAsRead(new MarkAsReadCommand(10L, 1L, 20L));
-
-        assertThat(existing.getLastReadMessageId()).isEqualTo(20L);
-        verify(chatRoomUnreadRepository).save(existing);
+            // then
+            assertThat(existing.getLastReadMessageId()).isEqualTo(20L);
+            verify(chatRoomUnreadRepository).save(existing);
+        }
     }
 }

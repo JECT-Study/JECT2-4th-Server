@@ -1,6 +1,7 @@
 package com.ject.vs.config;
 
 import com.ject.vs.util.JwtProvider;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,9 +12,6 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
-
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -45,32 +43,47 @@ class WebSocketAuthInterceptorTest {
         return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
     }
 
-    @Test
-    void CONNECT_유효한_토큰이면_Principal이_설정된다() {
-        given(jwtProvider.getUserId("valid-token")).willReturn(42L);
+    @Nested
+    class preSend {
 
-        Message<?> message = buildConnectMessage("Bearer valid-token");
-        Message<?> result = interceptor.preSend(message, messageChannel);
+        @Test
+        void CONNECT_유효한_토큰이면_Principal이_설정된다() {
+            // given
+            given(jwtProvider.getUserId("valid-token")).willReturn(42L);
+            Message<?> message = buildConnectMessage("Bearer valid-token");
 
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(result);
-        assertThat(accessor.getUser()).isNotNull();
-        assertThat(accessor.getUser().getName()).isEqualTo("42");
-    }
+            // when
+            Message<?> result = interceptor.preSend(message, messageChannel);
 
-    @Test
-    void CONNECT_토큰_없으면_Principal이_null이다() {
-        Message<?> message = buildConnectMessage(null);
-        Message<?> result = interceptor.preSend(message, messageChannel);
+            // then
+            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(result);
+            assertThat(accessor.getUser()).isNotNull();
+            assertThat(accessor.getUser().getName()).isEqualTo("42");
+        }
 
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(result);
-        assertThat(accessor.getUser()).isNull();
-    }
+        @Test
+        void CONNECT_토큰_없으면_Principal이_null이다() {
+            // given
+            Message<?> message = buildConnectMessage(null);
 
-    @Test
-    void CONNECT_아닌_frame은_그냥_통과된다() {
-        Message<?> message = buildNonConnectMessage();
-        Message<?> result = interceptor.preSend(message, messageChannel);
+            // when
+            Message<?> result = interceptor.preSend(message, messageChannel);
 
-        assertThat(result).isNotNull();
+            // then
+            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(result);
+            assertThat(accessor.getUser()).isNull();
+        }
+
+        @Test
+        void CONNECT_아닌_frame은_그냥_통과된다() {
+            // given
+            Message<?> message = buildNonConnectMessage();
+
+            // when
+            Message<?> result = interceptor.preSend(message, messageChannel);
+
+            // then
+            assertThat(result).isNotNull();
+        }
     }
 }
