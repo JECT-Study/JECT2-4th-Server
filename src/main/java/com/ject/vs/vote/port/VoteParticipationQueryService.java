@@ -24,7 +24,7 @@ public class VoteParticipationQueryService implements VoteParticipationQueryUseC
     }
 
     @Override
-    public long getParticipantCountByVoteId(Long voteId) {
+    public long countParticipantsByVoteId(Long voteId) {
         return voteParticipationRepository.countByVoteId(voteId);
     }
 

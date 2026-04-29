@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface VoteParticipationQueryUseCase {
     List<Long> findAllVoteIdsByUserId(Long userId);
-    long getParticipantCountByVoteId(Long voteId);
+    long countParticipantsByVoteId(Long voteId);
     List<Long> findAllUserIdsByVoteId(Long voteId);
 }
