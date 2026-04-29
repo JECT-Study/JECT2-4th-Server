@@ -1,11 +1,10 @@
 package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.port.in.dto.ChatRoomResult;
+import com.ject.vs.common.util.TimeUtils;
 import com.ject.vs.vote.port.in.dto.VoteStatus;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 
 public record ChatRoomResponse(
         Long voteId,
@@ -16,8 +15,6 @@ public record ChatRoomResponse(
         String optionB,
         OffsetDateTime endAt
 ) {
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     public static ChatRoomResponse from(ChatRoomResult result) {
         return new ChatRoomResponse(
                 result.voteId(),
@@ -26,12 +23,7 @@ public record ChatRoomResponse(
                 result.participantCount(),
                 result.optionA(),
                 result.optionB(),
-                toOffsetDateTime(result.endAt())
+                TimeUtils.toKstOffsetDateTime(result.endAt())
         );
-    }
-
-    private static OffsetDateTime toOffsetDateTime(LocalDateTime ldt) {
-        if (ldt == null) return null;
-        return ldt.atZone(KST).toOffsetDateTime();
     }
 }

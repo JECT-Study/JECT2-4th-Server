@@ -1,10 +1,9 @@
 package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.port.in.dto.ChatListItemResult;
+import com.ject.vs.common.util.TimeUtils;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 
 public record ChatListItemResponse(
         Long voteId,
@@ -18,8 +17,6 @@ public record ChatListItemResponse(
         OffsetDateTime endAt,
         int unreadCount
 ) {
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     public static ChatListItemResponse from(ChatListItemResult result) {
         return new ChatListItemResponse(
                 result.voteId(),
@@ -29,14 +26,9 @@ public record ChatListItemResponse(
                 result.optionB(),
                 result.participantCount(),
                 result.lastMessage(),
-                toOffsetDateTime(result.lastMessageAt()),
-                toOffsetDateTime(result.endAt()),
+                TimeUtils.toKstOffsetDateTime(result.lastMessageAt()),
+                TimeUtils.toKstOffsetDateTime(result.endAt()),
                 result.unreadCount()
         );
-    }
-
-    private static OffsetDateTime toOffsetDateTime(LocalDateTime ldt) {
-        if (ldt == null) return null;
-        return ldt.atZone(KST).toOffsetDateTime();
     }
 }
