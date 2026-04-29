@@ -134,7 +134,7 @@ class ChatServiceTest {
         void cursor가_null이면_최신부터_조회한다() {
             // given
             ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
-            given(chatMessageRepository.findByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class)))
+            given(chatMessageRepository.findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
             given(userRepository.findById(2L)).willReturn(Optional.empty());
 
@@ -144,14 +144,14 @@ class ChatServiceTest {
             // then
             assertThat(result.messages()).hasSize(1);
             assertThat(result.hasNext()).isFalse();
-            verify(chatMessageRepository).findByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class));
+            verify(chatMessageRepository).findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class));
         }
 
         @Test
         void cursor가_있으면_cursor_이전_메시지를_조회한다() {
             // given
             ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
-            given(chatMessageRepository.findByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class)))
+            given(chatMessageRepository.findAllByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
             given(userRepository.findById(2L)).willReturn(Optional.empty());
 
@@ -161,7 +161,7 @@ class ChatServiceTest {
             // then
             assertThat(result.messages()).hasSize(1);
             assertThat(result.hasNext()).isFalse();
-            verify(chatMessageRepository).findByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class));
+            verify(chatMessageRepository).findAllByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class));
         }
     }
 }

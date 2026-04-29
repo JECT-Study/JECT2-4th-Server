@@ -79,12 +79,12 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     @Override
     @Transactional(readOnly = true)
     public List<ChatListItemResult> getChatList(Long userId, VoteStatus status) {
-        List<Long> voteIds = voteParticipationQueryUseCase.findVoteIdsByUserId(userId);
-        List<Long> filteredVoteIds = voteQueryUseCase.filterVoteIdsByStatus(voteIds, status);
+        List<Long> voteIds = voteParticipationQueryUseCase.findAllVoteIdsByUserId(userId);
+        List<Long> filteredVoteIds = voteQueryUseCase.findAllVoteIdsByStatus(voteIds, status);
 
         return filteredVoteIds.stream()
                 .map(voteId -> {
-                    long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
+                    long participantCount = voteParticipationQueryUseCase.getParticipantCountByVoteId(voteId);
 
                     ChatMessage lastMsg = chatMessageRepository.findFirstByVoteIdOrderByIdDesc(voteId).orElse(null);
                     String lastMessage = lastMsg != null ? lastMsg.getContent() : null;
@@ -108,7 +108,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     @Override
     @Transactional(readOnly = true)
     public ChatRoomResult getChatRoom(Long voteId) {
-        long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
+        long participantCount = voteParticipationQueryUseCase.getParticipantCountByVoteId(voteId);
         return ChatRoomResult.of(voteId, (int) participantCount);
     }
 
@@ -116,7 +116,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     @Transactional(readOnly = true)
     public GaugeResult getGauge(Long voteId) {
         // TODO: Vote 도메인 연동 후 실제 득표율로 교체
-        long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
+        long participantCount = voteParticipationQueryUseCase.getParticipantCountByVoteId(voteId);
         return new GaugeResult(50, 50, (int) participantCount);
     }
 
@@ -127,9 +127,9 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
         List<ChatMessage> messages;
         if (cursor == null) {
-            messages = chatMessageRepository.findByVoteIdOrderByIdDesc(voteId, pageRequest);
+            messages = chatMessageRepository.findAllByVoteIdOrderByIdDesc(voteId, pageRequest);
         } else {
-            messages = chatMessageRepository.findByVoteIdAndIdLessThanOrderByIdDesc(voteId, cursor, pageRequest);
+            messages = chatMessageRepository.findAllByVoteIdAndIdLessThanOrderByIdDesc(voteId, cursor, pageRequest);
         }
 
         boolean hasNext = messages.size() > size;

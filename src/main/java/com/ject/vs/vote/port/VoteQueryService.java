@@ -10,7 +10,7 @@ import java.util.List;
 public class VoteQueryService implements VoteQueryUseCase {
 
     @Override
-    public List<Long> filterVoteIdsByStatus(List<Long> voteIds, VoteStatus status) {
+    public List<Long> findAllVoteIdsByStatus(List<Long> voteIds, VoteStatus status) {
         // TODO: Vote 도메인 연동 후 실제 status 기반 필터링으로 교체
         return voteIds;
     }

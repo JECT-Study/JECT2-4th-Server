@@ -35,7 +35,7 @@ class ChatMessageRepositoryTest {
     }
 
     @Nested
-    class findByVoteIdOrderByIdDesc {
+    class findAllByVoteIdOrderByIdDesc {
 
         @Test
         void 최신순으로_정렬된다() {
@@ -45,7 +45,7 @@ class ChatMessageRepositoryTest {
             chatMessageRepository.save(ChatMessage.of(voteId, userId, "세번째"));
 
             // when
-            List<ChatMessage> result = chatMessageRepository.findByVoteIdOrderByIdDesc(voteId, PageRequest.of(0, 10));
+            List<ChatMessage> result = chatMessageRepository.findAllByVoteIdOrderByIdDesc(voteId, PageRequest.of(0, 10));
 
             // then
             assertThat(result).hasSize(3);
@@ -55,7 +55,7 @@ class ChatMessageRepositoryTest {
     }
 
     @Nested
-    class findByVoteIdAndIdLessThanOrderByIdDesc {
+    class findAllByVoteIdAndIdLessThanOrderByIdDesc {
 
         @Test
         void cursor_기반으로_이전_메시지를_페이지네이션한다() {
@@ -66,7 +66,7 @@ class ChatMessageRepositoryTest {
 
             // when
             List<ChatMessage> result = chatMessageRepository
-                    .findByVoteIdAndIdLessThanOrderByIdDesc(voteId, msg3.getId(), PageRequest.of(0, 10));
+                    .findAllByVoteIdAndIdLessThanOrderByIdDesc(voteId, msg3.getId(), PageRequest.of(0, 10));
 
             // then
             assertThat(result).hasSize(2);

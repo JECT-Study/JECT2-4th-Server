@@ -16,7 +16,7 @@ public class VoteParticipationQueryService implements VoteParticipationQueryUseC
     private final VoteParticipationRepository voteParticipationRepository;
 
     @Override
-    public List<Long> findVoteIdsByUserId(Long userId) {
+    public List<Long> findAllVoteIdsByUserId(Long userId) {
         return voteParticipationRepository.findAllByUserId(userId)
                 .stream()
                 .map(p -> p.getVoteId())
@@ -24,12 +24,12 @@ public class VoteParticipationQueryService implements VoteParticipationQueryUseC
     }
 
     @Override
-    public long countParticipantsByVoteId(Long voteId) {
+    public long getParticipantCountByVoteId(Long voteId) {
         return voteParticipationRepository.countByVoteId(voteId);
     }
 
     @Override
-    public List<Long> findUserIdsByVoteId(Long voteId) {
+    public List<Long> findAllUserIdsByVoteId(Long voteId) {
         return voteParticipationRepository.findAllByVoteId(voteId)
                 .stream()
                 .map(p -> p.getUserId())

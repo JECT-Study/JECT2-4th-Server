@@ -50,7 +50,7 @@ public class ChatMessageEventListener {
     }
 
     private void broadcastUnreadCount(ChatMessage message) {
-        for (Long participantUserId : voteParticipationQueryUseCase.findUserIdsByVoteId(message.getVoteId())) {
+        for (Long participantUserId : voteParticipationQueryUseCase.findAllUserIdsByVoteId(message.getVoteId())) {
             long unreadCount = chatRoomUnreadRepository
                     .findByIdUserIdAndIdVoteId(participantUserId, message.getVoteId())
                     .map(unread -> chatMessageRepository.countByVoteIdAndIdGreaterThan(

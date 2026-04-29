@@ -8,9 +8,9 @@ import java.util.Optional;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-    List<ChatMessage> findByVoteIdAndIdLessThanOrderByIdDesc(Long voteId, Long cursor, Pageable pageable);
+    List<ChatMessage> findAllByVoteIdAndIdLessThanOrderByIdDesc(Long voteId, Long cursor, Pageable pageable);
 
-    List<ChatMessage> findByVoteIdOrderByIdDesc(Long voteId, Pageable pageable);
+    List<ChatMessage> findAllByVoteIdOrderByIdDesc(Long voteId, Pageable pageable);
 
     Optional<ChatMessage> findFirstByVoteIdOrderByIdDesc(Long voteId);
 

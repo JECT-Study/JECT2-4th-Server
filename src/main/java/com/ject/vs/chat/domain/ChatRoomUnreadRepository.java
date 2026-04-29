@@ -9,5 +9,5 @@ public interface ChatRoomUnreadRepository extends JpaRepository<ChatRoomUnread, 
 
     Optional<ChatRoomUnread> findByIdUserIdAndIdVoteId(Long userId, Long voteId);
 
-    List<ChatRoomUnread> findByIdVoteId(Long voteId);
+    List<ChatRoomUnread> findAllByIdVoteId(Long voteId);
 }
