@@ -46,3 +46,8 @@ package-lock.json
 ### api key ###
 src/main/resources/application-google.yml
 src/main/resources/application-dev.yml
+
+
+### harness ###
+.omc/
+.omx/
