@@ -30,11 +30,10 @@ com.ject.vs
     │   ├── ChatMessageRepository.java       # Spring Data JPA
     │   └── ChatRoomUnreadRepository.java    # Spring Data JPA
     ├── port
-    │   └── in
-    │       ├── ChatQueryUseCase.java         # inbound port (interface)
-    │       ├── ChatCommandUseCase.java       # inbound port (interface)
-    │       ├── ChatQueryService.java         # implements ChatQueryUseCase
-    │       └── ChatCommandService.java       # implements ChatCommandUseCase
+    │   ├── ChatQueryUseCase.java             # inbound port (interface)
+    │   ├── ChatCommandUseCase.java           # inbound port (interface)
+    │   ├── ChatQueryService.java             # implements ChatQueryUseCase
+    │   └── ChatCommandService.java           # implements ChatCommandUseCase
     └── adapter
         └── web
             └── ChatController.java
@@ -238,10 +237,10 @@ public class ChatCommandService implements ChatCommandUseCase {
 
 | 파일 | 내용 |
 |------|------|
-| `chat/port/in/ChatQueryUseCase.java` | inbound port |
-| `chat/port/in/ChatCommandUseCase.java` | inbound port |
-| `chat/port/in/ChatQueryService.java` | implements ChatQueryUseCase |
-| `chat/port/in/ChatCommandService.java` | implements ChatCommandUseCase |
+| `chat/port/ChatQueryUseCase.java` | inbound port |
+| `chat/port/ChatCommandUseCase.java` | inbound port |
+| `chat/port/ChatQueryService.java` | implements ChatQueryUseCase |
+| `chat/port/ChatCommandService.java` | implements ChatCommandUseCase |
 
 **테스트**
 - `ChatCommandServiceTest`: `@DataJpaTest` — 참여 검증 실패 / 성공 / 공백 메시지 케이스
