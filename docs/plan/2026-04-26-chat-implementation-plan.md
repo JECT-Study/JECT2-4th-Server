@@ -48,8 +48,7 @@ com.ject.vs
         │   ├── ChatRoomUnreadJpaRepository.java
         │   └── ChatRoomUnreadPersistenceAdapter.java # implements ChatRoomUnreadPort
         └── web
-            ├── ChatController.java
-            └── ChatWebSocketHandler.java
+            └── ChatController.java
 │
 └── config
     ├── WebSocketConfig.java             # STOMP 엔드포인트 및 브로커 설정
@@ -429,41 +428,16 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
 ---
 
-#### 6-3. ChatWebSocketHandler
+#### 6-3. broadcast 흐름
 
-`/app/chat/{voteId}/send` 발행 수신 → UseCase 위임 → broadcast.
-
-```java
-@Controller
-@RequiredArgsConstructor
-public class ChatWebSocketHandler {
-
-    private final ChatCommandUseCase chatCommandUseCase;
-
-    @MessageMapping("/chat/{voteId}/send")
-    public void sendMessage(@DestinationVariable Long voteId,
-                            @Payload SendMessageRequest request,
-                            Principal principal) {
-        Long senderId = Long.parseLong(principal.getName());
-        chatCommandUseCase.sendMessage(voteId, senderId, request.content());
-        // broadcast은 ChatCommandService 내부에서 SimpMessagingTemplate으로 처리
-    }
-}
-```
-
----
-
-#### 6-4. broadcast 흐름
+메시지 전송은 REST를 통해 이루어지며, `ChatCommandService` 내부에서 `SimpMessagingTemplate`으로 broadcast.  
+`@MessageMapping` 핸들러(`ChatWebSocketHandler`)는 불필요.
 
 ```
-클라이언트 STOMP 발행
-  /app/chat/{voteId}/send  { "content": "..." }
+REST POST /api/chats/{voteId}/messages  { "content": "..." }
         │
         ▼
-  WebSocketAuthInterceptor  ← CONNECT 시 JWT 검증, Principal 설정
-        │
-        ▼
-  ChatWebSocketHandler.sendMessage()
+  ChatController.sendMessage()
         │
         ▼
   ChatCommandService.sendMessage()
@@ -478,27 +452,26 @@ public class ChatWebSocketHandler {
 
 ---
 
-#### 6-5. 구현 파일
+#### 6-4. 구현 파일
 
 | 파일 | 내용 |
 |------|------|
 | `config/WebSocketConfig.java` | STOMP 엔드포인트 및 브로커 설정 |
 | `config/WebSocketAuthInterceptor.java` | CONNECT 시 JWT 인증, Principal 주입 |
-| `chat/infrastructure/web/ChatWebSocketHandler.java` | `@MessageMapping` 핸들러 |
 
 ---
 
-#### 6-6. 테스트
+#### 6-5. 테스트
 
 - `WebSocketAuthInterceptorTest`: CONNECT 시 유효/무효 토큰 처리 검증
-- `ChatWebSocketHandlerTest`: Mockito로 UseCase mocking — 핸들러 위임 검증
-- `ChatWebSocketIntegrationTest`: `StompClient`로 실제 연결 → 발행 → `/topic` 수신 검증
+- `ChatWebSocketIntegrationTest`: REST POST 후 `/topic/chat/{voteId}` 수신 검증
   ```java
   // 통합 테스트 흐름 예시
   StompSession session = stompClient.connect(url, headers).get();
   session.subscribe("/topic/chat/1", new TestStompFrameHandler());
-  session.send("/app/chat/1/send", new SendMessageRequest("테스트 메시지"));
-  // 수신된 payload 검증
+  // REST POST로 메시지 전송
+  mockMvc.perform(post("/api/chats/1/messages").content(...));
+  // WebSocket으로 broadcast된 payload 검증
   ```
 
 ---
@@ -520,7 +493,7 @@ public class ChatWebSocketHandler {
 | Application | JUnit 5 + Mockito | UseCase 비즈니스 로직, 예외 케이스 |
 | Persistence | `@DataJpaTest` | 쿼리 정합성, 커서 페이지네이션, upsert |
 | Controller | `@WebMvcTest` | 요청/응답 직렬화, 인증 필터 |
-| WebSocket | `StompClient` 통합 | 발행 → 수신 end-to-end |
+| WebSocket | `StompClient` 통합 | REST POST → `/topic` 수신 end-to-end |
 
 ---
 
@@ -535,6 +508,5 @@ STEP 5  REST Controller
 STEP 6  WebSocket 구현
           6-1. WebSocketConfig (STOMP 엔드포인트 + 브로커)
           6-2. WebSocketAuthInterceptor (JWT 인증)
-          6-3. ChatWebSocketHandler (@MessageMapping)
-          6-4. broadcast 흐름 연결 (SimpMessagingTemplate)
+          6-3. broadcast 흐름 (REST → ChatCommandService → SimpMessagingTemplate)
 ```
