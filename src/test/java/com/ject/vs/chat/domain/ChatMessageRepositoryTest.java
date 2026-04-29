@@ -29,7 +29,7 @@ class ChatMessageRepositoryTest {
     @BeforeEach
     void setUp() {
         User user = entityManager.persistAndFlush(User.createWithSub("test-sub"));
-        Vote vote = entityManager.persistAndFlush(Vote.createForTest());
+        Vote vote = entityManager.persistAndFlush(Vote.of());
         voteId = vote.getId();
         userId = user.getId();
     }

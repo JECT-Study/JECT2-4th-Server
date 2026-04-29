@@ -28,7 +28,7 @@ class ChatRoomUnreadRepositoryTest {
     @BeforeEach
     void setUp() {
         User user = entityManager.persistAndFlush(User.createWithSub("test-sub"));
-        Vote vote = entityManager.persistAndFlush(Vote.createForTest());
+        Vote vote = entityManager.persistAndFlush(Vote.of());
         userId = user.getId();
         voteId = vote.getId();
     }
