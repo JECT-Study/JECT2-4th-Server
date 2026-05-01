@@ -70,18 +70,29 @@ if [ "$CERTBOT_STAGING" = "true" ]; then
   STAGING_ARGS=(--staging)
 fi
 
-log "Let's Encrypt 인증서 발급: $DOMAIN"
-docker run --rm \
-  -v "$APP_DIR/certbot/conf:/etc/letsencrypt" \
-  -v "$APP_DIR/certbot/www:/var/www/certbot" \
-  certbot/certbot certonly \
-  --webroot \
-  --webroot-path /var/www/certbot \
-  --domain "$DOMAIN" \
-  --agree-tos \
-  --non-interactive \
-  "${EMAIL_ARGS[@]}" \
-  "${STAGING_ARGS[@]}"
+if [ ! -f "$APP_DIR/certbot/conf/live/$DOMAIN/fullchain.pem" ]; then
+  log "Let's Encrypt 인증서 신규 발급: $DOMAIN"
+  docker run --rm \
+    -v "$APP_DIR/certbot/conf:/etc/letsencrypt" \
+    -v "$APP_DIR/certbot/www:/var/www/certbot" \
+    certbot/certbot certonly \
+    --webroot \
+    --webroot-path /var/www/certbot \
+    --domain "$DOMAIN" \
+    --agree-tos \
+    --non-interactive \
+    "${EMAIL_ARGS[@]}" \
+    "${STAGING_ARGS[@]}"
+else
+  log "Let's Encrypt 인증서 갱신 시도: $DOMAIN"
+  docker run --rm \
+    -v "$APP_DIR/certbot/conf:/etc/letsencrypt" \
+    -v "$APP_DIR/certbot/www:/var/www/certbot" \
+    certbot/certbot renew \
+    --webroot \
+    --webroot-path /var/www/certbot \
+    --quiet
+fi
 
 log "HTTPS nginx 설정 적용"
 curl -fsSL "$REPO_RAW_BASE/nginx/app.conf" | sed "s/api.vs.io.kr/$DOMAIN/g" > "$APP_DIR/nginx/app.conf"
@@ -89,27 +100,4 @@ docker compose up -d nginx
 docker exec "$NGINX_CONTAINER" nginx -t
 docker exec "$NGINX_CONTAINER" nginx -s reload
 
-log "인증서 자동 갱신 cron 등록"
-RENEW_SCRIPT="$APP_DIR/renew-https-cert.sh"
-cat > "$RENEW_SCRIPT" <<RENEW_EOF
-#!/bin/bash
-set -euo pipefail
-cd "$APP_DIR"
-docker run --rm \\
-  -v "$APP_DIR/certbot/conf:/etc/letsencrypt" \\
-  -v "$APP_DIR/certbot/www:/var/www/certbot" \\
-  certbot/certbot renew --webroot --webroot-path /var/www/certbot --quiet
-if docker ps --format '{{.Names}}' | grep -qx "$NGINX_CONTAINER"; then
-  docker exec "$NGINX_CONTAINER" nginx -s reload >/dev/null 2>&1 || true
-fi
-RENEW_EOF
-chmod +x "$RENEW_SCRIPT"
-
-CRON_LINE="17 3 * * * $RENEW_SCRIPT >> $APP_DIR/certbot/renew.log 2>&1"
-TMP_CRON=$(mktemp)
-{ crontab -l 2>/dev/null || true; } | grep -vF "$RENEW_SCRIPT" > "$TMP_CRON" || true
-echo "$CRON_LINE" >> "$TMP_CRON"
-crontab "$TMP_CRON"
-rm -f "$TMP_CRON"
-
-log "HTTPS 인증서 발급 및 NGINX 전환 완료: https://$DOMAIN"
+log "HTTPS 인증서 발급/갱신 및 NGINX 전환 완료: https://$DOMAIN"

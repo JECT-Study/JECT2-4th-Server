@@ -1,6 +1,8 @@
 name: Issue HTTPS Certificate
 
 on:
+  schedule:
+    - cron: "0 0 1 * *"
   workflow_dispatch:
     inputs:
       domain:
@@ -24,9 +26,9 @@ jobs:
       - name: 서버에서 HTTPS 인증서 발급/갱신 설정
         uses: appleboy/ssh-action@v1.0.3
         env:
-          DOMAIN: ${{ inputs.domain }}
-          CERTBOT_EMAIL: ${{ inputs.certbot_email }}
-          CERTBOT_STAGING: ${{ inputs.staging }}
+          DOMAIN: ${{ inputs.domain || 'api.vs.io.kr' }}
+          CERTBOT_EMAIL: ${{ inputs.certbot_email || '' }}
+          CERTBOT_STAGING: ${{ inputs.staging || false }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
