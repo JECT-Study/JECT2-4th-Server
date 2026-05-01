@@ -31,6 +31,7 @@ dependencies {
 	implementation(Dependencies.SpringBoot.WEB)
 	implementation(Dependencies.SpringBoot.ACTUATOR)
 	implementation(Dependencies.SpringBoot.OAUTH2_CLIENT)
+	implementation(Dependencies.SpringBoot.WEBSOCKET)
 
 	// Jwt
 	implementation(Dependencies.Jwt.API)
@@ -38,8 +39,10 @@ dependencies {
 	runtimeOnly(Dependencies.Jwt.JACKSON)
 
 	// Database
+	runtimeOnly(Dependencies.Database.POSTGRESQL)
 	runtimeOnly(Dependencies.Database.H2)
 	implementation(Dependencies.Database.FLYWAY)
+	runtimeOnly(Dependencies.Database.FLYWAY_POSTGRESQL)
 
 	// Swagger / OpenAPI
 	implementation(Dependencies.Swagger.SPRINGDOC)

@@ -8,6 +8,7 @@ object Dependencies {
         const val WEB = "org.springframework.boot:spring-boot-starter-web"
         const val TEST = "org.springframework.boot:spring-boot-starter-test"
         const val OAUTH2_CLIENT = "org.springframework.boot:spring-boot-starter-oauth2-client"
+        const val WEBSOCKET = "org.springframework.boot:spring-boot-starter-websocket"
     }
 
     object Jwt {
@@ -30,7 +31,9 @@ object Dependencies {
 
     object Database {
         const val H2 = "com.h2database:h2"
+        const val POSTGRESQL = "org.postgresql:postgresql"
         const val FLYWAY = "org.flywaydb:flyway-core"
+        const val FLYWAY_POSTGRESQL = "org.flywaydb:flyway-database-postgresql"
     }
 
     object Test {
