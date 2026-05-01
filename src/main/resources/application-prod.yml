@@ -29,6 +29,10 @@ app:
     redirect-success-url: https://example.com/oauth2/redirect
   cookie:
     secure: true
+  jwt:
+    secret: ${JWT_SECRET:}
+    accessTokenExpirationSeconds: 3600
+    refreshTokenExpirationSeconds: 86400
 
 management:
   endpoints:
