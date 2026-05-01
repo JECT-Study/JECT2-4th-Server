@@ -22,6 +22,23 @@ jobs:
         id: version
         uses: ./.github/actions/calculate-version
 
+  check-source-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'src/**'
+              - 'build.gradle.kts'
+              - 'buildSrc/**'
+
   release:
     needs: calculate-version
     runs-on: ubuntu-latest
@@ -81,7 +98,8 @@ jobs:
               | bash -s ${{ secrets.DOCKER_HUB_USERNAME }}/vs-server:v${{ needs.calculate-version.outputs.version }}
 
   publish-api-client:
-    needs: calculate-version
+    needs: [ calculate-version, release, check-source-changes ]
+    if: needs.check-source-changes.outputs.src == 'true'
     runs-on: ubuntu-latest
 
     steps:
