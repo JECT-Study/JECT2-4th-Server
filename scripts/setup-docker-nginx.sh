@@ -4,6 +4,7 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/home/ubuntu/app}"
 REPO_RAW_BASE="${REPO_RAW_BASE:-https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main}"
 NETWORK="${NETWORK:-app-network}"
+NGINX_CONTAINER="${NGINX_CONTAINER:-nginx}"
 REMOVE_SYSTEM_NGINX="${REMOVE_SYSTEM_NGINX:-false}"
 
 log() {
@@ -54,6 +55,10 @@ fi
 log "Docker nginx 실행"
 cd "$APP_DIR"
 docker compose up -d nginx
+
+log "Docker nginx 설정 reload"
+docker exec "$NGINX_CONTAINER" nginx -t
+docker exec "$NGINX_CONTAINER" nginx -s reload
 
 log "Docker nginx 상태"
 docker compose ps nginx
