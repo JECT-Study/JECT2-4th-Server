@@ -69,11 +69,14 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: ECR 로그인
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Docker 이미지 빌드 & 푸시
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          IMAGE=${{ secrets.ECR_REGISTRY }}/backend
+          IMAGE=$REGISTRY/backend
           TAG=v${{ needs.calculate-version.outputs.version }}
 
           docker build -t $IMAGE:$TAG .
