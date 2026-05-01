@@ -102,7 +102,7 @@ jobs:
             curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/setup-docker-nginx.sh \
               | bash
             curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/deploy.sh \
-              | bash -s ${{ secrets.ECR_REGISTRY }}/backend:v${{ needs.calculate-version.outputs.version }}
+              | bash -s ${{ steps.login-ecr.outputs.registry }}/backend:v${{ needs.calculate-version.outputs.version }}
 
   publish-api-client:
     needs: [ calculate-version, release, check-source-changes ]
