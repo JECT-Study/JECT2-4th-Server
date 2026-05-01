@@ -38,8 +38,10 @@ dependencies {
 	runtimeOnly(Dependencies.Jwt.JACKSON)
 
 	// Database
+	runtimeOnly(Dependencies.Database.POSTGRESQL)
 	runtimeOnly(Dependencies.Database.H2)
 	implementation(Dependencies.Database.FLYWAY)
+	runtimeOnly(Dependencies.Database.FLYWAY_POSTGRESQL)
 
 	// Swagger / OpenAPI
 	implementation(Dependencies.Swagger.SPRINGDOC)
