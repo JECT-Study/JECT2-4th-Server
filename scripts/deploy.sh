@@ -75,6 +75,15 @@ fi
 
 log "현재: ${CURRENT:-없음} → 새로운: $NEW_CONTAINER"
 
+# ECR 이미지인 경우 로그인
+if [[ "$IMAGE" == *".dkr.ecr."* ]]; then
+  ECR_REGISTRY=$(echo "$IMAGE" | cut -d'/' -f1)
+  REGION=$(echo "$IMAGE" | sed 's/.*\.dkr\.ecr\.\([^.]*\)\..*/\1/')
+  log "ECR 로그인 중: $ECR_REGISTRY"
+  aws ecr get-login-password --region "$REGION" \
+    | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+fi
+
 # 새 이미지 pull
 log "이미지 pull 중: $IMAGE"
 docker pull "$IMAGE"
