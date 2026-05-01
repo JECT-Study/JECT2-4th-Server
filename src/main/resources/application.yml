@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: vs-server
+  profiles:
+    active: dev,google
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
