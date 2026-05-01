@@ -62,16 +62,21 @@ if ! echo "$NGINX_NETWORKS" | grep -qx "$NETWORK"; then
   docker network connect "$NETWORK" "$NGINX_CONTAINER"
 fi
 
-# 현재 활성 컨테이너 확인
-CURRENT=$(cat "$APP_DIR/current_container" 2>/dev/null || echo "")
+# 버전 기반 컨테이너 이름 (이미지 태그 추출)
+VERSION=$(echo "$IMAGE" | cut -d':' -f2)
+NEW_CONTAINER="app-${VERSION}"
 
-if [ "$CURRENT" = "app-blue" ]; then
-  NEW_CONTAINER="app-green"
-  OLD_CONTAINER="app-blue"
-else
-  NEW_CONTAINER="app-blue"
-  OLD_CONTAINER="app-green"
-fi
+# 현재 활성 컨테이너를 네트워크 alias로 탐색
+CURRENT=""
+for cid in $(docker ps -q 2>/dev/null); do
+  aliases=$(docker inspect "$cid" \
+    --format "{{range \$net, \$cfg := .NetworkSettings.Networks}}{{if eq \$net \"$NETWORK\"}}{{range \$cfg.Aliases}}{{.}} {{end}}{{end}}{{end}}" \
+    2>/dev/null)
+  if [[ " $aliases " == *" app "* ]]; then
+    CURRENT=$(docker inspect "$cid" --format '{{.Name}}' | sed 's/^\///')
+    break
+  fi
+done
 
 log "현재: ${CURRENT:-없음} → 새로운: $NEW_CONTAINER"
 
@@ -163,16 +168,7 @@ if [ -n "$CURRENT" ] && docker ps -a --format '{{.Names}}' | grep -qx "$CURRENT"
   docker network disconnect "$NETWORK" "$CURRENT" 2>/dev/null || true
   docker stop "$CURRENT" >/dev/null 2>&1 || true
   docker rm "$CURRENT" >/dev/null 2>&1 || true
-elif docker ps -a --format '{{.Names}}' | grep -qx "$OLD_CONTAINER"; then
-  log "남아있는 이전 후보 컨테이너($OLD_CONTAINER) 정리 중"
-  docker network disconnect "$NETWORK" "$OLD_CONTAINER" 2>/dev/null || true
-  docker stop "$OLD_CONTAINER" >/dev/null 2>&1 || true
-  docker rm "$OLD_CONTAINER" >/dev/null 2>&1 || true
 fi
-
-# 현재 컨테이너 기록
-echo "$NEW_CONTAINER" > "$APP_DIR/current_container"
-rm -f "$APP_DIR/current_port"
 
 # 오래된 Docker 이미지 정리
 docker image prune -f >/dev/null
