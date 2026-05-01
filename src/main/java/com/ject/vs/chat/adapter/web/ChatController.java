@@ -13,12 +13,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/chats")
 @RequiredArgsConstructor
-public class ChatController {
+public class ChatController implements ChatDocs {
 
     private final ChatQueryUseCase chatQueryUseCase;
     private final ChatCommandUseCase chatCommandUseCase;
 
     @GetMapping
+    @Override
     public ChatListResponse getChatList(@AuthenticationPrincipal Long userId,
                                         @RequestParam VoteStatus status) {
         return new ChatListResponse(
@@ -29,17 +30,20 @@ public class ChatController {
     }
 
     @GetMapping("/{voteId}")
+    @Override
     public ChatRoomResponse getChatRoom(@AuthenticationPrincipal Long userId,
                                         @PathVariable Long voteId) {
         return ChatRoomResponse.from(chatQueryUseCase.getChatRoom(voteId));
     }
 
     @GetMapping("/{voteId}/gauge")
+    @Override
     public GaugeResponse getGauge(@PathVariable Long voteId) {
         return GaugeResponse.from(chatQueryUseCase.getGauge(voteId));
     }
 
     @GetMapping("/{voteId}/messages")
+    @Override
     public MessagePageResponse getMessages(@PathVariable Long voteId,
                                            @AuthenticationPrincipal Long userId,
                                            @RequestParam(required = false) Long cursor,
@@ -49,6 +53,7 @@ public class ChatController {
 
     @PostMapping("/{voteId}/messages")
     @ResponseStatus(HttpStatus.CREATED)
+    @Override
     public MessageResponse sendMessage(@PathVariable Long voteId,
                                        @AuthenticationPrincipal Long userId,
                                        @RequestBody @Valid SendMessageRequest request) {
@@ -58,6 +63,7 @@ public class ChatController {
 
     @PostMapping("/{voteId}/read")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Override
     public void markAsRead(@PathVariable Long voteId,
                            @AuthenticationPrincipal Long userId,
                            @RequestBody @Valid MarkAsReadRequest request) {
