@@ -1,0 +1,39 @@
+name: Issue HTTPS Certificate
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "인증서를 발급할 도메인"
+        required: true
+        default: "api.vs.io.kr"
+      certbot_email:
+        description: "Let's Encrypt 알림 이메일(선택)"
+        required: false
+        default: ""
+      staging:
+        description: "Let's Encrypt staging 사용 여부"
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  issue-cert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 서버에서 HTTPS 인증서 발급/갱신 설정
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DOMAIN: ${{ inputs.domain }}
+          CERTBOT_EMAIL: ${{ inputs.certbot_email }}
+          CERTBOT_STAGING: ${{ inputs.staging }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DOMAIN,CERTBOT_EMAIL,CERTBOT_STAGING
+          script: |
+            curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/setup-docker-nginx.sh \
+              | bash
+            curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/issue-https-cert.sh \
+              | bash
