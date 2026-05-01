@@ -81,7 +81,7 @@ jobs:
               | bash -s ${{ secrets.DOCKER_HUB_USERNAME }}/vs-server:v${{ needs.calculate-version.outputs.version }}
 
   publish-api-client:
-    needs: calculate-version
+    needs: [ calculate-version, release ]
     runs-on: ubuntu-latest
 
     steps:
