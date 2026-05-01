@@ -79,6 +79,15 @@ log "현재: ${CURRENT:-없음} → 새로운: $NEW_CONTAINER"
 if [[ "$IMAGE" == *".dkr.ecr."* ]]; then
   ECR_REGISTRY=$(echo "$IMAGE" | cut -d'/' -f1)
   REGION=$(echo "$IMAGE" | sed 's/.*\.dkr\.ecr\.\([^.]*\)\..*/\1/')
+
+  if ! command -v aws &>/dev/null; then
+    log "AWS CLI 설치 중..."
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+    unzip -q /tmp/awscliv2.zip -d /tmp/aws-install
+    sudo /tmp/aws-install/aws/install --update
+    rm -rf /tmp/awscliv2.zip /tmp/aws-install
+  fi
+
   log "ECR 로그인 중: $ECR_REGISTRY"
   aws ecr get-login-password --region "$REGION" \
     | docker login --username AWS --password-stdin "$ECR_REGISTRY"
