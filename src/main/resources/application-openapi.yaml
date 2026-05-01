@@ -1,7 +1,43 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:openapi;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    url: jdbc:h2:mem:openapi;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: false
   jpa:
     hibernate:
       ddl-auto: create-drop
+  flyway:
+    enabled: false
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: openapi-dummy-client-id
+            client-secret: openapi-dummy-client-secret
+            scope:
+              - email
+              - profile
+
+app:
+  jwt:
+    secret: NHk7ya+qk5IVD/24BO7/BLFfdpqrZ6bSw/J9EyQDP7uCHtoF9NxD7OUwiHpiqt+MsxQd5eOcCknYJhvF+N8AVg==
+    access-token-expiration-seconds: 3600
+    refresh-token-expiration-seconds: 1209600
+  oauth2:
+    redirect-success-url: http://localhost:3000/oauth2/redirect
+  cookie:
+    secure: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
