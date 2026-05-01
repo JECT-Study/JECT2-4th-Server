@@ -13,15 +13,51 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
+    private static final List<String> JWT_EXCLUDED_PATHS = List.of(
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/api/**",
+            "/actuator/health",
+            "/",
+            "/error",
+            "/auth/reissue"
+    );
+
     private final JwtProvider jwtProvider;
     private final CookieUtil cookieUtil;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = getRequestPath(request);
+        return JWT_EXCLUDED_PATHS.stream()
+                .anyMatch(pattern -> pathMatcher.match(pattern, path));
+    }
+
+    private String getRequestPath(HttpServletRequest request) {
+        String servletPath = request.getServletPath();
+        if (StringUtils.hasText(servletPath)) {
+            return servletPath;
+        }
+
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        if (StringUtils.hasText(contextPath) && requestUri.startsWith(contextPath)) {
+            return requestUri.substring(contextPath.length());
+        }
+        return requestUri;
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -30,12 +66,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
 
+        if (!StringUtils.hasText(accessToken) || !jwtProvider.validationToken(accessToken)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         var tokenInfo = jwtProvider.parseToken(accessToken);
 
-        if (accessToken != null
-                && tokenInfo.isAccessToken()
+        if (tokenInfo.isAccessToken()
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
-
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
