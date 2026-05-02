@@ -109,9 +109,10 @@ NEW_CONTAINER="app-${VERSION}"             # app-v2026.0501.10
    - 엔드포인트: GET http://localhost:8081/actuator/health/readiness
    - Docker HEALTHCHECK 기반 (Dockerfile에 정의)
    - start-period: 90s / interval: 10s / retries: 18 / timeout: 180s
-4. healthy 확인 후 app alias 부여 (old + new 동시 트래픽 수신)
-5. sleep 6s (nginx DNS 캐시 TTL 5s 만료 대기)
+4. healthy 확인 후 app alias 부여 (old + new 동시 트래픽 수신, round-robin)
+5. sleep 6s (nginx DNS 캐시 TTL 5s 만료 대기 → nginx가 새 컨테이너를 인지)
 6. docker stop (SIGTERM → graceful shutdown → in-flight 요청 완료 후 종료)
+   - old로 향하던 신규 연결은 거부되고 nginx가 new로 재시도
 7. docker network disconnect (DNS에서 old 제거)
 8. docker rm
 ```
