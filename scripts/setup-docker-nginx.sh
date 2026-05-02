@@ -32,7 +32,7 @@ mkdir -p "$APP_DIR/nginx" "$APP_DIR/certbot/www" "$APP_DIR/certbot/conf"
 
 log "repo에서 Docker nginx 설정 다운로드"
 curl -fsSL "$REPO_RAW_BASE/docker-compose.yaml" -o "$APP_DIR/docker-compose.yaml"
-if [ -f "$APP_DIR/certbot/conf/live/$DOMAIN/fullchain.pem" ] && [ -f "$APP_DIR/certbot/conf/live/$DOMAIN/privkey.pem" ]; then
+if sudo test -f "$APP_DIR/certbot/conf/live/$DOMAIN/fullchain.pem" && sudo test -f "$APP_DIR/certbot/conf/live/$DOMAIN/privkey.pem"; then
   curl -fsSL "$REPO_RAW_BASE/nginx/app.conf" | sed "s/api.vs.io.kr/$DOMAIN/g" > "$APP_DIR/nginx/app.conf"
 else
   log "인증서가 없어 HTTP bootstrap nginx 설정을 적용합니다. HTTPS 전환은 scripts/issue-https-cert.sh를 실행하세요."
