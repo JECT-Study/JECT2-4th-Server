@@ -153,15 +153,16 @@ if [ "$HEALTH_PASSED" != "true" ]; then
   exit 1
 fi
 
-# 새 컨테이너를 네트워크에 연결 (app alias 부여 → 이 순간 트래픽 전환)
+# 새 컨테이너를 네트워크에 연결 (app alias 부여)
 log "트래픽 전환 중"
 docker network connect --alias app "$NETWORK" "$NEW_CONTAINER"
 
-# 이전 컨테이너 네트워크에서 분리 + 정리
+# nginx DNS 캐시(5s) 만료 대기 후 이전 컨테이너 graceful shutdown
 if [ -n "$CURRENT" ] && docker ps -a --format '{{.Names}}' | grep -qx "$CURRENT"; then
-  log "이전 컨테이너($CURRENT) 정리 중"
-  docker network disconnect "$NETWORK" "$CURRENT" 2>/dev/null || true
+  log "이전 컨테이너($CURRENT) graceful shutdown 중"
+  sleep 6
   docker stop "$CURRENT" >/dev/null 2>&1 || true
+  docker network disconnect "$NETWORK" "$CURRENT" 2>/dev/null || true
   docker rm "$CURRENT" >/dev/null 2>&1 || true
 fi
 
