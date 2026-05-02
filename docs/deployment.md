@@ -52,7 +52,7 @@ ECR: {ACCOUNT_ID}.dkr.ecr.ap-southeast-2.amazonaws.com/backend
 SSH로 EC2에 접속해 두 스크립트를 순서대로 실행합니다.
 
 ```bash
-curl .../setup-docker-nginx.sh | bash        # nginx 설정
+curl .../setup-docker-caddy.sh | bash        # Caddy 설정
 curl .../deploy.sh | bash -s {IMAGE}:{TAG}   # 앱 배포
 ```
 
@@ -63,10 +63,10 @@ curl .../deploy.sh | bash -s {IMAGE}:{TAG}   # 앱 배포
 ```
 EC2 (ap-southeast-2)
 ├─ Docker 네트워크: app-network
-├─ nginx 컨테이너 (포트 80/443 외부 노출)
-│   └─ upstream: app:8080 (DNS alias 기반)
+├─ Caddy 컨테이너 (포트 80/443 외부 노출)
+│   └─ upstream: app:8080 (Docker network alias 기반)
 └─ 앱 컨테이너: app-v{version}
-    ├─ 포트 8080: API (nginx를 통해서만 접근)
+    ├─ 포트 8080: API (Caddy를 통해서만 접근)
     └─ 포트 8081: actuator (내부 전용, 외부 접근 불가)
 ```
 
@@ -86,8 +86,10 @@ EC2에 `ec2-ecr-pull` IAM Instance Profile이 연결되어 있습니다.
 
 ### 동작 원리
 
-nginx가 `app` DNS alias로 upstream을 동적 조회합니다 (`resolver 127.0.0.11 valid=5s`).
-새 컨테이너가 `app` alias를 획득하면 nginx가 자동으로 트래픽을 전환합니다.
+Caddy가 `app` Docker network alias로 upstream을 조회합니다.
+새 컨테이너가 `app` alias를 획득하는 순간 Caddy가 트래픽을 전환합니다.
+
+Caddy active health check + Spring Boot readiness probe 조합으로 이전 컨테이너가 완전히 종료되기 전에 신규 요청이 차단됩니다.
 
 ### 컨테이너 이름
 
@@ -105,16 +107,19 @@ NEW_CONTAINER="app-${VERSION}"             # app-v2026.0501.10
 ```
 1. 새 이미지 pull
 2. 새 컨테이너 기동 (app-network 미연결, 트래픽 없음)
-3. Readiness probe 헬스체크 대기
+3. Docker HEALTHCHECK 기반 readiness 대기
    - 엔드포인트: GET http://localhost:8081/actuator/health/readiness
-   - Docker HEALTHCHECK 기반 (Dockerfile에 정의)
    - start-period: 90s / interval: 10s / retries: 18 / timeout: 180s
-4. healthy 확인 후 app alias 부여 (old + new 동시 트래픽 수신, round-robin)
-5. sleep 6s (nginx DNS 캐시 TTL 5s 만료 대기 → nginx가 새 컨테이너를 인지)
-6. docker stop (SIGTERM → graceful shutdown → in-flight 요청 완료 후 종료)
-   - old로 향하던 신규 연결은 거부되고 nginx가 new로 재시도
-7. docker network disconnect (DNS에서 old 제거)
-8. docker rm
+4. healthy 확인 후 app alias 부여 → 트래픽 전환 완료
+5. 이전 컨테이너에 docker stop (SIGTERM 전송)
+   - Spring Boot: readiness ACCEPTING_TRAFFIC → REFUSING_TRAFFIC (즉시)
+   - 이후 최대 5s 내 Caddy health check가 503을 감지
+   - Caddy가 이전 컨테이너를 upstream pool에서 자동 제거
+   - 제거 전 유입된 신규 요청은 503을 받지만 lb_try_next_upstream이
+     즉시 새 컨테이너로 재시도하므로 클라이언트에 오류가 노출되지 않음
+   - 진행 중인 기존 요청은 graceful shutdown이 완료까지 처리
+6. docker network disconnect (alias 제거)
+7. docker rm
 ```
 
 ### Graceful Shutdown
@@ -130,6 +135,22 @@ spring:
 
 SIGTERM 수신 시 Spring Boot가 처리 중인 요청을 최대 30초간 완료 후 종료합니다.
 
+### Caddy Health Check
+
+```
+# Caddyfile
+reverse_proxy app:8080 {
+    health_uri    /actuator/health/readiness
+    health_port   8081
+    health_interval 5s
+    health_timeout  3s
+    lb_try_next_upstream error timeout http_503
+}
+```
+
+- `health_interval 5s`: 5초마다 readiness 엔드포인트 체크
+- `lb_try_next_upstream error timeout http_503`: upstream이 503을 반환하면 즉시 다른 upstream으로 재시도
+
 ### 헬스체크 실패 시 롤백
 
 새 컨테이너가 타임아웃(180초) 내에 healthy 상태가 되지 않으면:
@@ -138,17 +159,15 @@ SIGTERM 수신 시 Spring Boot가 처리 중인 요청을 최대 30초간 완료
 
 ---
 
-## nginx 설정 (setup-docker-nginx.sh)
+## Caddy 설정 (setup-docker-caddy.sh)
+
+HTTPS 인증서를 Let's Encrypt에서 자동 발급/갱신합니다. 별도 certbot 설정 불필요.
 
 ```
-certbot/conf/live/{DOMAIN}/fullchain.pem 존재 여부 확인 (sudo)
-  ├─ 있음: HTTPS 설정 적용 (80 → 443 리다이렉트, SSL)
-  └─ 없음: HTTP bootstrap 설정 적용 (인증서 발급 전 임시)
+인증서 저장: caddy_data Docker named volume (권한 이슈 없음)
+HTTP/3: 443/udp 포트로 자동 지원
+WebSocket: 업그레이드 헤더 자동 처리
 ```
-
-> `live/` 디렉토리가 `root:root 700`으로 보호되므로 `sudo test -f`로 체크합니다.
-
-HTTPS 인증서 발급은 `scripts/issue-https-cert.sh`를 참고하세요.
 
 ---
 

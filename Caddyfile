@@ -1,0 +1,13 @@
+{
+    admin off
+}
+
+api.vs.io.kr {
+    reverse_proxy app:8080 {
+        health_uri /actuator/health/readiness
+        health_port 8081
+        health_interval 5s
+        health_timeout 3s
+        lb_try_next_upstream error timeout http_503
+    }
+}
