@@ -1,0 +1,7 @@
+{
+    admin off
+}
+
+api.vs.io.kr {
+    reverse_proxy app:8080
+}

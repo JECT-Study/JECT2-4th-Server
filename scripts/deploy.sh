@@ -10,7 +10,7 @@ fi
 
 APP_DIR="${APP_DIR:-/home/ubuntu/app}"
 NETWORK="${NETWORK:-app-network}"
-NGINX_CONTAINER="${NGINX_CONTAINER:-nginx}"
+CADDY_CONTAINER="${CADDY_CONTAINER:-caddy}"
 HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-180}"
 HEALTH_LOG_INTERVAL_SECONDS="${HEALTH_LOG_INTERVAL_SECONDS:-10}"
 
@@ -51,15 +51,15 @@ fi
 
 docker network inspect "$NETWORK" >/dev/null 2>&1 || docker network create "$NETWORK" >/dev/null
 
-if ! docker ps --format '{{.Names}}' | grep -qx "$NGINX_CONTAINER"; then
-  echo ">>> Docker nginx 컨테이너($NGINX_CONTAINER)가 실행 중이 아닙니다. scripts/setup-docker-nginx.sh를 먼저 실행하세요." >&2
+if ! docker ps --format '{{.Names}}' | grep -qx "$CADDY_CONTAINER"; then
+  echo ">>> Docker Caddy 컨테이너($CADDY_CONTAINER)가 실행 중이 아닙니다. scripts/setup-docker-caddy.sh를 먼저 실행하세요." >&2
   exit 1
 fi
 
-NGINX_NETWORKS=$(docker inspect --format='{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$NGINX_CONTAINER")
-if ! echo "$NGINX_NETWORKS" | grep -qx "$NETWORK"; then
-  log "nginx 컨테이너를 $NETWORK 네트워크에 연결"
-  docker network connect "$NETWORK" "$NGINX_CONTAINER"
+CADDY_NETWORKS=$(docker inspect --format='{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$CADDY_CONTAINER")
+if ! echo "$CADDY_NETWORKS" | grep -qx "$NETWORK"; then
+  log "Caddy 컨테이너를 $NETWORK 네트워크에 연결"
+  docker network connect "$NETWORK" "$CADDY_CONTAINER"
 fi
 
 # 버전 기반 컨테이너 이름 (이미지 태그 추출)
