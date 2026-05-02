@@ -20,6 +20,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/api/**",
                                 "/actuator/health",
+                                "/actuator/health/**",
                                 "/",
                                 "/error",
                                 "/auth/reissue"
