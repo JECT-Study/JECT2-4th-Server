@@ -157,10 +157,11 @@ fi
 log "트래픽 전환 중"
 docker network connect --alias app "$NETWORK" "$NEW_CONTAINER"
 
-# nginx DNS 캐시(5s) 만료 대기 후 이전 컨테이너 graceful shutdown
+# 이전 컨테이너 graceful shutdown 후 정리
+# stop 먼저: SIGTERM → readiness 503 → Caddy가 health check로 감지 후 pool에서 제거
+# disconnect는 그 이후: Caddy가 감지한 뒤 네트워크 분리
 if [ -n "$CURRENT" ] && docker ps -a --format '{{.Names}}' | grep -qx "$CURRENT"; then
   log "이전 컨테이너($CURRENT) graceful shutdown 중"
-  sleep 6
   docker stop "$CURRENT" >/dev/null 2>&1 || true
   docker network disconnect "$NETWORK" "$CURRENT" 2>/dev/null || true
   docker rm "$CURRENT" >/dev/null 2>&1 || true
