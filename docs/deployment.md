@@ -115,8 +115,8 @@ NEW_CONTAINER="app-${VERSION}"             # app-v2026.0501.10
    - Spring Boot: readiness ACCEPTING_TRAFFIC → REFUSING_TRAFFIC (즉시)
    - 이후 최대 5s 내 Caddy health check가 503을 감지
    - Caddy가 이전 컨테이너를 upstream pool에서 자동 제거
-   - 제거 전 유입된 신규 요청은 503을 받지만 lb_try_next_upstream이
-     즉시 새 컨테이너로 재시도하므로 클라이언트에 오류가 노출되지 않음
+   - 제거 전 유입된 신규 요청이 503을 받으면 Caddy passive health check가
+     해당 upstream을 일시적으로 unhealthy로 표시하고, 이후 요청은 가능한 healthy upstream으로 라우팅
    - 진행 중인 기존 요청은 graceful shutdown이 완료까지 처리
 6. docker network disconnect (alias 제거)
 7. docker rm
@@ -144,12 +144,16 @@ reverse_proxy app:8080 {
     health_port   8081
     health_interval 5s
     health_timeout  3s
-    lb_try_next_upstream error timeout http_503
+    fail_duration 10s
+    unhealthy_status 503
+    lb_try_duration 5s
+    lb_try_interval 250ms
 }
 ```
 
 - `health_interval 5s`: 5초마다 readiness 엔드포인트 체크
-- `lb_try_next_upstream error timeout http_503`: upstream이 503을 반환하면 즉시 다른 upstream으로 재시도
+- `fail_duration 10s` + `unhealthy_status 503`: upstream이 503을 반환하면 10초간 unhealthy로 간주
+- `lb_try_duration 5s` + `lb_try_interval 250ms`: 사용 가능한 upstream 선택을 최대 5초간 재시도
 
 ### 헬스체크 실패 시 롤백
 
