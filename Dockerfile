@@ -19,8 +19,8 @@ COPY --from=build /app/build/libs/*.jar app.jar
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=10 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=18 \
+  CMD curl -f http://localhost:8081/actuator/health/readiness || exit 1
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]

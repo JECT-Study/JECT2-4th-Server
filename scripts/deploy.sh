@@ -115,11 +115,6 @@ docker run -d --name "$NEW_CONTAINER" \
   -e APP_JWT_SECRET \
   -e APP_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS \
   -e APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS \
-  --health-cmd="curl -f http://localhost:8081/actuator/health || exit 1" \
-  --health-interval=10s \
-  --health-timeout=5s \
-  --health-start-period=90s \
-  --health-retries=18 \
   "$IMAGE" >/dev/null
 
 # 헬스체크 (docker inspect로 healthy 상태 확인)

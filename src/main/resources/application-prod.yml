@@ -34,6 +34,9 @@ app:
 management:
   server:
     port: 8081
+  health:
+    probes:
+      enabled: true
   endpoints:
     web:
       exposure:
