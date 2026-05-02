@@ -32,6 +32,8 @@ app:
     refresh-token-expiration-seconds: ${APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS:1209600}
 
 management:
+  server:
+    port: 8081
   endpoints:
     web:
       exposure:
