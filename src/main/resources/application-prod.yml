@@ -19,6 +19,11 @@ spring:
             scope:
               - email
               - profile
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  shutdown: graceful
 
 app:
   oauth2:
