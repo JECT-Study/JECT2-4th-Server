@@ -99,7 +99,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: DATABASE_HOST,DATABASE_USERNAME,DATABASE_PASSWORD,APP_JWT_SECRET,APP_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS,APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS
           script: |
-            curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/setup-docker-nginx.sh \
+            curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/setup-docker-caddy.sh \
               | bash
             curl -fsSL https://raw.githubusercontent.com/JECT-Study/JECT2-4th-Server/main/scripts/deploy.sh \
               | bash -s ${{ steps.login-ecr.outputs.registry }}/backend:v${{ needs.calculate-version.outputs.version }}
