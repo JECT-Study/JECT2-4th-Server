@@ -2,7 +2,9 @@ package com.ject.vs.util;
 
 import com.ject.vs.config.JwtProperties;
 import com.ject.vs.domain.TokenType;
+import com.ject.vs.domain.User;
 import com.ject.vs.dto.TokenInfo;
+import com.ject.vs.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -21,6 +23,7 @@ import java.util.Date;
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
+    private final UserRepository userRepository;
     private final JwtProperties jwtProperties;
     private SecretKey secretKey;
 
@@ -82,6 +85,10 @@ public class JwtProvider {
 
     public Long getUserId(String token) {
         return Long.parseLong(getClaims(token).getSubject());
+    }
+
+    public User getUser(String token) {
+        return userRepository.findById(getUserId(token)).orElseThrow(() -> new JwtException("토큰에 대한 정보 없음"));
     }
 
     public String getTokenType(String token) {
