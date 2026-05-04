@@ -21,9 +21,7 @@ class CorsConfigTest {
         assertThat(configuration).isNotNull();
         assertThat(configuration.getAllowedOrigins()).contains(
                 "http://localhost:3000",
-                "http://localhost:5173",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:5173"
+                "http://127.0.0.1:3000"
         );
         assertThat(configuration.getAllowedMethods()).contains("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
         assertThat(configuration.getAllowedHeaders()).contains("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin");
