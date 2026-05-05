@@ -13,14 +13,12 @@ COPY src ./src
 RUN gradle bootJar --no-daemon
 
 # ===== 실행 스테이지 =====
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
-
 HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=18 \
-  CMD curl -f http://localhost:8081/actuator/health/readiness || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:8081/actuator/health/readiness || exit 1
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
