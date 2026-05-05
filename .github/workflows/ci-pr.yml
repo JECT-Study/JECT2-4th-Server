@@ -37,21 +37,11 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      - name: Gradle 의존성 캐싱
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: 프로젝트 빌드
-        run: ./gradlew build
+        run: ./gradlew build --build-cache
 
       - name: 빌드 결과 댓글
         if: always()
@@ -90,24 +80,11 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      - name: Gradle 의존성 캐싱
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: 프로젝트 빌드
-        env:
-          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
-          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
-        run: ./gradlew build
+        run: ./gradlew build --build-cache
 
       - name: 빌드 결과 댓글
         if: always()
