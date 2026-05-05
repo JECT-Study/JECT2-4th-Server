@@ -1,13 +1,19 @@
 package com.ject.vs.service;
 
 import com.ject.vs.domain.User;
+import com.ject.vs.dto.NicknameCheckResponse;
 import com.ject.vs.dto.UserExtraInfo;
+import com.ject.vs.dto.UserNicknameRec;
 import com.ject.vs.dto.UserProfileResponse;
+import com.ject.vs.exception.CustomException;
+import com.ject.vs.exception.ErrorCode;
 import com.ject.vs.repository.TokenRepository;
 import com.ject.vs.repository.UserRepository;
 import com.ject.vs.util.JwtProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Transactional
@@ -15,6 +21,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final WordService wordService;
     private final JwtProvider jwtProvider;
 
     public User findOrCreate(String sub) {
@@ -28,17 +35,32 @@ public class UserService {
     }
 
     // 닉네임 중복체크
-    public boolean checkNickname(String nickName) {
-        return userRepository.existsUser(nickName);
+    public NicknameCheckResponse checkNickname(String nickName, String accessToken) {
+        User user = jwtProvider.getUser(accessToken);
+
+        if(user == null) throw new CustomException(ErrorCode.USER_NOT_FOUND);
+
+        return new NicknameCheckResponse(userRepository.existsUser(nickName));
     }
 
     // 추가정보 기입
     public UserProfileResponse setupAdditionalInfo(UserExtraInfo userInfo, String accessToken) {
         User user = jwtProvider.getUser(accessToken);
-        // 토큰 예외처리 해야함
+
+        if(user == null) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
 
         user.updateInfo(userInfo);
-
         return UserProfileResponse.from(user);
     }
+
+    // 닉네임 추천
+    public UserNicknameRec suggestNickname(String accessToken) {
+        User user = jwtProvider.getUser(accessToken);
+
+        if(user == null) throw new CustomException(ErrorCode.USER_NOT_FOUND);
+
+        return new UserNicknameRec(wordService.generateNickname());
+   }
 }

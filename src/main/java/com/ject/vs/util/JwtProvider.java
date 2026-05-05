@@ -4,6 +4,8 @@ import com.ject.vs.config.JwtProperties;
 import com.ject.vs.domain.TokenType;
 import com.ject.vs.domain.User;
 import com.ject.vs.dto.TokenInfo;
+import com.ject.vs.exception.CustomException;
+import com.ject.vs.exception.ErrorCode;
 import com.ject.vs.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -76,11 +78,19 @@ public class JwtProvider {
     }
 
     public Claims getClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // 토큰이 만료된 경우
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            // 토큰이 변조되었거나 형식이 잘못된 경우
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
     }
 
     public Long getUserId(String token) {
@@ -88,7 +98,7 @@ public class JwtProvider {
     }
 
     public User getUser(String token) {
-        return userRepository.findById(getUserId(token)).orElseThrow(() -> new JwtException("토큰에 대한 정보 없음"));
+        return userRepository.findById(getUserId(token)).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
     public String getTokenType(String token) {
