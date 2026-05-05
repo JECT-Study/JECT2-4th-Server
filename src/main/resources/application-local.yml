@@ -1,0 +1,53 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: local-dummy-client-id
+            client-secret: local-dummy-client-secret
+            scope:
+              - email
+              - profile
+
+app:
+  jwt:
+    secret: NHk7ya+qk5IVD/24BO7/BLFfdpqrZ6bSw/J9EyQDP7uCHtoF9NxD7OUwiHpiqt+MsxQd5eOcCknYJhvF+N8AVg==
+    access-token-expiration-seconds: 3600
+    refresh-token-expiration-seconds: 1209600
+  oauth2:
+    redirect-success-url: http://localhost:3000/oauth2/redirect
+  cookie:
+    secure: false
+  cors:
+    allowed-origins:
+      - https://vs.io.kr
+      - http://localhost:3000
+      - http://127.0.0.1:3000
+    allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+    allowed-headers: Authorization,Content-Type,X-Requested-With,Accept,Origin
+    allow-credentials: true
+    max-age: 3600
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
