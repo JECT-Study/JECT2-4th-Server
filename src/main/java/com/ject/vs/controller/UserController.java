@@ -1,9 +1,6 @@
 package com.ject.vs.controller;
 
-import com.ject.vs.dto.NicknameCheckResponse;
-import com.ject.vs.dto.UserExtraInfo;
-import com.ject.vs.dto.UserNicknameRec;
-import com.ject.vs.dto.UserProfileResponse;
+import com.ject.vs.dto.*;
 import com.ject.vs.service.UserService;
 import com.ject.vs.util.CookieUtil;
 import jakarta.annotation.PostConstruct;
@@ -52,5 +49,12 @@ public class UserController {
         UserProfileResponse response = userService.getUserProfile(userId);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/info")
+    public ResponseEntity<?> initializeDefaultProfile(HttpServletRequest request, @RequestBody UserProfileRequest userInfo) {
+        String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
+
+        return ResponseEntity.ok(userService.initializeDefaultProfile(accessToken, userInfo));
     }
 }

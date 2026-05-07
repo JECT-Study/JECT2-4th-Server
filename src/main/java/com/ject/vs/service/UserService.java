@@ -1,10 +1,9 @@
 package com.ject.vs.service;
 
+import com.ject.vs.domain.Gender;
+import com.ject.vs.domain.ImageColor;
 import com.ject.vs.domain.User;
-import com.ject.vs.dto.NicknameCheckResponse;
-import com.ject.vs.dto.UserExtraInfo;
-import com.ject.vs.dto.UserNicknameRec;
-import com.ject.vs.dto.UserProfileResponse;
+import com.ject.vs.dto.*;
 import com.ject.vs.exception.CustomException;
 import com.ject.vs.exception.ErrorCode;
 import com.ject.vs.repository.TokenRepository;
@@ -69,5 +68,20 @@ public class UserService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         return UserProfileResponse.from(user);
+   }
+
+   // 추천 닉네임 생성 + 기본 이미지 선택
+   public UserProfileDefaultResponse initializeDefaultProfile(String accessToken, UserProfileRequest request) {
+        User user = jwtProvider.getUser(accessToken);
+
+        if(user == null) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        UserNicknameRec nickname = suggestNickname(accessToken);
+
+        user.initializeDefault(request, nickname.nickname());
+
+        return UserProfileDefaultResponse.from(nickname.nickname(), ImageColor.GREEN.name());
    }
 }

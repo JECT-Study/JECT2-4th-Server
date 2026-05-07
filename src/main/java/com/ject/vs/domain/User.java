@@ -1,6 +1,7 @@
 package com.ject.vs.domain;
 
 import com.ject.vs.dto.UserExtraInfo;
+import com.ject.vs.dto.UserProfileRequest;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -43,5 +44,14 @@ public class User {
         this.nickname = userInfo.nickName();
         this.imageColor = userInfo.imageColor();
         this.userStatus = UserStatus.REGISTER;
+    }
+
+    public void initializeDefault(UserProfileRequest userInfo, String nickname)  {
+        this.sub = userInfo.getSub();
+        this.email = userInfo.getEmail();
+        this.birthYear = userInfo.getBirthYear();
+        this.gender = userInfo.getGender();
+        this.imageColor = ImageColor.GREEN;
+        this.nickname = nickname;
     }
 }
