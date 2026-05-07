@@ -1,6 +1,7 @@
 package com.ject.vs.controller;
 
 import com.ject.vs.dto.TokenInfo;
+import com.ject.vs.dto.TokenReissueResponse;
 import com.ject.vs.service.AuthService;
 import com.ject.vs.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,17 +25,14 @@ public class AuthController {
 
     @PostMapping("/auth/reissue")
     public ResponseEntity<Void> reissue(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = cookieUtil.getCookieValue(
-                request,
-                CookieUtil.CookieType.REFRESH_TOKEN
-        );
+        String refreshToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.REFRESH_TOKEN);
 
-        TokenInfo newAccessTokenInfo = authService.reissueAccessToken(refreshToken);
+        TokenReissueResponse tokenResponse = authService.reissueAccessToken(refreshToken);
 
         ResponseCookie accessTokenCookie = ResponseCookie.from(
-                        CookieUtil.CookieType.ACCESS_TOKEN,
-                        newAccessTokenInfo.tokenValue()
-                )
+                CookieUtil.CookieType.ACCESS_TOKEN,
+                tokenResponse.accessToken()
+        )
                 .httpOnly(true)
                 .secure(secureCookie)
                 .path("/")
@@ -42,7 +40,19 @@ public class AuthController {
                 .maxAge(60 * 30)
                 .build();
 
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(
+                CookieUtil.CookieType.REFRESH_TOKEN,
+                tokenResponse.refreshToken()
+        )
+                .httpOnly(true)
+                .secure(secureCookie)
+                .path("/")
+                .sameSite("None")
+                .maxAge(60 * 60 * 24 * 30)
+                .build();
+
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         return ResponseEntity.ok().build();
     }
