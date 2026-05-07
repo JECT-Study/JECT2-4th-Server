@@ -1,6 +1,7 @@
 package com.ject.vs.util;
 
 import com.ject.vs.config.JwtProperties;
+import com.ject.vs.domain.TokenStatus;
 import com.ject.vs.domain.TokenType;
 import com.ject.vs.domain.User;
 import com.ject.vs.dto.TokenInfo;
@@ -65,15 +66,18 @@ public class JwtProvider {
         return new TokenInfo(token, TokenType.REFRESH, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()), userId);
     }
 
-    public boolean validationToken(String token) {
+    public TokenStatus validationToken(String token) {
+        if(token == null || token.isBlank()) return TokenStatus.EMPTY;
         try {
             Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
                     .parseSignedClaims(token);
-            return true;
+            return TokenStatus.VALID;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return TokenStatus.EXPIRED;
         } catch (JwtException | IllegalArgumentException e) {
-            return false;
+            return TokenStatus.INVALID;
         }
     }
 

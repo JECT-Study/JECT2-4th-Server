@@ -1,5 +1,9 @@
 package com.ject.vs.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.domain.TokenStatus;
+import com.ject.vs.dto.ErrorResponse;
+import com.ject.vs.exception.ErrorCode;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import jakarta.servlet.FilterChain;
@@ -38,6 +42,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtProvider jwtProvider;
     private final CookieUtil cookieUtil;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private final ObjectMapper objectMapper;
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
@@ -65,29 +70,44 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        // 토큰 확인
         String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
 
-        if (!StringUtils.hasText(accessToken) || !jwtProvider.validationToken(accessToken)) {
-            filterChain.doFilter(request, response);
-            return;
+        TokenStatus status = jwtProvider.validationToken(accessToken);
+
+        switch (status) {
+            case VALID -> {
+                setAuthentication(request, accessToken);
+                filterChain.doFilter(request, response);
+            }
+            case EMPTY -> filterChain.doFilter(request, response);
+            case EXPIRED -> sendErrorResponse(response, ErrorCode.EXPIRED_TOKEN);
+            case INVALID -> sendErrorResponse(response, ErrorCode.INVALID_TOKEN);
         }
+    }
 
-        var tokenInfo = jwtProvider.parseToken(accessToken);
+    private void setAuthentication(HttpServletRequest request, String token) {
+        var tokenInfo = jwtProvider.parseToken(token);
 
-        if (tokenInfo.isAccessToken()
-                && SecurityContextHolder.getContext().getAuthentication() == null) {
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                tokenInfo.userId(),
+                null,
+                AuthorityUtils.NO_AUTHORITIES
+        );
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            tokenInfo.userId(),
-                            null,
-                            AuthorityUtils.NO_AUTHORITIES
-                    );
+        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+    }
 
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
+    private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+        response.setStatus(errorCode.getHttpStatus().value());
+        response.setContentType("application/json;charset=UTF-8");
 
-        filterChain.doFilter(request, response);
+        ErrorResponse errorResponse = new ErrorResponse(
+                errorCode.getCode(),
+                errorCode.getMessage()
+        );
+
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }

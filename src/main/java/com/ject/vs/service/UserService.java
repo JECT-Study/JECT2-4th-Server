@@ -63,4 +63,11 @@ public class UserService {
 
         return new UserNicknameRec(wordService.generateNickname());
    }
+
+   public UserProfileResponse getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return UserProfileResponse.from(user);
+   }
 }

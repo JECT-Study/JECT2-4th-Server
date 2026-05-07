@@ -1,10 +1,13 @@
 package com.ject.vs.service;
 
 import com.ject.vs.domain.Token;
+import com.ject.vs.domain.TokenStatus;
 import com.ject.vs.domain.TokenType;
 import com.ject.vs.domain.User;
 import com.ject.vs.dto.LoginTokenResponse;
 import com.ject.vs.dto.TokenInfo;
+import com.ject.vs.exception.CustomException;
+import com.ject.vs.exception.ErrorCode;
 import com.ject.vs.repository.TokenRepository;
 import com.ject.vs.util.JwtProvider;
 import jakarta.transaction.Transactional;
@@ -51,24 +54,25 @@ public class AuthService {
     }
 
     public TokenInfo reissueAccessToken(String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new IllegalArgumentException("토큰이 없습니다.");
-        }
+        TokenStatus status = jwtProvider.validationToken(refreshToken);
 
-        if (!jwtProvider.validationToken(refreshToken)) {
-            throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
+        switch (status) {
+            case EMPTY -> throw new CustomException(ErrorCode.TOKEN_NOT_FOUND);
+            case EXPIRED -> throw new CustomException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+            case INVALID -> throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
         String tokenType = jwtProvider.getTokenType(refreshToken);
-        if (!TokenType.REFRESH.name().equals(tokenType)) {
-            throw new IllegalArgumentException("지정된 토큰 타입이 아닙니다.");
+
+        if(!TokenType.REFRESH.name().equals(tokenType)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN_TYPE);
         }
 
-        Token savedRefreshToken = tokenRepository.findByTokenValueAndTokenType(refreshToken, TokenType.REFRESH)
-                .orElseThrow(() -> new IllegalArgumentException("저장된 토큰이 없습니다."));
+        Token savedToken = tokenRepository.findByTokenValueAndTokenType(refreshToken, TokenType.REFRESH)
+                .orElseThrow(() -> new CustomException(ErrorCode.TOKEN_NOT_FOUND));
 
-        if (savedRefreshToken.isRevoked()) {
-            throw new IllegalArgumentException("만료된 토큰입니다.");
+        if(savedToken.isRevoked()) {
+            throw new CustomException(ErrorCode.REVOKED_TOKEN);
         }
 
         Long userId = jwtProvider.getUserId(refreshToken);

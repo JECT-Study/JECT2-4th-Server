@@ -15,6 +15,8 @@ public class User {
     private Long id;
 
     private String sub;
+
+    private String email;
     // 아직 유저에 대한 정보 확정 아님
     private String nickname;
 
