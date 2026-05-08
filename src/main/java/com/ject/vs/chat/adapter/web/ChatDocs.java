@@ -7,7 +7,7 @@ import com.ject.vs.chat.adapter.web.dto.MarkAsReadRequest;
 import com.ject.vs.chat.adapter.web.dto.MessagePageResponse;
 import com.ject.vs.chat.adapter.web.dto.MessageResponse;
 import com.ject.vs.chat.adapter.web.dto.SendMessageRequest;
-import com.ject.vs.vote.port.in.dto.VoteStatus;
+import com.ject.vs.vote.domain.VoteStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

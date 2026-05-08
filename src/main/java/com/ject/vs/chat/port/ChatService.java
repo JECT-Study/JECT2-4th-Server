@@ -11,7 +11,7 @@ import com.ject.vs.chat.port.in.ChatQueryUseCase;
 import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
-import com.ject.vs.vote.port.in.dto.VoteStatus;
+import com.ject.vs.vote.domain.VoteStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
