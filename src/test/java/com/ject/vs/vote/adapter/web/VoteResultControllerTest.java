@@ -43,7 +43,8 @@ class VoteResultControllerTest {
 
     private VoteResultDetail sampleResult() {
         return new VoteResultDetail(1L, "제목", VoteStatus.ENDED,
-                Instant.parse("2025-01-01T01:00:00Z"), 10, List.of(), null);
+                Instant.parse("2025-01-01T01:00:00Z"), 10, List.of(), null,
+                VoteResultQueryUseCase.Insight.ofLocked(), VoteResultQueryUseCase.AiInsightView.unavailable());
     }
 
     @Nested
