@@ -47,7 +47,6 @@ public class User {
     }
 
     public void initializeDefault(UserProfileRequest userInfo, String nickname)  {
-        this.sub = userInfo.getSub();
         this.email = userInfo.getEmail();
         this.birthYear = userInfo.getBirthYear();
         this.gender = userInfo.getGender();

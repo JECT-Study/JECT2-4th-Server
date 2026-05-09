@@ -20,6 +20,12 @@ public class AuthController {
     private final AuthService authService;
     private final CookieUtil cookieUtil;
 
+    @Value("${app.jwt.access-token-expiration-seconds}")
+    private long accessTokenExpiration;
+
+    @Value("${app.jwt.refresh-token-expiration-seconds}")
+    private long refreshTokenExpiration;
+
     @Value("${app.cookie.secure:true}")
     private boolean secureCookie;
 
@@ -37,7 +43,7 @@ public class AuthController {
                 .secure(secureCookie)
                 .path("/")
                 .sameSite("None")
-                .maxAge(60 * 30)
+                .maxAge(accessTokenExpiration)
                 .build();
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from(
@@ -48,7 +54,7 @@ public class AuthController {
                 .secure(secureCookie)
                 .path("/")
                 .sameSite("None")
-                .maxAge(60 * 60 * 24 * 30)
+                .maxAge(refreshTokenExpiration)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());

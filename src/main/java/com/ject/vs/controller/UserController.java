@@ -52,7 +52,7 @@ public class UserController {
     }
 
     @GetMapping("/info")
-    public ResponseEntity<?> initializeDefaultProfile(HttpServletRequest request, @RequestBody UserProfileRequest userInfo) {
+    public ResponseEntity<UserProfileDefaultResponse> initializeDefaultProfile(HttpServletRequest request, @RequestBody UserProfileRequest userInfo) {
         String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
 
         return ResponseEntity.ok(userService.initializeDefaultProfile(accessToken, userInfo));

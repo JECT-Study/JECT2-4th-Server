@@ -11,7 +11,6 @@ import com.ject.vs.exception.CustomException;
 import com.ject.vs.exception.ErrorCode;
 import com.ject.vs.repository.TokenRepository;
 import com.ject.vs.util.JwtProvider;
-import com.nimbusds.oauth2.sdk.TokenResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,6 +51,7 @@ public class AuthService {
                 .userId(user.getId())
                 .accessToken(accessToken.getTokenValue())
                 .refreshToken(refreshToken.getTokenValue())
+                .userStatus(user.getUserStatus())
                 .build();
     }
 

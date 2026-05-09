@@ -7,7 +7,6 @@ import java.time.Year;
 
 @Data
 public class UserProfileRequest {
-    private String sub;
     private String email;
     private Year birthYear;
     private Gender gender;
