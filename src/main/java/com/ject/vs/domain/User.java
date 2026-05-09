@@ -3,6 +3,8 @@ package com.ject.vs.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 
+import java.time.LocalDate;
+
 @Entity
 @Getter
 @Table(name = "users")
@@ -11,7 +13,10 @@ public class User {
     private Long id;
 
     private String sub;
-    // 아직 유저에 대한 정보 확정 아님
+
+    private String gender;
+
+    private LocalDate birthDate;
 
     public static User createWithSub(String sub) {
         User user = new User();

@@ -20,6 +20,9 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
     @Query("SELECT p.userId FROM VoteParticipation p WHERE p.voteId = :voteId AND p.userId IS NOT NULL")
     List<Long> findAllUserIdsByVoteId(@Param("voteId") Long voteId);
 
+    @Query("SELECT p.userId FROM VoteParticipation p WHERE p.voteId = :voteId AND p.optionId = :optionId AND p.userId IS NOT NULL")
+    List<Long> findUserIdsByVoteIdAndOptionId(@Param("voteId") Long voteId, @Param("optionId") Long optionId);
+
     Optional<VoteParticipation> findByVoteIdAndUserId(Long voteId, Long userId);
 
     Optional<VoteParticipation> findByVoteIdAndAnonymousId(Long voteId, String anonymousId);
@@ -27,4 +30,25 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
     long countByVoteIdAndOptionId(Long voteId, Long optionId);
 
     void deleteByVoteIdAndUserId(Long voteId, Long userId);
+
+    @Query("""
+            SELECT new com.ject.vs.vote.domain.GenderCount(u.gender, COUNT(p))
+            FROM VoteParticipation p, com.ject.vs.domain.User u
+            WHERE p.userId = u.id
+              AND p.voteId = :voteId
+              AND p.optionId = :optionId
+              AND p.userId IS NOT NULL
+            GROUP BY u.gender
+            """)
+    List<GenderCount> findGenderDistribution(@Param("voteId") Long voteId, @Param("optionId") Long optionId);
+
+    @Query("""
+            SELECT new com.ject.vs.vote.domain.GenderCount(u.gender, COUNT(p))
+            FROM VoteParticipation p, com.ject.vs.domain.User u
+            WHERE p.userId = u.id
+              AND p.voteId = :voteId
+              AND p.userId IS NOT NULL
+            GROUP BY u.gender
+            """)
+    List<GenderCount> findGenderDistributionByVote(@Param("voteId") Long voteId);
 }
