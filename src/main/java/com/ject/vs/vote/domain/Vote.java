@@ -32,9 +32,9 @@ public class Vote extends BaseTimeEntity {
 
     private String imageUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private VoteStatus status;
+//    @Enumerated(EnumType.STRING)
+//    @Column(nullable = false)
+//    private VoteStatus status;
 
     @Column(nullable = false)
     private Instant endAt;
@@ -54,7 +54,7 @@ public class Vote extends BaseTimeEntity {
         vote.content = content;
         vote.thumbnailUrl = thumbnailUrl;
         vote.imageUrl = imageUrl;
-        vote.status = VoteStatus.ONGOING;
+//        vote.status = VoteStatus.ONGOING;
         vote.endAt = Instant.now(clock).plus(validityPeriod);
         return vote;
     }
@@ -68,10 +68,18 @@ public class Vote extends BaseTimeEntity {
         return !isOngoing(clock);
     }
 
-    /** 스케줄러용 — status 컬럼을 ENDED로 마킹 (캐시 갱신) */
-    public void markEnded() {
-        this.status = VoteStatus.ENDED;
+    public VoteStatus getStatus(Clock clock) {
+        return isOngoing(clock) ? VoteStatus.ONGOING : VoteStatus.ENDED;
     }
+
+    public VoteStatus getStatus(){
+        return getStatus(Clock.systemUTC());
+    }
+
+//    /** 스케줄러용 — status 컬럼을 ENDED로 마킹 (캐시 갱신) */
+//    public void markEnded() {
+//        this.status = VoteStatus.ENDED;
+//    }
 
     public void cacheAiInsight(String headline, String body) {
         this.aiInsightHeadline = headline;

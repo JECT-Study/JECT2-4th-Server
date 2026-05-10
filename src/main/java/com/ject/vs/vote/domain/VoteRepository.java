@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface VoteRepository extends JpaRepository<Vote, Long> {
 
-    @Query("SELECT v FROM Vote v WHERE v.status = com.ject.vs.vote.domain.VoteStatus.ONGOING AND v.endAt < :now")
+    @Query("SELECT v FROM Vote v WHERE v.endAt < :now")
     List<Vote> findExpiredOngoing(@Param("now") Instant now);
 
     List<Vote> findAllByIdIn(List<Long> ids);

@@ -31,7 +31,6 @@ public class VoteCloseScheduler {
     public void closeExpiredVotes() {
         List<Vote> expired = voteRepository.findExpiredOngoing(Instant.now(clock));
         for (Vote vote : expired) {
-            vote.markEnded();
             eventPublisher.publishEvent(new VoteEndedEvent(vote.getId()));
         }
         if (!expired.isEmpty()) {
