@@ -40,14 +40,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(400).body(new ErrorResponse(e.getErrorCode(), e.getMessage()));
     }
 
-    @ExceptionHandler(InvalidDurationException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidDuration(InvalidDurationException e) {
-        return ResponseEntity.status(400).body(new ErrorResponse(e.getErrorCode(), e.getMessage()));
-    }
-
-    @ExceptionHandler(ImageRequiredException.class)
-    public ResponseEntity<ErrorResponse> handleImageRequired(ImageRequiredException e) {
-        return ResponseEntity.status(400).body(new ErrorResponse(e.getErrorCode(), e.getMessage()));
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
+        return ResponseEntity.status(e.getStatusCode())
+                .body(new ErrorResponse(e.getErrorCode(), e.getErrorMessage()));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
