@@ -21,17 +21,18 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
     @Override
     public EmojiResult reactAsMember(Long voteId, Long userId, VoteEmoji emoji) {
         Optional<VoteEmojiReaction> existing = reactionRepository.findByVoteIdAndUserId(voteId, userId);
-        VoteEmoji resultEmoji = applyReaction(existing, emoji,
-                () -> reactionRepository.save(VoteEmojiReaction.ofMember(voteId, userId, emoji)));
-        return buildResult(voteId, resultEmoji);
+        VoteEmojiReaction resultEmoji = applyReaction(existing, emoji != null ? VoteEmojiReaction.ofMember(voteId, userId, emoji) : null);
+        return buildResult(voteId, resultEmoji.getEmoji());
     }
 
     @Override
     public EmojiResult reactAsGuest(Long voteId, String anonymousId, VoteEmoji emoji) {
         Optional<VoteEmojiReaction> existing = reactionRepository.findByVoteIdAndAnonymousId(voteId, anonymousId);
-        VoteEmoji resultEmoji = applyReaction(existing, emoji,
-                () -> reactionRepository.save(VoteEmojiReaction.ofGuest(voteId, anonymousId, emoji)));
-        return buildResult(voteId, resultEmoji);
+        VoteEmojiReaction resultEmoji = applyReaction(
+                existing,
+                emoji != null ? VoteEmojiReaction.ofGuest(voteId, anonymousId, emoji) : null
+        );
+        return buildResult(voteId, resultEmoji.getEmoji());
     }
 
     /**
@@ -41,29 +42,19 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
      * 기존 없음 + emoji 있음 → 신규 (create via newReactionSaver)
      * Returns the current emoji after the operation (null if canceled/deleted).
      */
-    private VoteEmoji applyReaction(Optional<VoteEmojiReaction> existing,
-                                    VoteEmoji emoji,
-                                    Runnable newReactionSaver) {
-        if (existing.isPresent()) {
-            VoteEmojiReaction reaction = existing.get();
-            if (emoji == null || reaction.getEmoji() == emoji) {
-                reactionRepository.delete(reaction);
-                return null;
-            }
-            reaction.changeEmoji(emoji);
-            return emoji;
-        }
-        if (emoji == null) return null;
-        newReactionSaver.run();
-        return emoji;
+    private VoteEmojiReaction applyReaction(Optional<VoteEmojiReaction> existing,
+                                            VoteEmojiReaction emojiReaction) {
+        existing.ifPresent(reactionRepository::delete);
+        if (emojiReaction == null) return null;
+        reactionRepository.save(emojiReaction);
+        return emojiReaction;
     }
 
     private EmojiResult buildResult(Long voteId, VoteEmoji myEmoji) {
-        Map<VoteEmoji, Long> summary = Arrays.stream(VoteEmoji.values())
-                .collect(Collectors.toMap(e -> e, e -> 0L));
+        Map<VoteEmoji, Long> summary = VoteEmoji.getMap();
 
         reactionRepository.countByEmojiForVote(voteId)
-                .forEach(row -> summary.put((VoteEmoji) row[0], (Long) row[1]));
+                .forEach(row -> summary.put(row.emoij(), row.count()));
 
         long total = summary.values().stream().mapToLong(Long::longValue).sum();
         return new EmojiResult(summary, total, myEmoji);
