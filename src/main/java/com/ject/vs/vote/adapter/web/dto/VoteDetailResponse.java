@@ -22,7 +22,7 @@ public record VoteDetailResponse(
         int participantCount,
         List<OptionItem> options,
         Long mySelectedOptionId,
-        Map<String, Long> emojiSummary,
+        Map<VoteEmoji, Long> emojiSummary,
         String myEmoji
 ) {
     public record OptionItem(Long optionId, String label, long voteCount, Integer ratio) {
@@ -36,14 +36,12 @@ public record VoteDetailResponse(
         List<OptionItem> items = result.options().stream()
                 .map(o -> new OptionItem(o.optionId(), o.label(), o.voteCount(), o.ratio()))
                 .toList();
-        Map<String, Long> summary = result.emojiSummary().entrySet().stream()
-                .collect(Collectors.toMap(e -> e.getKey().name(), Map.Entry::getValue));
         String myEmoji = result.myEmoji() != null ? result.myEmoji().name() : null;
         return new VoteDetailResponse(
                 result.voteId(), result.type().name(), result.title(), result.content(),
                 result.thumbnailUrl(), result.imageUrl(), result.status().name(),
                 toKst(result.endAt()), result.participantCount(), items,
-                result.mySelectedOptionId(), summary, myEmoji
+                result.mySelectedOptionId(), result.emojiSummary(), myEmoji
         );
     }
 }
