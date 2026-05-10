@@ -54,6 +54,16 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
         }
 
         // TODO: currentViewerCount — Redis 도입 후 갱신 예정
+        /**
+         * 클라이언트 <-> 서버 웹소캣으로 연결을 해
+         *
+         * 클라이언트가 -> 서버
+         * 1. 해당 투표 화면을 보고 있다.(조회 api)
+         * 2. 서버에서는 조회가 들어왔네? 그러면 redis set 자료구조로 user id를 넣어, key vote:{voteId} 구성
+         * 3. redis에 넣은 결과 얼마나 있는지? 웹소캣으로 뿌려줘
+         * 4. userId별로 ttl을 넣어야함. 이를 위해서 redis를 넣을 수도 있어보이고, 아니면 데이터베이스로 해결할 수 있는 부분이 있다면 그것도 좋아보임
+         * 5. 이 사람이 언제 조회했는지? 유효시간을 1분으로줘, 프론트에 1분마다 요청해주세요
+         */
         return new ImmersiveLiveResult(voteId, aRatio, bRatio, (int) total, 0);
     }
 
