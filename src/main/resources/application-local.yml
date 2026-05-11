@@ -32,6 +32,7 @@ app:
   oauth2:
     redirect-success-url: http://localhost:3000/oauth2/redirect
     extra-info-url: http://localhost:3000/extra-info
+
   cookie:
     secure: false
   cors:

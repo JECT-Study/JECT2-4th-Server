@@ -54,6 +54,17 @@ app:
     allow-credentials: ${APP_CORS_ALLOW_CREDENTIALS:true}
     max-age: ${APP_CORS_MAX_AGE:3600}
 
+  cors:
+    # 브라우저 기반 운영 도메인은 APP_CORS_ALLOWED_ORIGINS에 콤마로 구분해 설정합니다.
+    # 예: https://vs.io.kr,https://admin.vs.io.kr
+    # 로컬 프론트 개발 편의를 위해 기본값에 localhost:3000을 임시 포함합니다.
+    # 백엔드 서버간 직접 호출에는 브라우저 CORS 검사가 적용되지 않습니다.
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://vs.io.kr,http://localhost:3000,http://127.0.0.1:3000}
+    allowed-methods: ${APP_CORS_ALLOWED_METHODS:GET,POST,PUT,PATCH,DELETE,OPTIONS}
+    allowed-headers: ${APP_CORS_ALLOWED_HEADERS:Authorization,Content-Type,X-Requested-With,Accept,Origin}
+    allow-credentials: ${APP_CORS_ALLOW_CREDENTIALS:true}
+    max-age: ${APP_CORS_MAX_AGE:3600}
+
 management:
   server:
     port: 8081

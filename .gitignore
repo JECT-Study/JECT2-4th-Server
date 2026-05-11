@@ -44,7 +44,7 @@ node_modules/
 package-lock.json
 
 ### api key ###
-./src/main/java/resource/application-google.yml
+
 
 ### harness ###
 .omc/
