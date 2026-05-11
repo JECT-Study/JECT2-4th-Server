@@ -40,8 +40,8 @@ class UserServiceTest {
     @DisplayName("추가 정보 설정 - 성공")
     void setupAdditionalInfo_Success() {
         String token = "mock-token";
-        String sub = "google-1234";
-        User user = User.createWithSub(sub);
+        String email = "hong1234@naver.com";
+        User user = User.createWithEmail(email);
 
         UserExtraInfo extraInfo = new UserExtraInfo(Year.of(2001), Gender.MALE, "홍길동", ImageColor.GREEN);
 

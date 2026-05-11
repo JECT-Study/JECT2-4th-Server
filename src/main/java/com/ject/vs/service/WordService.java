@@ -3,6 +3,7 @@ package com.ject.vs.service;
 import com.ject.vs.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WordService {
     private final ResourceLoader resourceLoader;
     private final UserRepository userRepository;
@@ -33,6 +35,7 @@ public class WordService {
             words2 = loadWords("classpath:data/ko_words_2.txt");
             words3 = loadWords("classpath:data/ko_words_3.txt");
         } catch (IOException e) {
+            log.error("단어 로딩 실패", e);
         }
     }
 
@@ -73,7 +76,7 @@ public class WordService {
             String number = generateNumber();
 
             ret = nickname + '_' + number;
-        } while(userRepository.existsUser(ret));
+        } while(!userRepository.isNicknameAvailable(ret));
 
         return ret;
     }

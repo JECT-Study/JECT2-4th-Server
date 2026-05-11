@@ -10,8 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findBySub(String sub);
-
     @Query("select (count(u.id) = 0) from User u where u.nickname = :nickName")
-    boolean existsUser(@Param("nickName") String nickName);
+    boolean isNicknameAvailable(@Param("nickName") String nickName);
+
+    Optional<User> findByEmail(String email);
 }

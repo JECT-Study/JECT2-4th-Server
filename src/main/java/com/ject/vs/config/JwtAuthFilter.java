@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.domain.TokenStatus;
 import com.ject.vs.dto.ErrorResponse;
 import com.ject.vs.exception.ErrorCode;
+import com.ject.vs.exception.TokenErrorCode;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import jakarta.servlet.FilterChain;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -27,18 +29,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
-    private static final List<String> JWT_EXCLUDED_PATHS = List.of(
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-ui.html",
-            "/api/**",
-            "/actuator/health",
-            "/actuator/health/**",
-            "/",
-            "/error",
-            "/auth/reissue"
-    );
-
     private final JwtProvider jwtProvider;
     private final CookieUtil cookieUtil;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -47,7 +37,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = getRequestPath(request);
-        return JWT_EXCLUDED_PATHS.stream()
+        return SecurityPaths.JWT_EXCLUDED_PATHS.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
@@ -77,30 +67,41 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         switch (status) {
             case VALID -> {
-                setAuthentication(request, accessToken);
+                boolean authenticated = setAuthentication(request, accessToken);
+
+                if(!authenticated) {
+                    sendErrorResponse(response, TokenErrorCode.INVALID_TOKEN);
+                    return;
+                }
                 filterChain.doFilter(request, response);
             }
             case EMPTY -> filterChain.doFilter(request, response);
-            case EXPIRED -> sendErrorResponse(response, ErrorCode.EXPIRED_TOKEN);
-            case INVALID -> sendErrorResponse(response, ErrorCode.INVALID_TOKEN);
+            case EXPIRED -> sendErrorResponse(response, TokenErrorCode.EXPIRED_TOKEN);
+            case INVALID -> sendErrorResponse(response, TokenErrorCode.INVALID_TOKEN);
         }
     }
 
-    private void setAuthentication(HttpServletRequest request, String token) {
+    private boolean setAuthentication(HttpServletRequest request, String token) {
         var tokenInfo = jwtProvider.parseToken(token);
 
+        if(!tokenInfo.isAccessToken()) {
+            return false;
+        }
+
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                tokenInfo.userId(),
-                null,
-                AuthorityUtils.NO_AUTHORITIES
+                        tokenInfo.userId(),
+                        null,
+                        AuthorityUtils.NO_AUTHORITIES
         );
 
         authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+        return true;
     }
 
     private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
-        response.setStatus(errorCode.getHttpStatus().value());
+        response.setStatus(errorCode.getStatus().value());
         response.setContentType("application/json;charset=UTF-8");
 
         ErrorResponse errorResponse = new ErrorResponse(

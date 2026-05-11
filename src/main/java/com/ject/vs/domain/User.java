@@ -15,8 +15,6 @@ public class User {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String sub;
-
     private String email;
     // 아직 유저에 대한 정보 확정 아님
     private String nickname;
@@ -32,9 +30,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserStatus userStatus = UserStatus.UNREGISTER;
 
-    public static User createWithSub(String sub) {
+    public static User createWithEmail(String email) {
         User user = new User();
-        user.sub = sub;
+        user.email = email;
         return user;
     }
 

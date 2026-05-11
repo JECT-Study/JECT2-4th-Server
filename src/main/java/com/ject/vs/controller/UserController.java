@@ -20,26 +20,22 @@ public class UserController {
     private final CookieUtil cookieUtil;
 
     @PostMapping("/me/profile")
-    public ResponseEntity<UserProfileResponse> setupInfo(HttpServletRequest request, @RequestBody UserExtraInfo userExtraInfo) {
-        String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
-        UserProfileResponse response = userService.setupAdditionalInfo(userExtraInfo, accessToken);
+    public ResponseEntity<UserProfileResponse> setupInfo(@AuthenticationPrincipal Long userId, @RequestBody UserExtraInfo userExtraInfo) {
+        UserProfileResponse response = userService.setupAdditionalInfo(userExtraInfo, userId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/nickname/check")
-    public ResponseEntity<NicknameCheckResponse> isUniqueNickname(HttpServletRequest request, @RequestBody UserNicknameRec nickname) {
-        String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
-        NicknameCheckResponse response = userService.checkNickname(nickname.nickname(), accessToken);
+    public ResponseEntity<NicknameCheckResponse> isUniqueNickname(@AuthenticationPrincipal Long userId, @RequestBody UserNicknameRec nickname) {
+        NicknameCheckResponse response = userService.checkNickname(nickname.nickname(), userId);
 
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/nickname/suggest")
-    public ResponseEntity<UserNicknameRec> suggestNickname(HttpServletRequest request) {
-        String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
-
-        UserNicknameRec response = userService.suggestNickname(accessToken);
+    public ResponseEntity<UserNicknameRec> suggestNickname(@AuthenticationPrincipal Long userId) {
+        UserNicknameRec response = userService.suggestNickname(userId);
 
         return ResponseEntity.ok(response);
     }
@@ -51,10 +47,8 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/info")
-    public ResponseEntity<UserProfileDefaultResponse> initializeDefaultProfile(HttpServletRequest request, @RequestBody UserProfileRequest userInfo) {
-        String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
-
-        return ResponseEntity.ok(userService.initializeDefaultProfile(accessToken, userInfo));
+    @PostMapping("/info")
+    public ResponseEntity<UserProfileDefaultResponse> initializeDefaultProfile(@AuthenticationPrincipal Long userId, @RequestBody UserProfileRequest userInfo) {
+        return ResponseEntity.ok(userService.initializeDefaultProfile(userId, userInfo));
     }
 }

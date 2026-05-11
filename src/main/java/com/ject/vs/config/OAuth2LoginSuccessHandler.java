@@ -25,7 +25,6 @@ import java.io.IOException;
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final AuthService authService;
-    private final CookieUtil cookieUtil;
 
     @Value("${app.oauth2.redirect-success-url}")
     private String homeUrl;
@@ -48,10 +47,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                                         Authentication authentication) throws IOException {
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        String sub = oAuth2User.getAttribute("sub");
+        String email = oAuth2User.getAttribute("email");
 
         try {
-            LoginTokenResponse loginResponse = authService.socialLogin(sub);
+            LoginTokenResponse loginResponse = authService.socialLogin(email);
 
             addTokenCookies(response, loginResponse);
 
@@ -69,7 +68,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     private void addTokenCookies(HttpServletResponse response, LoginTokenResponse loginResponse) {
         // 30분
-        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", loginResponse.getAccessToken())
+        ResponseCookie accessTokenCookie = ResponseCookie.from(CookieUtil.CookieType.ACCESS_TOKEN, loginResponse.getAccessToken())
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
@@ -78,7 +77,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .build();
 
         // 30일
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", loginResponse.getRefreshToken())
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(CookieUtil.CookieType.REFRESH_TOKEN, loginResponse.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .path("/")

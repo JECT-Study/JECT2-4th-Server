@@ -9,6 +9,7 @@ import com.ject.vs.dto.TokenInfo;
 import com.ject.vs.dto.TokenReissueResponse;
 import com.ject.vs.exception.CustomException;
 import com.ject.vs.exception.ErrorCode;
+import com.ject.vs.exception.TokenErrorCode;
 import com.ject.vs.repository.TokenRepository;
 import com.ject.vs.util.JwtProvider;
 import jakarta.transaction.Transactional;
@@ -23,8 +24,8 @@ public class AuthService {
     private final TokenRepository tokenRepository;
     private final JwtProvider jwtProvider;
 
-    public LoginTokenResponse socialLogin(String sub) {
-        User user = userService.findOrCreate(sub);
+    public LoginTokenResponse socialLogin(String email) {
+        User user = userService.findOrCreate(email);
 
         TokenInfo accessTokenInfo = jwtProvider.createAccessToken(user.getId());
         TokenInfo refreshTokenInfo = jwtProvider.createRefreshToken(user.getId());
@@ -57,9 +58,9 @@ public class AuthService {
 
     public void handleTokenStatus(TokenStatus status) {
         switch (status) {
-            case EMPTY -> throw new CustomException(ErrorCode.TOKEN_NOT_FOUND);
-            case EXPIRED -> throw new CustomException(ErrorCode.REFRESH_TOKEN_EXPIRED);
-            case INVALID -> throw new CustomException(ErrorCode.INVALID_TOKEN);
+            case EMPTY -> throw new CustomException(TokenErrorCode.TOKEN_NOT_FOUND);
+            case EXPIRED -> throw new CustomException(TokenErrorCode.REFRESH_TOKEN_EXPIRED);
+            case INVALID -> throw new CustomException(TokenErrorCode.INVALID_TOKEN);
         }
     }
 
@@ -69,11 +70,11 @@ public class AuthService {
 
         // db에서 토큰 있는지 확인
         Token savedToken = tokenRepository.findByTokenValueAndTokenType(refreshToken, TokenType.REFRESH)
-                .orElseThrow(() -> new CustomException(ErrorCode.TOKEN_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(TokenErrorCode.TOKEN_NOT_FOUND));
 
         // 회수된 토큰인지 확인
         if (savedToken.isRevoked()) {
-            throw new CustomException(ErrorCode.REVOKED_TOKEN);
+            throw new CustomException(TokenErrorCode.REVOKED_TOKEN);
         }
 
         // 기존 토큰 회수

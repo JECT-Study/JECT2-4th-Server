@@ -7,6 +7,8 @@ import com.ject.vs.domain.User;
 import com.ject.vs.dto.TokenInfo;
 import com.ject.vs.exception.CustomException;
 import com.ject.vs.exception.ErrorCode;
+import com.ject.vs.exception.TokenErrorCode;
+import com.ject.vs.exception.UserErrorCode;
 import com.ject.vs.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -90,10 +92,10 @@ public class JwtProvider {
                     .getPayload();
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
             // 토큰이 만료된 경우
-            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+            throw new CustomException(TokenErrorCode.EXPIRED_TOKEN);
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
             // 토큰이 변조되었거나 형식이 잘못된 경우
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
+            throw new CustomException(TokenErrorCode.INVALID_TOKEN);
         }
     }
 
@@ -102,7 +104,7 @@ public class JwtProvider {
     }
 
     public User getUser(String token) {
-        return userRepository.findById(getUserId(token)).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        return userRepository.findById(getUserId(token)).orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     }
 
     public String getTokenType(String token) {
