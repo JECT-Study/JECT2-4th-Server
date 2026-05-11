@@ -1,8 +1,15 @@
 package com.ject.vs.util;
 
 import com.ject.vs.config.JwtProperties;
+import com.ject.vs.domain.TokenStatus;
 import com.ject.vs.domain.TokenType;
+import com.ject.vs.domain.User;
 import com.ject.vs.dto.TokenInfo;
+import com.ject.vs.exception.CustomException;
+import com.ject.vs.exception.ErrorCode;
+import com.ject.vs.exception.TokenErrorCode;
+import com.ject.vs.exception.UserErrorCode;
+import com.ject.vs.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -21,6 +28,7 @@ import java.util.Date;
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
+    private final UserRepository userRepository;
     private final JwtProperties jwtProperties;
     private SecretKey secretKey;
 
@@ -60,28 +68,43 @@ public class JwtProvider {
         return new TokenInfo(token, TokenType.REFRESH, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()), userId);
     }
 
-    public boolean validationToken(String token) {
+    public TokenStatus validationToken(String token) {
+        if(token == null || token.isBlank()) return TokenStatus.EMPTY;
         try {
             Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
                     .parseSignedClaims(token);
-            return true;
+            return TokenStatus.VALID;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return TokenStatus.EXPIRED;
         } catch (JwtException | IllegalArgumentException e) {
-            return false;
+            return TokenStatus.INVALID;
         }
     }
 
     public Claims getClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // 토큰이 만료된 경우
+            throw new CustomException(TokenErrorCode.EXPIRED_TOKEN);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            // 토큰이 변조되었거나 형식이 잘못된 경우
+            throw new CustomException(TokenErrorCode.INVALID_TOKEN);
+        }
     }
 
     public Long getUserId(String token) {
         return Long.parseLong(getClaims(token).getSubject());
+    }
+
+    public User getUser(String token) {
+        return userRepository.findById(getUserId(token)).orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
     }
 
     public String getTokenType(String token) {

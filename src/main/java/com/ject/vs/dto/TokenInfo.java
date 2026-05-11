@@ -1,7 +1,9 @@
 package com.ject.vs.dto;
 
+import com.ject.vs.domain.Token;
 import com.ject.vs.domain.TokenType;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 import java.time.LocalDateTime;
 
