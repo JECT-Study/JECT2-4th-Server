@@ -1,4 +1,6 @@
 package com.ject.vs.vote.domain;
 
-public record GenderCount(String gender, long count) {
+import com.ject.vs.domain.Gender;
+
+public record GenderCount(Gender gender, long count) {
 }

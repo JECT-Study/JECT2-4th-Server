@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.Year;
 
 @Getter
 @RequiredArgsConstructor
@@ -17,8 +18,8 @@ public enum AgeGroup {
 
     private final String label;
 
-    public static AgeGroup fromBirthDate(LocalDate birthDate, Clock clock) {
-        int age = LocalDate.now(clock).getYear() - birthDate.getYear();
+    public static AgeGroup fromBirthYear(Year birthYear, Clock clock) {
+        int age = LocalDate.now(clock).getYear() - birthYear.getValue();
         if (age < 20) return TEENS;
         if (age < 30) return TWENTIES;
         if (age < 40) return THIRTIES;

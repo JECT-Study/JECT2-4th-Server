@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.domain.Gender;
 import com.ject.vs.domain.User;
 import com.ject.vs.repository.UserRepository;
 import com.ject.vs.vote.domain.*;
@@ -101,7 +102,7 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
 
     private AgeGroup resolveMyAgeGroup(Long userId) {
         return userRepository.findById(userId)
-                .map(u -> u.getBirthDate() != null ? AgeGroup.fromBirthDate(u.getBirthDate(), clock) : null)
+                .map(u -> u.getBirthYear() != null ? AgeGroup.fromBirthYear(u.getBirthYear(), clock) : null)
                 .orElse(null);
     }
 
@@ -110,7 +111,7 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
         if (totalGender == 0) return new GenderDistribution(0, 0);
 
         long maleCount = genderCounts.stream()
-                .filter(gc -> "MALE".equals(gc.gender())).mapToLong(GenderCount::count).sum();
+                .filter(gc -> Gender.MALE == gc.gender()).mapToLong(GenderCount::count).sum();
         int maleRatio = (int) Math.round(maleCount * 100.0 / totalGender);
         return new GenderDistribution(maleRatio, 100 - maleRatio);
     }
@@ -129,9 +130,9 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
         List<User> users = userRepository.findAllById(userIds);
 
         Map<AgeGroup, Long> groupCounts = users.stream()
-                .filter(u -> u.getBirthDate() != null)
+                .filter(u -> u.getBirthYear() != null)
                 .collect(Collectors.groupingBy(
-                        u -> AgeGroup.fromBirthDate(u.getBirthDate(), clock),
+                        u -> AgeGroup.fromBirthYear(u.getBirthYear(), clock),
                         Collectors.counting()));
 
         long total = groupCounts.values().stream().mapToLong(Long::longValue).sum();
