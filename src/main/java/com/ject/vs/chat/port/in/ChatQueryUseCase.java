@@ -4,7 +4,7 @@ import com.ject.vs.chat.port.in.dto.ChatListItemResult;
 import com.ject.vs.chat.port.in.dto.ChatRoomResult;
 import com.ject.vs.chat.port.in.dto.GaugeResult;
 import com.ject.vs.chat.port.in.dto.MessagePageResult;
-import com.ject.vs.vote.port.in.dto.VoteStatus;
+import com.ject.vs.vote.domain.VoteStatus;
 
 import java.util.List;
 

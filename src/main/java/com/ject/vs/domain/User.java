@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.LocalDate;
-import java.time.Year;
 
 @Entity
 @Getter
@@ -15,6 +14,11 @@ public class User {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String sub;
+
+    private String gender;
+
+    private LocalDate birthDate;
     private String email;
     // 아직 유저에 대한 정보 확정 아님
     private String nickname;

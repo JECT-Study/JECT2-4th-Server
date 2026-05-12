@@ -1,6 +1,6 @@
 package com.ject.vs.chat.port.in.dto;
 
-import com.ject.vs.vote.port.in.dto.VoteStatus;
+import com.ject.vs.vote.domain.VoteStatus;
 
 import java.time.Instant;
 
