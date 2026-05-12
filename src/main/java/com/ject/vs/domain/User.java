@@ -5,7 +5,7 @@ import com.ject.vs.dto.UserProfileRequest;
 import jakarta.persistence.*;
 import lombok.Getter;
 
-import java.time.LocalDate;
+import java.time.Year;
 
 @Entity
 @Getter
@@ -16,11 +16,7 @@ public class User {
 
     private String sub;
 
-    private String gender;
-
-    private LocalDate birthDate;
     private String email;
-    // 아직 유저에 대한 정보 확정 아님
     private String nickname;
 
     private Year birthYear;
