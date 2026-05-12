@@ -68,7 +68,7 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
     }
 
     private ImmersiveFeedItem toFeedItem(Vote vote, Long userId, String anonymousId) {
-        VoteStatus status = vote.isOngoing(clock) ? VoteStatus.ONGOING : VoteStatus.ENDED;
+        VoteStatus status = vote.getStatus(clock);
         int participantCount = (int) voteParticipationRepository.countByVoteId(vote.getId());
 
         Long mySelectedOptionId = null;

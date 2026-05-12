@@ -27,7 +27,7 @@ public class VoteDetailQueryService {
 
     public VoteDetailResult getDetail(Long voteId, Long userId, String anonymousId) {
         Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
-        VoteStatus status = vote.isOngoing(clock) ? VoteStatus.ONGOING : VoteStatus.ENDED;
+        VoteStatus status = vote.getStatus(clock);
 
         List<VoteOption> options = voteOptionRepository.findByVoteIdOrderByPosition(voteId);
         long total = voteParticipationRepository.countByVoteId(voteId);

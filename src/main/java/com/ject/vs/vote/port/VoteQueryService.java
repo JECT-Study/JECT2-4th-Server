@@ -36,8 +36,7 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
     @Override
     public VoteSummary getVoteSummary(Long voteId) {
         Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
-        VoteStatus computedStatus = vote.isOngoing(clock) ? VoteStatus.ONGOING : VoteStatus.ENDED;
-        return new VoteSummary(vote.getId(), vote.getTitle(), computedStatus, vote.getEndAt());
+        return new VoteSummary(vote.getId(), vote.getTitle(), vote.getStatus(clock), vote.getEndAt());
     }
 
     @Override
