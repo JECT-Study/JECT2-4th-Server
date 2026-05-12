@@ -1,10 +1,15 @@
 package com.ject.vs.service;
 
 import com.ject.vs.domain.Token;
+import com.ject.vs.domain.TokenStatus;
 import com.ject.vs.domain.TokenType;
 import com.ject.vs.domain.User;
 import com.ject.vs.dto.LoginTokenResponse;
 import com.ject.vs.dto.TokenInfo;
+import com.ject.vs.dto.TokenReissueResponse;
+import com.ject.vs.exception.CustomException;
+import com.ject.vs.exception.ErrorCode;
+import com.ject.vs.exception.TokenErrorCode;
 import com.ject.vs.repository.TokenRepository;
 import com.ject.vs.util.JwtProvider;
 import jakarta.transaction.Transactional;
@@ -19,8 +24,8 @@ public class AuthService {
     private final TokenRepository tokenRepository;
     private final JwtProvider jwtProvider;
 
-    public LoginTokenResponse socialLogin(String sub) {
-        User user = userService.findOrCreate(sub);
+    public LoginTokenResponse socialLogin(String email) {
+        User user = userService.findOrCreate(email);
 
         TokenInfo accessTokenInfo = jwtProvider.createAccessToken(user.getId());
         TokenInfo refreshTokenInfo = jwtProvider.createRefreshToken(user.getId());
@@ -47,32 +52,50 @@ public class AuthService {
                 .userId(user.getId())
                 .accessToken(accessToken.getTokenValue())
                 .refreshToken(refreshToken.getTokenValue())
+                .userStatus(user.getUserStatus())
                 .build();
     }
 
-    public TokenInfo reissueAccessToken(String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new IllegalArgumentException("토큰이 없습니다.");
+    public void handleTokenStatus(TokenStatus status) {
+        switch (status) {
+            case EMPTY -> throw new CustomException(TokenErrorCode.TOKEN_NOT_FOUND);
+            case EXPIRED -> throw new CustomException(TokenErrorCode.REFRESH_TOKEN_EXPIRED);
+            case INVALID -> throw new CustomException(TokenErrorCode.INVALID_TOKEN);
+        }
+    }
+
+    public TokenReissueResponse reissueAccessToken(String refreshToken) {
+        TokenStatus status = jwtProvider.validationToken(refreshToken);
+        handleTokenStatus(status);
+
+        // db에서 토큰 있는지 확인
+        Token savedToken = tokenRepository.findByTokenValueAndTokenType(refreshToken, TokenType.REFRESH)
+                .orElseThrow(() -> new CustomException(TokenErrorCode.TOKEN_NOT_FOUND));
+
+        // 회수된 토큰인지 확인
+        if (savedToken.isRevoked()) {
+            throw new CustomException(TokenErrorCode.REVOKED_TOKEN);
         }
 
-        if (!jwtProvider.validationToken(refreshToken)) {
-            throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
-        }
+        // 기존 토큰 회수
+        savedToken.revoke();
 
-        String tokenType = jwtProvider.getTokenType(refreshToken);
-        if (!TokenType.REFRESH.name().equals(tokenType)) {
-            throw new IllegalArgumentException("지정된 토큰 타입이 아닙니다.");
-        }
+        User user = jwtProvider.getUser(refreshToken);
 
-        Token savedRefreshToken = tokenRepository.findByTokenValueAndTokenType(refreshToken, TokenType.REFRESH)
-                .orElseThrow(() -> new IllegalArgumentException("저장된 토큰이 없습니다."));
+        // 5. 새로운 토큰 세트 생성
+        TokenInfo newAccessToken = jwtProvider.createAccessToken(user.getId());
+        TokenInfo newRefreshToken = jwtProvider.createRefreshToken(user.getId());
 
-        if (savedRefreshToken.isRevoked()) {
-            throw new IllegalArgumentException("만료된 토큰입니다.");
-        }
+        Token newRefreshTokenInfo = Token.builder()
+                .user(user)
+                .tokenValue(newRefreshToken.tokenValue())
+                .tokenType(newRefreshToken.tokenType())
+                .expiresAt(newRefreshToken.expiresAt())
+                .revoked(false)
+                .build();
 
-        Long userId = jwtProvider.getUserId(refreshToken);
+        tokenRepository.save(newRefreshTokenInfo);
 
-        return jwtProvider.createAccessToken(userId);
+        return TokenReissueResponse.from(newRefreshTokenInfo, newAccessToken.tokenValue());
     }
 }

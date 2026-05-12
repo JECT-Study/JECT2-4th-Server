@@ -1,5 +1,10 @@
 package com.ject.vs.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.domain.TokenStatus;
+import com.ject.vs.dto.ErrorResponse;
+import com.ject.vs.exception.ErrorCode;
+import com.ject.vs.exception.TokenErrorCode;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import jakarta.servlet.FilterChain;
@@ -11,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -23,26 +29,15 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
-    private static final List<String> JWT_EXCLUDED_PATHS = List.of(
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-ui.html",
-            "/api/**",
-            "/actuator/health",
-            "/actuator/health/**",
-            "/",
-            "/error",
-            "/auth/reissue"
-    );
-
     private final JwtProvider jwtProvider;
     private final CookieUtil cookieUtil;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private final ObjectMapper objectMapper;
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = getRequestPath(request);
-        return JWT_EXCLUDED_PATHS.stream()
+        return SecurityPaths.JWT_EXCLUDED_PATHS.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
@@ -65,29 +60,55 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        // 토큰 확인
         String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
 
-        if (!StringUtils.hasText(accessToken) || !jwtProvider.validationToken(accessToken)) {
-            filterChain.doFilter(request, response);
-            return;
+        TokenStatus status = jwtProvider.validationToken(accessToken);
+
+        switch (status) {
+            case VALID -> {
+                boolean authenticated = setAuthentication(request, accessToken);
+
+                if(!authenticated) {
+                    sendErrorResponse(response, TokenErrorCode.INVALID_TOKEN);
+                    return;
+                }
+                filterChain.doFilter(request, response);
+            }
+            case EMPTY -> filterChain.doFilter(request, response);
+            case EXPIRED -> sendErrorResponse(response, TokenErrorCode.EXPIRED_TOKEN);
+            case INVALID -> sendErrorResponse(response, TokenErrorCode.INVALID_TOKEN);
+        }
+    }
+
+    private boolean setAuthentication(HttpServletRequest request, String token) {
+        var tokenInfo = jwtProvider.parseToken(token);
+
+        if(!tokenInfo.isAccessToken()) {
+            return false;
         }
 
-        var tokenInfo = jwtProvider.parseToken(accessToken);
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                        tokenInfo.userId(),
+                        null,
+                        AuthorityUtils.NO_AUTHORITIES
+        );
 
-        if (tokenInfo.isAccessToken()
-                && SecurityContextHolder.getContext().getAuthentication() == null) {
+        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            tokenInfo.userId(),
-                            null,
-                            AuthorityUtils.NO_AUTHORITIES
-                    );
+        return true;
+    }
 
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
+    private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+        response.setStatus(errorCode.getStatus().value());
+        response.setContentType("application/json;charset=UTF-8");
 
-        filterChain.doFilter(request, response);
+        ErrorResponse errorResponse = new ErrorResponse(
+                errorCode.getCode(),
+                errorCode.getMessage()
+        );
+
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }

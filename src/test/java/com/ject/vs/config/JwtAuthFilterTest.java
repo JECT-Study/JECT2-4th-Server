@@ -1,11 +1,14 @@
 package com.ject.vs.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.domain.TokenStatus;
 import com.ject.vs.domain.TokenType;
 import com.ject.vs.dto.TokenInfo;
+import com.ject.vs.exception.ErrorCode;
+import com.ject.vs.exception.TokenErrorCode;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
@@ -17,16 +20,15 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class JwtAuthFilterTest {
+
     private final JwtProvider jwtProvider = mock(JwtProvider.class);
     private final CookieUtil cookieUtil = mock(CookieUtil.class);
-    private final JwtAuthFilter filter = new JwtAuthFilter(jwtProvider, cookieUtil);
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private final JwtAuthFilter filter = new JwtAuthFilter(jwtProvider, cookieUtil, objectMapper);
 
     @AfterEach
     void tearDown() {
@@ -52,9 +54,11 @@ class JwtAuthFilterTest {
         MockFilterChain chain = new MockFilterChain();
 
         when(cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN)).thenReturn(null);
+        when(jwtProvider.validationToken(null)).thenReturn(TokenStatus.EMPTY);
 
         filter.doFilter(request, response, chain);
 
+        verify(jwtProvider).validationToken(null);
         verify(jwtProvider, never()).parseToken(null);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
@@ -62,19 +66,54 @@ class JwtAuthFilterTest {
     @Test
     void setsAuthenticationForValidAccessToken() throws ServletException, IOException {
         String accessToken = "access-token";
+        Long userId = 1L;
+
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/chat/messages");
-        request.setCookies(new Cookie(CookieUtil.CookieType.ACCESS_TOKEN, accessToken));
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 
         when(cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN)).thenReturn(accessToken);
-        when(jwtProvider.validationToken(accessToken)).thenReturn(true);
+        when(jwtProvider.validationToken(accessToken)).thenReturn(TokenStatus.VALID);
         when(jwtProvider.parseToken(accessToken))
-                .thenReturn(new TokenInfo(accessToken, TokenType.ACCESS, LocalDateTime.now().plusMinutes(10), 1L));
+                .thenReturn(new TokenInfo(accessToken, TokenType.ACCESS, LocalDateTime.now().plusMinutes(10), userId));
 
         filter.doFilter(request, response, chain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
-        assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo(1L);
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo(userId);
+    }
+
+    @Test
+    void returnsExpiredTokenErrorWhenAccessTokenIsExpired() throws ServletException, IOException {
+        String expiredToken = "expired-token";
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/chat/messages");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        when(cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN)).thenReturn(expiredToken);
+        when(jwtProvider.validationToken(expiredToken)).thenReturn(TokenStatus.EXPIRED);
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(TokenErrorCode.EXPIRED_TOKEN.getStatus().value());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void returnsInvalidTokenErrorWhenAccessTokenIsInvalid() throws ServletException, IOException {
+        String invalidToken = "invalid-token";
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/chat/messages");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        when(cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN)).thenReturn(invalidToken);
+        when(jwtProvider.validationToken(invalidToken)).thenReturn(TokenStatus.INVALID);
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(TokenErrorCode.INVALID_TOKEN.getStatus().value());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }
