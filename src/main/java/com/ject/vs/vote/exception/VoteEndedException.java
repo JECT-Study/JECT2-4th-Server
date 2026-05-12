@@ -1,12 +1,9 @@
 package com.ject.vs.vote.exception;
 
-public class VoteEndedException extends RuntimeException {
+import com.ject.vs.common.exception.BusinessException;
 
+public class VoteEndedException extends BusinessException {
     public VoteEndedException() {
-        super("이미 종료된 투표입니다.");
-    }
-
-    public String getErrorCode() {
-        return "VOTE_ENDED";
+        super(VoteErrorCode.VOTE_ENDED);
     }
 }

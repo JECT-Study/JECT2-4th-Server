@@ -1,12 +1,9 @@
 package com.ject.vs.vote.exception;
 
-public class VoteFreeLimitExceededException extends RuntimeException {
+import com.ject.vs.common.exception.BusinessException;
 
+public class VoteFreeLimitExceededException extends BusinessException {
     public VoteFreeLimitExceededException() {
-        super("무료 투표 횟수를 초과했습니다.");
-    }
-
-    public String getErrorCode() {
-        return "VOTE_FREE_LIMIT_EXCEEDED";
+        super(VoteErrorCode.VOTE_FREE_LIMIT_EXCEEDED);
     }
 }

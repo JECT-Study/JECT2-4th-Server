@@ -1,14 +1,9 @@
 package com.ject.vs.vote.exception;
 
-public class UnauthorizedException extends RuntimeException {
+import com.ject.vs.common.exception.BusinessException;
 
-    private static final String ERROR_CODE = "UNAUTHORIZED";
-
+public class UnauthorizedException extends BusinessException {
     public UnauthorizedException() {
-        super("인증이 필요합니다");
-    }
-
-    public String getErrorCode() {
-        return ERROR_CODE;
+        super(VoteErrorCode.UNAUTHORIZED);
     }
 }
