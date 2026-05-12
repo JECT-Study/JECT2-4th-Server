@@ -54,7 +54,7 @@ public class VoteDetailQueryService {
         Map<VoteEmoji, Long> emojiSummary = Arrays.stream(VoteEmoji.values())
                 .collect(Collectors.toMap(e -> e, e -> 0L));
         emojiReactionRepository.countByEmojiForVote(voteId)
-                .forEach(row -> emojiSummary.put((VoteEmoji) row[0], (Long) row[1]));
+                .forEach(row -> emojiSummary.put(row.emoij(), row.count()));
 
         VoteEmoji myEmoji = null;
         if (userId != null) {
