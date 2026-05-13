@@ -44,10 +44,24 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
      */
     private VoteEmojiReaction applyReaction(Optional<VoteEmojiReaction> existing,
                                             VoteEmojiReaction emojiReaction) {
-        existing.ifPresent(reactionRepository::delete);
-        if (emojiReaction == null) return null;
-        reactionRepository.save(emojiReaction);
-        return emojiReaction;
+        if (existing.isEmpty()) {
+            if (emojiReaction != null) {
+                reactionRepository.save(emojiReaction);
+                return emojiReaction;
+            }
+            return null;
+        }
+
+        VoteEmojiReaction existingReaction = existing.get();
+
+        if (emojiReaction == null || existingReaction.getEmoji() == emojiReaction.getEmoji()) {
+            reactionRepository.delete(existingReaction);
+            return null;
+        }
+
+        existingReaction.changeEmoji(emojiReaction.getEmoji());
+        reactionRepository.save(existingReaction);
+        return existingReaction;
     }
 
     private EmojiResult buildResult(Long voteId, VoteEmoji myEmoji) {
