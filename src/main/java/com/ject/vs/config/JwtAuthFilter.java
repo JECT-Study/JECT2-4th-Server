@@ -65,6 +65,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         TokenStatus status = jwtProvider.validationToken(accessToken);
 
+        if (status == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         switch (status) {
             case VALID -> {
                 boolean authenticated = setAuthentication(request, accessToken);
