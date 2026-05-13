@@ -29,7 +29,7 @@ class VoteTest {
 
             assertThat(vote.getType()).isEqualTo(VoteType.GENERAL);
             assertThat(vote.getTitle()).isEqualTo("제목");
-            assertThat(vote.getStatus()).isEqualTo(VoteStatus.ONGOING);
+            assertThat(vote.getStatus(FIXED_CLOCK)).isEqualTo(VoteStatus.ONGOING);
             assertThat(vote.getEndAt()).isEqualTo(Instant.parse("2025-01-02T00:00:00Z"));
         }
 
