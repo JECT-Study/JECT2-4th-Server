@@ -11,6 +11,7 @@ import org.apache.http.HttpResponse;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 @Component
 @RequiredArgsConstructor
@@ -22,10 +23,11 @@ public class WebPushSenderAdapter implements PushSenderPort {
     @Override
     public SendResult send(PushSubscription subscription, PushPayload payload) {
         try {
+            byte[] authKey = Base64.getUrlDecoder().decode(subscription.getAuthKey());
             nl.martijndwars.webpush.Notification notif = new nl.martijndwars.webpush.Notification(
                     subscription.getEndpoint(),
                     Utils.loadPublicKey(subscription.getP256dhKey()),
-                    Utils.loadAuthSecret(subscription.getAuthKey()),
+                    authKey,
                     payload.toJson().getBytes(StandardCharsets.UTF_8)
             );
             HttpResponse response = pushService.send(notif);
