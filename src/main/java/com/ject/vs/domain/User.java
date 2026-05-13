@@ -36,6 +36,12 @@ public class User {
         return user;
     }
 
+    public static User createWithSub(String sub) {
+        User user = new User();
+        user.sub = sub;
+        return user;
+    }
+
     public void updateInfo(UserExtraInfo userInfo) {
         this.birthYear = userInfo.birthDate();
         this.gender = userInfo.gender();
