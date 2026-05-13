@@ -4,3 +4,9 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+
+webpush:
+  vapid:
+    public-key: ${VAPID_PUBLIC_KEY:}
+    private-key: ${VAPID_PRIVATE_KEY:}
+    subject: ${VAPID_SUBJECT:mailto:dev@vsapp.example.com}

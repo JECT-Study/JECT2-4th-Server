@@ -47,6 +47,10 @@ dependencies {
 	// Swagger / OpenAPI
 	implementation(Dependencies.Swagger.SPRINGDOC)
 
+	// Web Push (VAPID)
+	implementation(Dependencies.WebPush.WEB_PUSH)
+	implementation(Dependencies.WebPush.BOUNCY_CASTLE)
+
 	compileOnly(Dependencies.Lombok.LOMBOK)
 	annotationProcessor(Dependencies.Lombok.LOMBOK)
 	testImplementation(Dependencies.SpringBoot.TEST)
