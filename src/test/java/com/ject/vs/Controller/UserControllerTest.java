@@ -21,7 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Year;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -49,17 +48,13 @@ class UserControllerTest {
     @DisplayName("추가 정보 설정 API - 성공")
     @WithMockUser
     void setupInfo_Success() throws Exception {
-        // 가짜 토큰
-        String mockToken = "mock-access-token";
-
         // 사용자가 보낼 데이터
         UserExtraInfo extraInfo = new UserExtraInfo(Year.of(2001), Gender.MALE, "홍길동", ImageColor.GREEN);
 
         // 서버에 보내줄 데이터
         UserProfileResponse response = new UserProfileResponse(extraInfo.birthDate(), extraInfo.gender(), extraInfo.nickName(), extraInfo.imageColor());
 
-        given(cookieUtil.getCookieValue(any(), any())).willReturn(mockToken);
-        given(userService.setupAdditionalInfo(any(), eq(mockToken))).willReturn(response);
+        given(userService.setupAdditionalInfo(any(), any(Long.class))).willReturn(response);
 
         mockMvc.perform(post("/api/users/me/profile")
                 .with(csrf())

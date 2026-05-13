@@ -7,14 +7,11 @@ import com.ject.vs.domain.UserStatus;
 import com.ject.vs.dto.UserExtraInfo;
 import com.ject.vs.dto.UserProfileResponse;
 import com.ject.vs.repository.UserRepository;
-import com.ject.vs.util.JwtProvider;
-import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Year;
@@ -31,7 +28,7 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private JwtProvider jwtProvider;
+    private WordService wordService;
 
     @InjectMocks
     private UserService userService;
@@ -39,23 +36,20 @@ class UserServiceTest {
     @Test
     @DisplayName("추가 정보 설정 - 성공")
     void setupAdditionalInfo_Success() {
-        String token = "mock-token";
-        String email = "hong1234@naver.com";
-        User user = User.createWithEmail(email);
+        Long userId = 1L;
+        User user = User.createWithEmail("hong1234@naver.com");
 
         UserExtraInfo extraInfo = new UserExtraInfo(Year.of(2001), Gender.MALE, "홍길동", ImageColor.GREEN);
 
-        given(jwtProvider.getUser(token)).willReturn(user);
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
 
-        UserProfileResponse result = userService.setupAdditionalInfo(extraInfo, token);
+        UserProfileResponse result = userService.setupAdditionalInfo(extraInfo, userId);
 
         assertThat(result.nickname()).isEqualTo("홍길동");
         assertThat(result.birthDate()).isEqualTo(Year.of(2001));
         assertThat(result.gender()).isEqualTo(Gender.MALE);
         assertThat(user.getUserStatus()).isEqualTo(UserStatus.REGISTER);
 
-        verify(jwtProvider).getUser(token);
-
-//        verify(userRepository).findBySub(sub);
+        verify(userRepository).findById(userId);
     }
 }
