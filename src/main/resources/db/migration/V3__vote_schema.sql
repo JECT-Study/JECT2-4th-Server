@@ -23,7 +23,7 @@ WHERE "type" IS NULL;
 ALTER TABLE vote ALTER COLUMN "type"        SET NOT NULL;
 ALTER TABLE vote ALTER COLUMN title         SET NOT NULL;
 ALTER TABLE vote ALTER COLUMN thumbnail_url SET NOT NULL;
-ALTER TABLE vote ALTER COLUMN status        SET NOT NULL;
+ALTER TABLE vote ALTER COLUMN status        SET DEFAULT 'ENDED';
 ALTER TABLE vote ALTER COLUMN end_at        SET NOT NULL;
 
 CREATE INDEX idx_vote_type_end_at   ON vote ("type", end_at DESC);
@@ -87,6 +87,3 @@ CREATE TABLE guest_free_vote (
     updated_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- users 테이블에 분석용 컬럼 추가 (Insight 분석)
-ALTER TABLE users ADD COLUMN gender     VARCHAR(10);
-ALTER TABLE users ADD COLUMN birth_date DATE;
