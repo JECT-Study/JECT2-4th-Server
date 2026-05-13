@@ -2,6 +2,7 @@ package com.ject.vs.vote.adapter.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
+import com.ject.vs.service.CustomOAuth2UserService;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import com.ject.vs.vote.adapter.web.dto.ParticipateRequest;
@@ -42,6 +43,7 @@ class ImmersiveVoteControllerTest {
     @MockBean JwtProvider jwtProvider;
     @MockBean CookieUtil cookieUtil;
     @MockBean OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    @MockBean CustomOAuth2UserService customOAuth2UserService;
 
     private static final UsernamePasswordAuthenticationToken AUTH =
             new UsernamePasswordAuthenticationToken(1L, null, Collections.emptyList());
