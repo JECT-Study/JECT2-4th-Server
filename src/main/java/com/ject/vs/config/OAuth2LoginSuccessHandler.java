@@ -62,7 +62,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         } catch (CustomException e) {
             // 401 또는 500 에러 처리 (로그인 실패 시)
-            response.sendError(e.getErrorCode().getHttpStatus().value(), e.getMessage());
+            response.sendError(e.getErrorCode().getStatus().value(), e.getMessage());
         }
     }
 
