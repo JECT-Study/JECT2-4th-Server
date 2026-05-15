@@ -1,5 +1,10 @@
 package com.ject.vs.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.auth.domain.TokenStatus;
+import com.ject.vs.auth.exception.TokenErrorCode;
+import com.ject.vs.common.exception.ErrorCode;
+import com.ject.vs.common.exception.ErrorResponse;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import jakarta.servlet.FilterChain;
@@ -18,31 +23,19 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
-    private static final List<String> JWT_EXCLUDED_PATHS = List.of(
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-ui.html",
-            "/api/**",
-            "/actuator/health",
-            "/actuator/health/**",
-            "/",
-            "/error",
-            "/auth/reissue"
-    );
-
     private final JwtProvider jwtProvider;
     private final CookieUtil cookieUtil;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private final ObjectMapper objectMapper;
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = getRequestPath(request);
-        return JWT_EXCLUDED_PATHS.stream()
+        return SecurityPaths.JWT_EXCLUDED_PATHS.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
@@ -67,27 +60,57 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
 
-        if (!StringUtils.hasText(accessToken) || !jwtProvider.validationToken(accessToken)) {
+        TokenStatus status = jwtProvider.validationToken(accessToken);
+
+        if (status == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        var tokenInfo = jwtProvider.parseToken(accessToken);
+        switch (status) {
+            case VALID -> {
+                boolean authenticated = setAuthentication(request, accessToken);
 
-        if (tokenInfo.isAccessToken()
-                && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if(!authenticated) {
+                    sendErrorResponse(response, TokenErrorCode.INVALID_TOKEN);
+                    return;
+                }
+                filterChain.doFilter(request, response);
+            }
+            case EMPTY -> filterChain.doFilter(request, response);
+            case EXPIRED -> sendErrorResponse(response, TokenErrorCode.EXPIRED_TOKEN);
+            case INVALID -> sendErrorResponse(response, TokenErrorCode.INVALID_TOKEN);
+        }
+    }
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            tokenInfo.userId(),
-                            null,
-                            AuthorityUtils.NO_AUTHORITIES
-                    );
+    private boolean setAuthentication(HttpServletRequest request, String token) {
+        var tokenInfo = jwtProvider.parseToken(token);
 
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        if(!tokenInfo.isAccessToken()) {
+            return false;
         }
 
-        filterChain.doFilter(request, response);
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                        tokenInfo.userId(),
+                        null,
+                        AuthorityUtils.NO_AUTHORITIES
+        );
+
+        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+        return true;
+    }
+
+    private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+        response.setStatus(errorCode.getStatusCode());
+        response.setContentType("application/json;charset=UTF-8");
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                errorCode.getCode(),
+                errorCode.getMessage()
+        );
+
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }

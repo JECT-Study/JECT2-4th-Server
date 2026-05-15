@@ -6,7 +6,9 @@ import com.ject.vs.chat.adapter.web.dto.SendMessageRequest;
 import com.ject.vs.chat.exception.ChatForbiddenException;
 import com.ject.vs.chat.port.in.*;
 import com.ject.vs.chat.port.in.dto.*;
-import com.ject.vs.vote.port.in.dto.VoteStatus;
+import com.ject.vs.config.OAuth2LoginSuccessHandler;
+import com.ject.vs.auth.port.CustomOAuth2UserService;
+import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import org.junit.jupiter.api.Nested;
@@ -48,6 +50,12 @@ class ChatControllerTest {
 
     @MockBean
     private CookieUtil cookieUtil;
+
+    @MockBean
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
+    @MockBean
+    private CustomOAuth2UserService customOAuth2UserService;
 
     @Nested
     class getChatList {

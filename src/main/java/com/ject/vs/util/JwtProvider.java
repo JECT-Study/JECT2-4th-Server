@@ -1,8 +1,14 @@
 package com.ject.vs.util;
 
+import com.ject.vs.auth.domain.TokenStatus;
+import com.ject.vs.auth.domain.TokenType;
+import com.ject.vs.auth.exception.TokenErrorCode;
+import com.ject.vs.auth.port.in.dto.TokenInfo;
+import com.ject.vs.common.exception.BusinessException;
 import com.ject.vs.config.JwtProperties;
-import com.ject.vs.domain.TokenType;
-import com.ject.vs.dto.TokenInfo;
+import com.ject.vs.user.domain.User;
+import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.exception.UserErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -14,18 +20,17 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
+    private final UserRepository userRepository;
     private final JwtProperties jwtProperties;
     private SecretKey secretKey;
 
     @PostConstruct
-    public void init() {        // secretkey 값을 읽어 디코딩 하여 바이트 배열로 변환 후 hmac으로 암호화
+    public void init() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.secret());
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
@@ -42,7 +47,7 @@ public class JwtProvider {
                 .signWith(secretKey)
                 .compact();
 
-        return new TokenInfo(token, TokenType.ACCESS, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()), userId);
+        return new TokenInfo(token, TokenType.ACCESS, expiresAt, userId);
     }
 
     public TokenInfo createRefreshToken(Long userId) {
@@ -57,31 +62,44 @@ public class JwtProvider {
                 .signWith(secretKey)
                 .compact();
 
-        return new TokenInfo(token, TokenType.REFRESH, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()), userId);
+        return new TokenInfo(token, TokenType.REFRESH, expiresAt, userId);
     }
 
-    public boolean validationToken(String token) {
+    public TokenStatus validationToken(String token) {
+        if(token == null || token.isBlank()) return TokenStatus.EMPTY;
         try {
             Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
                     .parseSignedClaims(token);
-            return true;
+            return TokenStatus.VALID;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return TokenStatus.EXPIRED;
         } catch (JwtException | IllegalArgumentException e) {
-            return false;
+            return TokenStatus.INVALID;
         }
     }
 
     public Claims getClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            throw new BusinessException(TokenErrorCode.EXPIRED_TOKEN);
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            throw new BusinessException(TokenErrorCode.INVALID_TOKEN);
+        }
     }
 
     public Long getUserId(String token) {
         return Long.parseLong(getClaims(token).getSubject());
+    }
+
+    public User getUser(String token) {
+        return userRepository.findById(getUserId(token)).orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
     }
 
     public String getTokenType(String token) {
@@ -93,6 +111,7 @@ public class JwtProvider {
         Claims claims = getClaims(token);
         String type = claims.get("type").toString();
         Long userId = Long.parseLong(claims.getSubject());
-        return new TokenInfo(token, TokenType.valueOf(type), LocalDateTime.now(), userId);
+        Instant expiresAt = claims.getExpiration().toInstant();
+        return new TokenInfo(token, TokenType.valueOf(type), expiresAt, userId);
     }
 }

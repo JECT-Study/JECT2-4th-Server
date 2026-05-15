@@ -1,20 +1,32 @@
 package com.ject.vs.chat.domain;
 
-import com.ject.vs.domain.User;
+import com.ject.vs.config.JpaAuditingConfig;
+import com.ject.vs.user.domain.User;
 import com.ject.vs.vote.domain.Vote;
+import com.ject.vs.vote.domain.VoteType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(JpaAuditingConfig.class)
 class ChatMessageRepositoryTest {
 
     @Autowired
@@ -26,10 +38,14 @@ class ChatMessageRepositoryTest {
     private Long voteId;
     private Long userId;
 
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2025-01-01T00:00:00Z"), ZoneOffset.UTC);
+
     @BeforeEach
     void setUp() {
         User user = entityManager.persistAndFlush(User.createWithSub("test-sub"));
-        Vote vote = entityManager.persistAndFlush(Vote.of());
+        Vote vote = entityManager.persistAndFlush(
+                Vote.create(VoteType.GENERAL, "테스트", null, "thumb", null, Duration.ofHours(24), FIXED_CLOCK)
+        );
         voteId = vote.getId();
         userId = user.getId();
     }

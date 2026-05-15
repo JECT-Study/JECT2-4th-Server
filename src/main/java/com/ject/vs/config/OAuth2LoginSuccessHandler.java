@@ -1,10 +1,10 @@
 package com.ject.vs.config;
 
-import com.ject.vs.dto.LoginTokenResponse;
-import com.ject.vs.dto.OAuthAttributes;
-import com.ject.vs.service.AuthService;
+import com.ject.vs.auth.port.AuthService;
+import com.ject.vs.auth.port.in.dto.LoginTokenResponse;
+import com.ject.vs.common.exception.BusinessException;
+import com.ject.vs.user.domain.UserStatus;
 import com.ject.vs.util.CookieUtil;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -26,49 +25,67 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final AuthService authService;
 
     @Value("${app.oauth2.redirect-success-url}")
-    private String redirectSuccessUrl;
+    private String homeUrl;
 
-    @Value("${app.cookie.secure:false}")      // 운영 상황에서는 true로 변경 https 사용할 경우
+    @Value("${app.oauth2.extra-info-url}")
+    private String extraInfoUrl;
+
+    @Value("${app.jwt.access-token-expiration-seconds}")
+    private long accessTokenExpiration;
+
+    @Value("${app.jwt.refresh-token-expiration-seconds}")
+    private long refreshTokenExpiration;
+
+    @Value("${app.cookie.secure:false}")
     private boolean secureCookie;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException {
 
-        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
-        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        String email = oAuth2User.getAttribute("email");
 
-        String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-        String userNameAttributeName = "sub";
+        try {
+            LoginTokenResponse loginResponse = authService.socialLogin(email);
 
-        OAuthAttributes attributes = OAuthAttributes.of(
-                registrationId,
-                userNameAttributeName,
-                oauth2User.getAttributes()
-        );
+            addTokenCookies(response, loginResponse);
 
-        LoginTokenResponse tokenResponse = authService.socialLogin(attributes.getSub());
+            String targetUrl = determineTargetUrl(loginResponse.getUserStatus());
 
-        ResponseCookie accessTokenCookie = ResponseCookie.from(CookieUtil.CookieType.ACCESS_TOKEN, tokenResponse.getAccessToken())
+            getRedirectStrategy().sendRedirect(request, response, targetUrl);
+
+        } catch (BusinessException e) {
+            response.sendError(e.getErrorCode().getStatusCode(), e.getMessage());
+        }
+    }
+
+    private void addTokenCookies(HttpServletResponse response, LoginTokenResponse loginResponse) {
+        ResponseCookie accessTokenCookie = ResponseCookie.from(CookieUtil.CookieType.ACCESS_TOKEN, loginResponse.getAccessToken())
                 .httpOnly(true)
-                .secure(secureCookie)
+                .secure(true)
                 .path("/")
+                .maxAge(accessTokenExpiration)
                 .sameSite("Lax")
-                .maxAge(60 * 30)
                 .build();
 
-        ResponseCookie refreshTokenCookie = ResponseCookie.from(CookieUtil.CookieType.REFRESH_TOKEN, tokenResponse.getRefreshToken())
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(CookieUtil.CookieType.REFRESH_TOKEN, loginResponse.getRefreshToken())
                 .httpOnly(true)
-                .secure(secureCookie)
+                .secure(true)
                 .path("/")
+                .maxAge(refreshTokenExpiration)
                 .sameSite("Lax")
-                .maxAge(60 * 60 * 24 * 14)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+    }
 
-        getRedirectStrategy().sendRedirect(request, response, redirectSuccessUrl);
+    private String determineTargetUrl(UserStatus status) {
+        if(UserStatus.REGISTER.equals(status)) {
+            return homeUrl;
+        }
+        return extraInfoUrl;
     }
 }
