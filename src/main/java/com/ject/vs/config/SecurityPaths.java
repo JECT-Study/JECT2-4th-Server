@@ -13,6 +13,7 @@ public class SecurityPaths {
             "/actuator/health/**",
             "/",
             "/error",
+            "/ws/**",
             "/oauth2/authorization/**",
             "/login/oauth2/code/**"
     );
