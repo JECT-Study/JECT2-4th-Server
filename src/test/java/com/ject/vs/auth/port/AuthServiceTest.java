@@ -77,6 +77,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("소셜 로그인 성공 시 Refresh Token에 tokenFamily가 설정된다")
         void socialLogin_setsFamilyOnRefreshToken() {
+            // given
             User user = createUserWithId(USER_ID);
 
             TokenInfo accessInfo = createTokenInfo(TokenType.ACCESS, Instant.now().plusSeconds(3600));
@@ -86,14 +87,15 @@ class AuthServiceTest {
             given(jwtProvider.createAccessToken(USER_ID)).willReturn(accessInfo);
             given(jwtProvider.createRefreshToken(USER_ID)).willReturn(refreshInfo);
 
+            // when
             LoginTokenResponse response = authService.socialLogin("test@example.com");
 
+            // then
             assertThat(response).isNotNull();
             assertThat(response.getUserId()).isEqualTo(USER_ID);
             assertThat(response.getAccessToken()).isEqualTo(accessInfo.tokenValue());
             assertThat(response.getRefreshToken()).isEqualTo(refreshInfo.tokenValue());
 
-            // refresh token이 저장될 때 family가 설정되었는지 검증
             verify(tokenRepository).save(argThat(token ->
                     token.getTokenType() == TokenType.REFRESH &&
                     token.getTokenFamily() != null &&
@@ -109,6 +111,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("유효한 Refresh Token으로 재발급 성공 시 새 토큰을 발급하고 기존 토큰을 revoke 한다")
         void reissue_success_rotatesTokens() {
+            // given
             String oldRefreshValue = "old-refresh-token";
             Instant expiresAt = Instant.now().plusSeconds(1209600);
 
@@ -131,13 +134,15 @@ class AuthServiceTest {
             given(jwtProvider.createAccessToken(USER_ID)).willReturn(newAccess);
             given(jwtProvider.createRefreshToken(USER_ID)).willReturn(newRefresh);
 
+            // when
             TokenReissueResponse response = authService.reissueAccessToken(oldRefreshValue);
 
+            // then
             assertThat(response.accessToken()).isEqualTo(newAccess.tokenValue());
             assertThat(response.refreshToken()).isEqualTo(newRefresh.tokenValue());
             assertThat(oldRefreshToken.isRevoked()).isTrue();
 
-            verify(tokenRepository).save(any(Token.class)); // 새 refresh 저장
+            verify(tokenRepository).save(any(Token.class));
         }
     }
 
@@ -148,6 +153,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("이미 revoke 된 Refresh Token으로 재발급 시도 시 TOKEN_REUSE_DETECTED 예외 발생")
         void reissue_withRevokedToken_throwsReuseDetected() {
+            // given
             String stolenRefresh = "stolen-refresh";
             Token revokedToken = Token.builder()
                     .user(createUserWithId(USER_ID))
@@ -162,6 +168,7 @@ class AuthServiceTest {
             given(tokenRepository.findByTokenValueAndTokenType(stolenRefresh, TokenType.REFRESH))
                     .willReturn(Optional.of(revokedToken));
 
+            // when & then
             assertThatThrownBy(() -> authService.reissueAccessToken(stolenRefresh))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -173,6 +180,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("재사용 탐지 시 같은 family의 모든 토큰을 revoke 한다")
         void reissue_reuseDetection_revokesEntireFamily() {
+            // given
             String stolenRefresh = "stolen-refresh";
 
             Token revokedToken = Token.builder()
@@ -199,10 +207,11 @@ class AuthServiceTest {
             given(tokenRepository.findAllByTokenFamily(FAMILY))
                     .willReturn(List.of(revokedToken, anotherActiveTokenInFamily));
 
+            // when
             assertThatThrownBy(() -> authService.reissueAccessToken(stolenRefresh))
                     .isInstanceOf(BusinessException.class);
 
-            // family 내 active 토큰이 revoke 되었는지 확인
+            // then
             assertThat(anotherActiveTokenInFamily.isRevoked()).isTrue();
             verify(tokenRepository).findAllByTokenFamily(FAMILY);
         }
@@ -210,6 +219,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("family가 없는 레거시 토큰 재사용 시에도 TOKEN_REUSE_DETECTED를 반환한다")
         void reissue_legacyTokenWithoutFamily_stillDetectsReuse() {
+            // given
             String oldToken = "legacy-refresh-without-family";
 
             Token legacyRevoked = Token.builder()
@@ -225,6 +235,7 @@ class AuthServiceTest {
             given(tokenRepository.findByTokenValueAndTokenType(oldToken, TokenType.REFRESH))
                     .willReturn(Optional.of(legacyRevoked));
 
+            // when & then
             assertThatThrownBy(() -> authService.reissueAccessToken(oldToken))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -239,12 +250,14 @@ class AuthServiceTest {
         @Test
         @DisplayName("DB에 존재하지 않는 Refresh Token이면 TOKEN_NOT_FOUND 예외")
         void reissue_tokenNotInDb_throwsNotFound() {
+            // given
             String unknownToken = "unknown";
 
             given(jwtProvider.validationToken(unknownToken)).willReturn(TokenStatus.VALID);
             given(tokenRepository.findByTokenValueAndTokenType(unknownToken, TokenType.REFRESH))
                     .willReturn(Optional.empty());
 
+            // when & then
             assertThatThrownBy(() -> authService.reissueAccessToken(unknownToken))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -254,10 +267,12 @@ class AuthServiceTest {
         @Test
         @DisplayName("만료된 Refresh Token이면 REFRESH_TOKEN_EXPIRED 예외")
         void reissue_expiredToken_throwsExpired() {
+            // given
             String expired = "expired-refresh";
 
             given(jwtProvider.validationToken(expired)).willReturn(TokenStatus.EXPIRED);
 
+            // when & then
             assertThatThrownBy(() -> authService.reissueAccessToken(expired))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
@@ -267,10 +282,12 @@ class AuthServiceTest {
         @Test
         @DisplayName("유효하지 않은 JWT 형식이면 INVALID_TOKEN 예외")
         void reissue_invalidJwt_throwsInvalid() {
+            // given
             String invalid = "not-a-jwt";
 
             given(jwtProvider.validationToken(invalid)).willReturn(TokenStatus.INVALID);
 
+            // when & then
             assertThatThrownBy(() -> authService.reissueAccessToken(invalid))
                     .isInstanceOf(BusinessException.class)
                     .extracting("errorCode")
