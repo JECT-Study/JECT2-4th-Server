@@ -8,7 +8,8 @@ import com.ject.vs.user.domain.UserRepository;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +31,7 @@ class JwtProviderTest {
         assertThat(jwtProvider.getTokenType(tokenInfo.tokenValue())).isEqualTo(TokenType.ACCESS.name());
         assertThat(parsedToken.userId()).isEqualTo(1L);
         assertThat(parsedToken.tokenType()).isEqualTo(TokenType.ACCESS);
-        assertThat(parsedToken.expiresAt()).isAfter(LocalDateTime.now().plusMinutes(29));
+        assertThat(parsedToken.expiresAt()).isAfter(Instant.now().plus(Duration.ofMinutes(29)));
     }
 
     @Test
