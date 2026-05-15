@@ -26,7 +26,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate changelog
-        id: changelog
         run: |
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -n "$LAST_TAG" ]; then
@@ -40,18 +39,15 @@ jobs:
             fi
           fi
 
-          # Write to temp file to avoid shell metacharacter issues when the
-          # content (arbitrary commit messages) is later included via ${{ }} expansion.
+          # Always write to a fixed temp file. Never pass arbitrary commit
+          # messages through GITHUB_OUTPUT or ${{ }} expansion.
           printf '%s\n' "$LOG" > /tmp/release-changelog.txt
-          {
-            echo "log_file=/tmp/release-changelog.txt"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Build PR body
-        id: body
         run: |
-          # Write full PR body to a temp file. This avoids dangerous ${{ }} expansion
-          # of arbitrary commit message text into shell commands in later steps.
+          # Build the PR body using only hardcoded paths. This guarantees
+          # the workflow file itself never contains ${{ }} inside a run: block,
+          # which was causing "An expression was expected" parser errors.
           {
             echo "## Release: develop → main"
             echo ""
@@ -59,21 +55,17 @@ jobs:
             echo "버전은 main 머지 시점에 자동으로 확정됩니다."
             echo ""
             echo "### Changes"
-            if [ -f "${{ steps.changelog.outputs.log_file }}" ]; then
-              cat "${{ steps.changelog.outputs.log_file }}"
+            if [ -f /tmp/release-changelog.txt ]; then
+              cat /tmp/release-changelog.txt
             fi
           } > /tmp/release-pr-body.txt
-
-          {
-            echo "body_file=/tmp/release-pr-body.txt"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Update existing PR
         if: steps.check.outputs.existing_pr != ''
         run: |
           gh pr edit ${{ steps.check.outputs.existing_pr }} \
             --title "release: develop → main" \
-            --body-file "${{ steps.body.outputs.body_file }}"
+            --body-file /tmp/release-pr-body.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -85,7 +77,7 @@ jobs:
             --base main \
             --head develop \
             --title "release: develop → main" \
-            --body-file "${{ steps.body.outputs.body_file }}" \
+            --body-file /tmp/release-pr-body.txt \
             --label release)
           PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
