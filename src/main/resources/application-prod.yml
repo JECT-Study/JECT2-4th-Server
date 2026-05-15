@@ -35,7 +35,8 @@ server:
 app:
   oauth2:
     # 운영 도메인 확정 후 실제 URL로 교체 필요 (관련 이슈: #43)
-    redirect-success-url: https://example.com/oauth2/redirect
+    redirect-success-url: ${APP_OAUTH2_REDIRECT_SUCCESS_URL:https://example.com/oauth2/redirect}
+    extra-info-url: ${APP_OAUTH2_EXTRA_INFO_URL:https://example.com/extra-info}
   cookie:
     secure: true
   jwt:
