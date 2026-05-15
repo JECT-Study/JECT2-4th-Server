@@ -1,7 +1,7 @@
 package com.ject.vs.vote.adapter.web;
 
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
-import com.ject.vs.service.CustomOAuth2UserService;
+import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import org.springframework.security.test.context.support.WithMockUser;

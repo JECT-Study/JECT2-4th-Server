@@ -1,6 +1,6 @@
 package com.ject.vs.vote.port;
 
-import com.ject.vs.repository.UserRepository;
+import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.exception.VoteNotEndedException;

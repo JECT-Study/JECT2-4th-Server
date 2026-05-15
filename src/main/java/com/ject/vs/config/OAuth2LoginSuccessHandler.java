@@ -1,12 +1,10 @@
 package com.ject.vs.config;
 
-import com.ject.vs.domain.UserStatus;
-import com.ject.vs.dto.LoginTokenResponse;
-import com.ject.vs.dto.OAuthAttributes;
-import com.ject.vs.exception.CustomException;
-import com.ject.vs.service.AuthService;
+import com.ject.vs.auth.port.AuthService;
+import com.ject.vs.auth.port.in.dto.LoginTokenResponse;
+import com.ject.vs.common.exception.BusinessException;
+import com.ject.vs.user.domain.UserStatus;
 import com.ject.vs.util.CookieUtil;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +36,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${app.jwt.refresh-token-expiration-seconds}")
     private long refreshTokenExpiration;
 
-    @Value("${app.cookie.secure:false}")      // 운영 상황에서는 true로 변경 https 사용할 경우
+    @Value("${app.cookie.secure:false}")
     private boolean secureCookie;
 
     @Override
@@ -54,20 +52,16 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             addTokenCookies(response, loginResponse);
 
-            // 상태(REGISTER, UNREGISTER)에 따른 리다이렉트 경로 결정
             String targetUrl = determineTargetUrl(loginResponse.getUserStatus());
 
-            // 리다이렉트 실행
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
-        } catch (CustomException e) {
-            // 401 또는 500 에러 처리 (로그인 실패 시)
-            response.sendError(e.getErrorCode().getStatus().value(), e.getMessage());
+        } catch (BusinessException e) {
+            response.sendError(e.getErrorCode().getStatusCode(), e.getMessage());
         }
     }
 
     private void addTokenCookies(HttpServletResponse response, LoginTokenResponse loginResponse) {
-        // 30분
         ResponseCookie accessTokenCookie = ResponseCookie.from(CookieUtil.CookieType.ACCESS_TOKEN, loginResponse.getAccessToken())
                 .httpOnly(true)
                 .secure(true)
@@ -76,7 +70,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .sameSite("Lax")
                 .build();
 
-        // 30일
         ResponseCookie refreshTokenCookie = ResponseCookie.from(CookieUtil.CookieType.REFRESH_TOKEN, loginResponse.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)

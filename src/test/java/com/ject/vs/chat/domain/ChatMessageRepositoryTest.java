@@ -1,7 +1,7 @@
 package com.ject.vs.chat.domain;
 
 import com.ject.vs.config.JpaAuditingConfig;
-import com.ject.vs.domain.User;
+import com.ject.vs.user.domain.User;
 import com.ject.vs.vote.domain.Vote;
 import com.ject.vs.vote.domain.VoteType;
 import org.junit.jupiter.api.BeforeEach;

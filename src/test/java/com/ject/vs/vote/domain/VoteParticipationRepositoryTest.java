@@ -1,7 +1,7 @@
 package com.ject.vs.vote.domain;
 
 import com.ject.vs.config.JpaAuditingConfig;
-import com.ject.vs.domain.User;
+import com.ject.vs.user.domain.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

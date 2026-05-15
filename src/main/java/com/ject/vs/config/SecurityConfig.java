@@ -1,6 +1,6 @@
 package com.ject.vs.config;
 
-import com.ject.vs.service.CustomOAuth2UserService;
+import com.ject.vs.auth.port.CustomOAuth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
