@@ -14,17 +14,24 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+    private final WebSocketHandshakeInterceptor webSocketHandshakeInterceptor;
     private final CorsProperties corsProperties;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         String[] allowedOriginPatterns = corsProperties.allowedOriginPatterns().toArray(String[]::new);
         if (allowedOriginPatterns.length > 0) {
-            registry.addEndpoint("/ws").setAllowedOriginPatterns(allowedOriginPatterns).withSockJS();
+            registry.addEndpoint("/ws")
+                    .addInterceptors(webSocketHandshakeInterceptor)
+                    .setAllowedOriginPatterns(allowedOriginPatterns)
+                    .withSockJS();
             return;
         }
 
-        registry.addEndpoint("/ws").setAllowedOrigins(corsProperties.allowedOrigins().toArray(String[]::new)).withSockJS();
+        registry.addEndpoint("/ws")
+                .addInterceptors(webSocketHandshakeInterceptor)
+                .setAllowedOrigins(corsProperties.allowedOrigins().toArray(String[]::new))
+                .withSockJS();
     }
 
     @Override
