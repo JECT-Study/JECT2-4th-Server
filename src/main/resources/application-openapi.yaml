@@ -29,7 +29,8 @@ app:
     access-token-expiration-seconds: 1800
     refresh-token-expiration-seconds: 2592000
   oauth2:
-    redirect-success-url: http://localhost:3000/oauth2/redirect
+    redirect-success-url: ${APP_OAUTH2_REDIRECT_SUCCESS_URL:http://localhost:3000/oauth2/redirect}
+    extra-info-url: ${APP_OAUTH2_EXTRA_INFO_URL:http://localhost:3000/extra-info}
   cookie:
     secure: false
 
