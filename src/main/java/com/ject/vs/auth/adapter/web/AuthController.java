@@ -2,11 +2,12 @@ package com.ject.vs.auth.adapter.web;
 
 import com.ject.vs.auth.port.AuthService;
 import com.ject.vs.auth.port.in.dto.TokenReissueResponse;
+import com.ject.vs.config.CookieProperties;
+import com.ject.vs.config.JwtProperties;
 import com.ject.vs.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -18,15 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
     private final CookieUtil cookieUtil;
-
-    @Value("${app.jwt.access-token-expiration-seconds}")
-    private long accessTokenExpiration;
-
-    @Value("${app.jwt.refresh-token-expiration-seconds}")
-    private long refreshTokenExpiration;
-
-    @Value("${app.cookie.secure:true}")
-    private boolean secureCookie;
+    private final JwtProperties jwtProperties;
+    private final CookieProperties cookieProperties;
 
     @PostMapping("/auth/reissue")
     public ResponseEntity<Void> reissue(HttpServletRequest request, HttpServletResponse response) {
@@ -34,14 +28,17 @@ public class AuthController {
 
         TokenReissueResponse tokenResponse = authService.reissueAccessToken(refreshToken);
 
+        long accessTokenExpiration = jwtProperties.accessTokenExpirationSeconds();
+        long refreshTokenExpiration = jwtProperties.refreshTokenExpirationSeconds();
+
         ResponseCookie accessTokenCookie = ResponseCookie.from(
                 CookieUtil.CookieType.ACCESS_TOKEN,
                 tokenResponse.accessToken()
         )
                 .httpOnly(true)
-                .secure(secureCookie)
+                .secure(cookieProperties.secure())
                 .path("/")
-                .sameSite("None")
+                .sameSite(cookieProperties.sameSite())
                 .maxAge(accessTokenExpiration)
                 .build();
 
@@ -50,9 +47,9 @@ public class AuthController {
                 tokenResponse.refreshToken()
         )
                 .httpOnly(true)
-                .secure(secureCookie)
+                .secure(cookieProperties.secure())
                 .path("/")
-                .sameSite("None")
+                .sameSite(cookieProperties.sameSite())
                 .maxAge(refreshTokenExpiration)
                 .build();
 

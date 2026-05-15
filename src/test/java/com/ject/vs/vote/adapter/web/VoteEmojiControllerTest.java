@@ -2,6 +2,8 @@ package com.ject.vs.vote.adapter.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
+import com.ject.vs.config.TestPropertiesConfig;
+import org.springframework.context.annotation.Import;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
@@ -30,6 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(VoteEmojiController.class)
+@Import(TestPropertiesConfig.class)
 class VoteEmojiControllerTest {
 
     @Autowired MockMvc mockMvc;

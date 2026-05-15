@@ -8,6 +8,8 @@ import com.ject.vs.chat.port.in.*;
 import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
+import com.ject.vs.config.TestPropertiesConfig;
+import org.springframework.context.annotation.Import;
 import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
@@ -31,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ChatController.class)
+@Import(TestPropertiesConfig.class)
 class ChatControllerTest {
 
     @Autowired
