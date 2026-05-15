@@ -326,7 +326,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic");      // 구독 prefix
-        registry.setUserDestinationPrefix("/user"); // 사용자별 개인 채널 prefix
+        registry.setUserDestinationPrefix("/user"); // 사용자별 개인 채널 prefix (convertAndSendToUser용)
     }
 
     @Override
@@ -344,7 +344,7 @@ STOMP CONNECT frame 수신 시 `Authorization` 헤더에서 JWT를 추출해 인
 `accessor.setUser()`로 설정한 `Principal`은 이후 두 가지 역할을 한다.
 
 1. **서버 → 클라이언트 전송**: `convertAndSendToUser(userId, ...)` 호출 시 Spring이 해당 userId의 세션을 찾아 메시지를 라우팅.
-2. **클라이언트 구독 라우팅**: 클라이언트가 `/user/topic/...`으로 구독하면 Spring이 내부적으로 `/user/{userId}/topic/...`으로 매핑. `WebSocketConfig`의 `setUserDestinationPrefix("/user")`가 이 매핑을 활성화.
+2. **클라이언트 구독 라우팅**: 클라이언트가 `/user/topic/...`으로 구독하면 Spring이 내부적으로 해당 Principal의 세션에만 메시지를 전달. `/user` prefix는 **보안을 위해 필수**이며, 임의 userId로 다른 사람의 개인 채널을 구독할 수 없게 한다.
 
 ```java
 @Component
@@ -391,7 +391,7 @@ REST POST /api/chats/{voteId}/messages  { "content": "..." }
     ├─ SimpMessagingTemplate.convertAndSend("/topic/chat/{voteId}")
     │     payload: { messageId, content, sentAt, senderNickname, senderVoteOption, isMine }
     └─ SimpMessagingTemplate.convertAndSendToUser(userId, "/topic/chat/{voteId}/unread")
-          payload: { unreadCount }  ← 사용자마다 다른 값이므로 개인 채널로 전송
+          payload: { unreadCount }  ← 사용자마다 다른 값이므로 Principal 기반 개인 채널로 전송 (보안)
 ```
 
 ---

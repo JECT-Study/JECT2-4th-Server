@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -18,6 +19,7 @@ public class SecurityConfig {
             HttpSecurity http,
             OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
             CustomOAuth2UserService customOAuth2UserService,
+            JwtAuthFilter jwtAuthFilter,
             CorsConfigurationSource corsConfigurationSource
     ) throws Exception {
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
@@ -36,7 +38,8 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2LoginSuccessHandler)
-                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService)));
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService)))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -1,6 +1,5 @@
 package com.ject.vs.config;
 
-import com.ject.vs.util.JwtProvider;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,8 +12,9 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class WebSocketAuthInterceptorTest {
@@ -23,16 +23,19 @@ class WebSocketAuthInterceptorTest {
     private WebSocketAuthInterceptor interceptor;
 
     @Mock
-    private JwtProvider jwtProvider;
-
-    @Mock
     private MessageChannel messageChannel;
 
-    private Message<?> buildConnectMessage(String authHeader) {
+    private Message<?> buildConnectMessageWithSessionUserId(Long userId) {
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.CONNECT);
-        if (authHeader != null) {
-            accessor.setNativeHeader("Authorization", authHeader);
+        if (userId != null) {
+            accessor.setSessionAttributes(Map.of("userId", userId));
         }
+        accessor.setLeaveMutable(true);
+        return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+    }
+
+    private Message<?> buildConnectMessageWithoutSession() {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.CONNECT);
         accessor.setLeaveMutable(true);
         return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
     }
@@ -47,10 +50,9 @@ class WebSocketAuthInterceptorTest {
     class preSend {
 
         @Test
-        void CONNECT_유효한_토큰이면_Principal이_설정된다() {
-            // given
-            given(jwtProvider.getUserId("valid-token")).willReturn(42L);
-            Message<?> message = buildConnectMessage("Bearer valid-token");
+        void CONNECT_세션에_userId가_있으면_Principal이_설정된다() {
+            // given (HandshakeInterceptor가 쿠키에서 userId를 추출해 sessionAttributes에 저장한 상태)
+            Message<?> message = buildConnectMessageWithSessionUserId(42L);
 
             // when
             Message<?> result = interceptor.preSend(message, messageChannel);
@@ -62,9 +64,9 @@ class WebSocketAuthInterceptorTest {
         }
 
         @Test
-        void CONNECT_토큰_없으면_Principal이_null이다() {
-            // given
-            Message<?> message = buildConnectMessage(null);
+        void CONNECT_세션에_userId가_없으면_Principal이_null이다() {
+            // given (쿠키 없음 또는 유효하지 않은 토큰 → anonymous)
+            Message<?> message = buildConnectMessageWithoutSession();
 
             // when
             Message<?> result = interceptor.preSend(message, messageChannel);

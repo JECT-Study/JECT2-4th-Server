@@ -274,7 +274,7 @@ ALTER TABLE users
 ```
 
 > 서버는 `convertAndSendToUser(userId, "/topic/chat/{voteId}/unread", payload)`로 전송.  
-> 각 사용자의 unreadCount가 다르므로 개인 채널로 분리.
+> 각 사용자의 unreadCount가 다르므로 `Principal` 기반 개인 채널로 분리 (보안상 외부에서 임의 userId로 구독 불가).
 
 > **REST vs WebSocket 역할 분리**
 > - 메시지 전송 → REST `POST /api/chats/{voteId}/messages`
