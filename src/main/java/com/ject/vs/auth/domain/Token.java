@@ -29,13 +29,17 @@ public class Token {
 
     private boolean revoked;
 
+    @Column(length = 255)
+    private String tokenFamily;
+
     @Builder
-    public Token(User user, String tokenValue, TokenType tokenType, Instant expiresAt, boolean revoked) {
+    public Token(User user, String tokenValue, TokenType tokenType, Instant expiresAt, boolean revoked, String tokenFamily) {
         this.user = user;
         this.tokenValue = tokenValue;
         this.tokenType = tokenType;
         this.expiresAt = expiresAt;
         this.revoked = revoked;
+        this.tokenFamily = tokenFamily;
     }
 
     public void revoke() {

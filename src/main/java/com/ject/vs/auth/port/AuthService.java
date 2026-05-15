@@ -16,6 +16,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -38,12 +40,14 @@ public class AuthService {
                 .revoked(false)
                 .build();
 
+        String refreshTokenFamily = UUID.randomUUID().toString();
         Token refreshToken = Token.builder()
                 .user(user)
                 .tokenValue(refreshTokenInfo.tokenValue())
                 .tokenType(refreshTokenInfo.tokenType())
                 .expiresAt(refreshTokenInfo.expiresAt())
                 .revoked(false)
+                .tokenFamily(refreshTokenFamily)
                 .build();
 
         tokenRepository.save(refreshToken);
@@ -71,8 +75,19 @@ public class AuthService {
         Token savedToken = tokenRepository.findByTokenValueAndTokenType(refreshToken, TokenType.REFRESH)
                 .orElseThrow(() -> new BusinessException(TokenErrorCode.TOKEN_NOT_FOUND));
 
+        String tokenFamily = savedToken.getTokenFamily();
+
         if (savedToken.isRevoked()) {
-            throw new BusinessException(TokenErrorCode.REVOKED_TOKEN);
+            // Refresh token reuse detected — possible token theft.
+            // Revoke all tokens in the same family to protect the user.
+            if (tokenFamily != null) {
+                tokenRepository.findAllByTokenFamily(tokenFamily).forEach(token -> {
+                    if (!token.isRevoked()) {
+                        token.revoke();
+                    }
+                });
+            }
+            throw new BusinessException(TokenErrorCode.TOKEN_REUSE_DETECTED);
         }
 
         savedToken.revoke();
@@ -88,6 +103,7 @@ public class AuthService {
                 .tokenType(newRefreshToken.tokenType())
                 .expiresAt(newRefreshToken.expiresAt())
                 .revoked(false)
+                .tokenFamily(tokenFamily)  // propagate family for future rotations
                 .build();
 
         tokenRepository.save(newRefreshTokenInfo);

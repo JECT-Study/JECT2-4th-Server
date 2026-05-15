@@ -12,6 +12,7 @@ public enum TokenErrorCode implements ErrorCode {
     INVALID_TOKEN_TYPE("E400005", "해당 토큰의 종류가 다릅니다.", 401),
     REFRESH_TOKEN_EXPIRED("E400004", "재발급 토큰이 만료되었습니다.", 401),
     REVOKED_TOKEN("E400006", "회수된 토큰입니다.", 401),
+    TOKEN_REUSE_DETECTED("E400007", "토큰 재사용이 감지되었습니다. 모든 기기에서 다시 로그인해주세요.", 401),
     TOKEN_NOT_FOUND("E400003", "토큰이 존재하지 않습니다.", 401);
 
     private final String code;
