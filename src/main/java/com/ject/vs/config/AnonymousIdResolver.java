@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -20,6 +21,9 @@ public class AnonymousIdResolver implements HandlerMethodArgumentResolver {
 
     private static final String COOKIE_NAME = "anonymous_id";
     private static final Duration MAX_AGE = Duration.ofDays(365);
+
+    @Value("${app.cookie.secure:false}")
+    private boolean secureCookie;
 
     @Override
     public boolean supportsParameter(org.springframework.core.MethodParameter parameter) {
@@ -41,7 +45,7 @@ public class AnonymousIdResolver implements HandlerMethodArgumentResolver {
         String newId = UUID.randomUUID().toString();
         ResponseCookie cookie = ResponseCookie.from(COOKIE_NAME, newId)
                 .httpOnly(true)
-                .secure(true)
+                .secure(secureCookie)
                 .sameSite("None")
                 .maxAge(MAX_AGE)
                 .path("/")

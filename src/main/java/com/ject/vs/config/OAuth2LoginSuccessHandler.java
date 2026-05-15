@@ -36,7 +36,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${app.jwt.refresh-token-expiration-seconds}")
     private long refreshTokenExpiration;
 
-    @Value("${app.cookie.secure:true}")
+    @Value("${app.cookie.secure:false}")
     private boolean secureCookie;
 
     @Override

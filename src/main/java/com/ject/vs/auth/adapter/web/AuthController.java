@@ -25,7 +25,7 @@ public class AuthController {
     @Value("${app.jwt.refresh-token-expiration-seconds}")
     private long refreshTokenExpiration;
 
-    @Value("${app.cookie.secure:true}")
+    @Value("${app.cookie.secure:false}")
     private boolean secureCookie;
 
     @PostMapping("/auth/reissue")
