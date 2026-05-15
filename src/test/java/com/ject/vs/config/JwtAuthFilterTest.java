@@ -1,11 +1,10 @@
 package com.ject.vs.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ject.vs.domain.TokenStatus;
-import com.ject.vs.domain.TokenType;
-import com.ject.vs.dto.TokenInfo;
-import com.ject.vs.exception.ErrorCode;
-import com.ject.vs.exception.TokenErrorCode;
+import com.ject.vs.auth.domain.TokenStatus;
+import com.ject.vs.auth.domain.TokenType;
+import com.ject.vs.auth.exception.TokenErrorCode;
+import com.ject.vs.auth.port.in.dto.TokenInfo;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import jakarta.servlet.ServletException;
@@ -96,7 +95,7 @@ class JwtAuthFilterTest {
 
         filter.doFilter(request, response, chain);
 
-        assertThat(response.getStatus()).isEqualTo(TokenErrorCode.EXPIRED_TOKEN.getStatus().value());
+        assertThat(response.getStatus()).isEqualTo(TokenErrorCode.EXPIRED_TOKEN.getStatusCode());
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
@@ -113,7 +112,7 @@ class JwtAuthFilterTest {
 
         filter.doFilter(request, response, chain);
 
-        assertThat(response.getStatus()).isEqualTo(TokenErrorCode.INVALID_TOKEN.getStatus().value());
+        assertThat(response.getStatus()).isEqualTo(TokenErrorCode.INVALID_TOKEN.getStatusCode());
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }

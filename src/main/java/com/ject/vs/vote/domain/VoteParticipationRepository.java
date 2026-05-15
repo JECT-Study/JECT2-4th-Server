@@ -33,7 +33,7 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
 
     @Query("""
             SELECT new com.ject.vs.vote.domain.GenderCount(u.gender, COUNT(p))
-            FROM VoteParticipation p, com.ject.vs.domain.User u
+            FROM VoteParticipation p, com.ject.vs.user.domain.User u
             WHERE p.userId = u.id
               AND p.voteId = :voteId
               AND p.optionId = :optionId
@@ -44,7 +44,7 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
 
     @Query("""
             SELECT new com.ject.vs.vote.domain.GenderCount(u.gender, COUNT(p))
-            FROM VoteParticipation p, com.ject.vs.domain.User u
+            FROM VoteParticipation p, com.ject.vs.user.domain.User u
             WHERE p.userId = u.id
               AND p.voteId = :voteId
               AND p.userId IS NOT NULL

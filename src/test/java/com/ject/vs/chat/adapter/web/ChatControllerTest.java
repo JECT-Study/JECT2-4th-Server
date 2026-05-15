@@ -7,7 +7,7 @@ import com.ject.vs.chat.exception.ChatForbiddenException;
 import com.ject.vs.chat.port.in.*;
 import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
-import com.ject.vs.service.CustomOAuth2UserService;
+import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;

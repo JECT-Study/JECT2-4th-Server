@@ -10,16 +10,4 @@ public class BusinessException extends RuntimeException {
         super(errorCode.getMessage());
         this.errorCode = errorCode;
     }
-
-    public String getErrorCode() {
-        return this.errorCode.getCode();
-    }
-
-    public String getErrorMessage() {
-        return this.errorCode.getMessage();
-    }
-
-    public Integer getStatusCode() {
-        return this.errorCode.getStatusCode();
-    }
 }

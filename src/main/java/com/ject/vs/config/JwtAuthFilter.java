@@ -1,10 +1,10 @@
 package com.ject.vs.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ject.vs.domain.TokenStatus;
-import com.ject.vs.dto.ErrorResponse;
-import com.ject.vs.exception.ErrorCode;
-import com.ject.vs.exception.TokenErrorCode;
+import com.ject.vs.auth.domain.TokenStatus;
+import com.ject.vs.auth.exception.TokenErrorCode;
+import com.ject.vs.common.exception.ErrorCode;
+import com.ject.vs.common.exception.ErrorResponse;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import jakarta.servlet.FilterChain;
@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -24,7 +23,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -60,7 +58,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        // 토큰 확인
         String accessToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN);
 
         TokenStatus status = jwtProvider.validationToken(accessToken);
@@ -106,7 +103,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private void sendErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
-        response.setStatus(errorCode.getStatus().value());
+        response.setStatus(errorCode.getStatusCode());
         response.setContentType("application/json;charset=UTF-8");
 
         ErrorResponse errorResponse = new ErrorResponse(

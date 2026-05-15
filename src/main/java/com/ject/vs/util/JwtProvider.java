@@ -1,15 +1,14 @@
 package com.ject.vs.util;
 
+import com.ject.vs.auth.domain.TokenStatus;
+import com.ject.vs.auth.domain.TokenType;
+import com.ject.vs.auth.exception.TokenErrorCode;
+import com.ject.vs.auth.port.in.dto.TokenInfo;
+import com.ject.vs.common.exception.BusinessException;
 import com.ject.vs.config.JwtProperties;
-import com.ject.vs.domain.TokenStatus;
-import com.ject.vs.domain.TokenType;
-import com.ject.vs.domain.User;
-import com.ject.vs.dto.TokenInfo;
-import com.ject.vs.exception.CustomException;
-import com.ject.vs.exception.ErrorCode;
-import com.ject.vs.exception.TokenErrorCode;
-import com.ject.vs.exception.UserErrorCode;
-import com.ject.vs.repository.UserRepository;
+import com.ject.vs.user.domain.User;
+import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.exception.UserErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -33,7 +32,7 @@ public class JwtProvider {
     private SecretKey secretKey;
 
     @PostConstruct
-    public void init() {        // secretkey 값을 읽어 디코딩 하여 바이트 배열로 변환 후 hmac으로 암호화
+    public void init() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.secret());
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
@@ -91,11 +90,9 @@ public class JwtProvider {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            // 토큰이 만료된 경우
-            throw new CustomException(TokenErrorCode.EXPIRED_TOKEN);
+            throw new BusinessException(TokenErrorCode.EXPIRED_TOKEN);
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
-            // 토큰이 변조되었거나 형식이 잘못된 경우
-            throw new CustomException(TokenErrorCode.INVALID_TOKEN);
+            throw new BusinessException(TokenErrorCode.INVALID_TOKEN);
         }
     }
 
@@ -104,7 +101,7 @@ public class JwtProvider {
     }
 
     public User getUser(String token) {
-        return userRepository.findById(getUserId(token)).orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+        return userRepository.findById(getUserId(token)).orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
     }
 
     public String getTokenType(String token) {
