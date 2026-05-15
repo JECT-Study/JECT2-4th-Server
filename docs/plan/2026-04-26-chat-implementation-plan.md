@@ -326,7 +326,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic");      // 구독 prefix
-        registry.setUserDestinationPrefix("/user"); // 사용자별 개인 채널 prefix
+        // setUserDestinationPrefix("/user") 제거 — /topic/chat/{voteId}/unread/{userId} 경로로 통일
     }
 
     @Override
@@ -341,10 +341,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 #### 5-2. WebSocketAuthInterceptor
 
 STOMP CONNECT frame 수신 시 `Authorization` 헤더에서 JWT를 추출해 인증 처리.  
-`accessor.setUser()`로 설정한 `Principal`은 이후 두 가지 역할을 한다.
-
-1. **서버 → 클라이언트 전송**: `convertAndSendToUser(userId, ...)` 호출 시 Spring이 해당 userId의 세션을 찾아 메시지를 라우팅.
-2. **클라이언트 구독 라우팅**: 클라이언트가 `/user/topic/...`으로 구독하면 Spring이 내부적으로 `/user/{userId}/topic/...`으로 매핑. `WebSocketConfig`의 `setUserDestinationPrefix("/user")`가 이 매핑을 활성화.
+`accessor.setUser()`로 설정한 `Principal`은 메시지 전송(`convertAndSendToUser`) 시 사용되었으나,
+현재는 `/topic/chat/{voteId}/unread/{userId}` 경로에 userId를 직접 포함하는 방식으로 변경하여
+`/user` prefix와 `setUserDestinationPrefix`를 제거하였다. (일관성 확보)
 
 ```java
 @Component
@@ -390,8 +389,8 @@ REST POST /api/chats/{voteId}/messages  { "content": "..." }
     ├─ ChatMessagePort.save(): DB 저장
     ├─ SimpMessagingTemplate.convertAndSend("/topic/chat/{voteId}")
     │     payload: { messageId, content, sentAt, senderNickname, senderVoteOption, isMine }
-    └─ SimpMessagingTemplate.convertAndSendToUser(userId, "/topic/chat/{voteId}/unread")
-          payload: { unreadCount }  ← 사용자마다 다른 값이므로 개인 채널로 전송
+    └─ SimpMessagingTemplate.convertAndSend("/topic/chat/{voteId}/unread/{userId}")
+          payload: { unreadCount }  ← 사용자마다 다른 값이므로 userId를 경로에 포함하여 전송
 ```
 
 ---

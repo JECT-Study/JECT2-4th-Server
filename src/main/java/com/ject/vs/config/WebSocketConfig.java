@@ -37,7 +37,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic");
-        registry.setUserDestinationPrefix("/user");
+        // 사용자별 개인 채널이 필요할 경우 convertAndSendToUser + /user prefix를 사용했으나,
+        // 현재는 /topic/chat/{voteId}/unread/{userId} 경로로 통일하여 /user prefix를 제거함.
     }
 
     @Override
