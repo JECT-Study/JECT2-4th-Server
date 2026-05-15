@@ -22,7 +22,7 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
     public EmojiResult reactAsMember(Long voteId, Long userId, VoteEmoji emoji) {
         Optional<VoteEmojiReaction> existing = reactionRepository.findByVoteIdAndUserId(voteId, userId);
         VoteEmojiReaction resultEmoji = applyReaction(existing, emoji != null ? VoteEmojiReaction.ofMember(voteId, userId, emoji) : null);
-        return buildResult(voteId, resultEmoji.getEmoji());
+        return buildResult(voteId, resultEmoji != null ? resultEmoji.getEmoji() : null);
     }
 
     @Override
@@ -32,7 +32,7 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
                 existing,
                 emoji != null ? VoteEmojiReaction.ofGuest(voteId, anonymousId, emoji) : null
         );
-        return buildResult(voteId, resultEmoji.getEmoji());
+        return buildResult(voteId, resultEmoji != null ? resultEmoji.getEmoji() : null);
     }
 
     /**
@@ -44,10 +44,24 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
      */
     private VoteEmojiReaction applyReaction(Optional<VoteEmojiReaction> existing,
                                             VoteEmojiReaction emojiReaction) {
-        existing.ifPresent(reactionRepository::delete);
-        if (emojiReaction == null) return null;
-        reactionRepository.save(emojiReaction);
-        return emojiReaction;
+        if (existing.isEmpty()) {
+            if (emojiReaction != null) {
+                reactionRepository.save(emojiReaction);
+                return emojiReaction;
+            }
+            return null;
+        }
+
+        VoteEmojiReaction existingReaction = existing.get();
+
+        if (emojiReaction == null || existingReaction.getEmoji() == emojiReaction.getEmoji()) {
+            reactionRepository.delete(existingReaction);
+            return null;
+        }
+
+        existingReaction.changeEmoji(emojiReaction.getEmoji());
+        reactionRepository.save(existingReaction);
+        return existingReaction;
     }
 
     private EmojiResult buildResult(Long voteId, VoteEmoji myEmoji) {

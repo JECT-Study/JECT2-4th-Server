@@ -19,6 +19,6 @@ public enum VoteDuration {
         return Arrays.stream(values())
                 .filter(d -> d.value.toHours() == hours)
                 .findFirst()
-                .orElseThrow(() -> new InvalidDurationException(hours));
+                .orElseThrow(InvalidDurationException::new);
     }
 }

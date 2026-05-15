@@ -29,7 +29,7 @@ class VoteTest {
 
             assertThat(vote.getType()).isEqualTo(VoteType.GENERAL);
             assertThat(vote.getTitle()).isEqualTo("제목");
-            assertThat(vote.getStatus()).isEqualTo(VoteStatus.ONGOING);
+            assertThat(vote.getStatus(FIXED_CLOCK)).isEqualTo(VoteStatus.ONGOING);
             assertThat(vote.getEndAt()).isEqualTo(Instant.parse("2025-01-02T00:00:00Z"));
         }
 
@@ -103,13 +103,12 @@ class VoteTest {
     class markEnded {
 
         @Test
-        void status가_ENDED로_변경된다() {
+        void endAt_이후에는_status가_ENDED() {
             Vote vote = Vote.create(VoteType.GENERAL, "제목", null, "thumb", null,
                     Duration.ofHours(24), FIXED_CLOCK);
 
-            vote.markEnded();
-
-            assertThat(vote.getStatus()).isEqualTo(VoteStatus.ENDED);
+            Clock afterEnd = Clock.fixed(Instant.parse("2025-01-03T00:00:00Z"), ZoneOffset.UTC);
+            assertThat(vote.getStatus(afterEnd)).isEqualTo(VoteStatus.ENDED);
         }
     }
 
