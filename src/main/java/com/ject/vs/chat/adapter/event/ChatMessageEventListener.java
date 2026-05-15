@@ -51,8 +51,9 @@ public class ChatMessageEventListener {
                             message.getVoteId(), unread.getLastReadMessageId()))
                     .orElse(totalCount);
 
-            messagingTemplate.convertAndSend(
-                    "/topic/chat/" + message.getVoteId() + "/unread/" + participantUserId,
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(participantUserId),
+                    "/topic/chat/" + message.getVoteId() + "/unread",
                     new UnreadPayload(message.getVoteId(), unreadCount)
             );
         }

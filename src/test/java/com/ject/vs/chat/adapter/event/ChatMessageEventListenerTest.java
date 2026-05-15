@@ -93,7 +93,7 @@ class ChatMessageEventListenerTest {
 
             // then
             ArgumentCaptor<UnreadPayload> captor = ArgumentCaptor.forClass(UnreadPayload.class);
-            verify(messagingTemplate).convertAndSend(eq("/topic/chat/1/unread/3"), captor.capture());
+            verify(messagingTemplate).convertAndSendToUser(eq("3"), eq("/topic/chat/1/unread"), captor.capture());
             assertThat(captor.getValue().unreadCount()).isEqualTo(5L);
         }
 
@@ -112,7 +112,7 @@ class ChatMessageEventListenerTest {
 
             // then
             ArgumentCaptor<UnreadPayload> captor = ArgumentCaptor.forClass(UnreadPayload.class);
-            verify(messagingTemplate).convertAndSend(eq("/topic/chat/1/unread/3"), captor.capture());
+            verify(messagingTemplate).convertAndSendToUser(eq("3"), eq("/topic/chat/1/unread"), captor.capture());
             assertThat(captor.getValue().unreadCount()).isEqualTo(2L);
         }
     }

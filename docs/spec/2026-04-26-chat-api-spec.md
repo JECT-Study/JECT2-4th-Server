@@ -251,8 +251,8 @@ ALTER TABLE users
 구독: /topic/chat/{voteId}         ← 새 메시지 수신 (모든 참여자)
 
 ─ 읽지 않은 메시지 뱃지 ────────────────────────────
-구독: /topic/chat/{voteId}/unread/{userId}  ← 새 메시지 도착 시 본인의 unreadCount 갱신
-                                               (userId별 개인 경로, 채팅 목록 화면에서 실시간 반영)
+구독: /user/topic/chat/{voteId}/unread  ← 새 메시지 도착 시 본인의 unreadCount 갱신
+                                           (사용자별 개인 채널, 채팅 목록 화면에서 실시간 반영)
 ```
 
 **수신 Payload (`/topic/chat/{voteId}`):**
@@ -268,13 +268,13 @@ ALTER TABLE users
 }
 ```
 
-**수신 Payload (`/topic/chat/{voteId}/unread/{userId}`):**
+**수신 Payload (`/user/topic/chat/{voteId}/unread`):**
 ```json
 { "unreadCount": 3 }
 ```
 
-> 서버는 `convertAndSend("/topic/chat/{voteId}/unread/{userId}", payload)`로 전송.  
-> 각 사용자의 unreadCount가 다르므로 userId를 경로에 포함하여 분리.
+> 서버는 `convertAndSendToUser(userId, "/topic/chat/{voteId}/unread", payload)`로 전송.  
+> 각 사용자의 unreadCount가 다르므로 `Principal` 기반 개인 채널로 분리 (보안상 외부에서 임의 userId로 구독 불가).
 
 > **REST vs WebSocket 역할 분리**
 > - 메시지 전송 → REST `POST /api/chats/{voteId}/messages`
