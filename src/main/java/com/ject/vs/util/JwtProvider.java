@@ -20,8 +20,6 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 
 @Component
@@ -49,7 +47,7 @@ public class JwtProvider {
                 .signWith(secretKey)
                 .compact();
 
-        return new TokenInfo(token, TokenType.ACCESS, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()), userId);
+        return new TokenInfo(token, TokenType.ACCESS, expiresAt, userId);
     }
 
     public TokenInfo createRefreshToken(Long userId) {
@@ -64,7 +62,7 @@ public class JwtProvider {
                 .signWith(secretKey)
                 .compact();
 
-        return new TokenInfo(token, TokenType.REFRESH, LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault()), userId);
+        return new TokenInfo(token, TokenType.REFRESH, expiresAt, userId);
     }
 
     public TokenStatus validationToken(String token) {
@@ -113,7 +111,7 @@ public class JwtProvider {
         Claims claims = getClaims(token);
         String type = claims.get("type").toString();
         Long userId = Long.parseLong(claims.getSubject());
-        LocalDateTime expiresAt = LocalDateTime.ofInstant(claims.getExpiration().toInstant(), ZoneId.systemDefault());
+        Instant expiresAt = claims.getExpiration().toInstant();
         return new TokenInfo(token, TokenType.valueOf(type), expiresAt, userId);
     }
 }

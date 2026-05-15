@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Getter
@@ -25,12 +25,12 @@ public class Token {
     @Enumerated(EnumType.STRING)
     private TokenType tokenType;
 
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
 
     private boolean revoked;
 
     @Builder
-    public Token(User user, String tokenValue, TokenType tokenType, LocalDateTime expiresAt, boolean revoked) {
+    public Token(User user, String tokenValue, TokenType tokenType, Instant expiresAt, boolean revoked) {
         this.user = user;
         this.tokenValue = tokenValue;
         this.tokenType = tokenType;

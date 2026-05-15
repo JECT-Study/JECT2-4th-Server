@@ -30,35 +30,42 @@ jobs:
         run: |
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           if [ -n "$LAST_TAG" ]; then
-            LOG=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
+            LOG=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges || true)
           else
             MAIN_HEAD=$(git rev-parse origin/main 2>/dev/null || echo "")
             if [ -n "$MAIN_HEAD" ]; then
-              LOG=$(git log "origin/main..HEAD" --pretty=format:"- %s" --no-merges)
+              LOG=$(git log "origin/main..HEAD" --pretty=format:"- %s" --no-merges || true)
             else
-              LOG=$(git log --pretty=format:"- %s" --no-merges -20)
+              LOG=$(git log --pretty=format:"- %s" --no-merges -20 || true)
             fi
           fi
 
+          # Write to temp file to avoid shell metacharacter issues when the
+          # content (arbitrary commit messages) is later included via ${{ }} expansion.
+          printf '%s\n' "$LOG" > /tmp/release-changelog.txt
           {
-            echo "log<<EOF"
-            echo "$LOG"
-            echo "EOF"
+            echo "log_file=/tmp/release-changelog.txt"
           } >> "$GITHUB_OUTPUT"
 
       - name: Build PR body
         id: body
         run: |
+          # Write full PR body to a temp file. This avoids dangerous ${{ }} expansion
+          # of arbitrary commit message text into shell commands in later steps.
           {
-            echo "content<<EOF"
             echo "## Release: develop → main"
             echo ""
             echo "develop 브랜치의 변경사항을 main으로 배포합니다."
             echo "버전은 main 머지 시점에 자동으로 확정됩니다."
             echo ""
             echo "### Changes"
-            echo "${{ steps.changelog.outputs.log }}"
-            echo "EOF"
+            if [ -f "${{ steps.changelog.outputs.log_file }}" ]; then
+              cat "${{ steps.changelog.outputs.log_file }}"
+            fi
+          } > /tmp/release-pr-body.txt
+
+          {
+            echo "body_file=/tmp/release-pr-body.txt"
           } >> "$GITHUB_OUTPUT"
 
       - name: Update existing PR
@@ -66,7 +73,7 @@ jobs:
         run: |
           gh pr edit ${{ steps.check.outputs.existing_pr }} \
             --title "release: develop → main" \
-            --body "${{ steps.body.outputs.content }}"
+            --body-file "${{ steps.body.outputs.body_file }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -78,7 +85,7 @@ jobs:
             --base main \
             --head develop \
             --title "release: develop → main" \
-            --body "${{ steps.body.outputs.content }}" \
+            --body-file "${{ steps.body.outputs.body_file }}" \
             --label release)
           PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"

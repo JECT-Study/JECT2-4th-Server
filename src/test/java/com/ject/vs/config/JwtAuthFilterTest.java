@@ -16,7 +16,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -74,7 +75,7 @@ class JwtAuthFilterTest {
         when(cookieUtil.getCookieValue(request, CookieUtil.CookieType.ACCESS_TOKEN)).thenReturn(accessToken);
         when(jwtProvider.validationToken(accessToken)).thenReturn(TokenStatus.VALID);
         when(jwtProvider.parseToken(accessToken))
-                .thenReturn(new TokenInfo(accessToken, TokenType.ACCESS, LocalDateTime.now().plusMinutes(10), userId));
+                .thenReturn(new TokenInfo(accessToken, TokenType.ACCESS, Instant.now().plus(Duration.ofMinutes(10)), userId));
 
         filter.doFilter(request, response, chain);
 
