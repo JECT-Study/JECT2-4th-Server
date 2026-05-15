@@ -113,6 +113,7 @@ public class JwtProvider {
         Claims claims = getClaims(token);
         String type = claims.get("type").toString();
         Long userId = Long.parseLong(claims.getSubject());
-        return new TokenInfo(token, TokenType.valueOf(type), LocalDateTime.now(), userId);
+        LocalDateTime expiresAt = LocalDateTime.ofInstant(claims.getExpiration().toInstant(), ZoneId.systemDefault());
+        return new TokenInfo(token, TokenType.valueOf(type), expiresAt, userId);
     }
 }
