@@ -1,5 +1,6 @@
 package com.ject.vs.chat.port.in.dto;
 
+import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.vote.domain.VoteOptionCode;
 
 import java.time.Instant;
@@ -9,7 +10,7 @@ public record MessageResult(
         String content,
         Instant sentAt,
         String senderNickname,
-        String senderProfileIcon,
+        ImageColor senderProfileIcon,
         VoteOptionCode senderVoteOption,
         boolean isMine
 ) {}

@@ -11,6 +11,7 @@ import com.ject.vs.user.port.in.UserQueryUseCase;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -31,12 +32,14 @@ public class ChatMessageEventListener {
     public void handle(ChatMessageSentEvent event) {
         ChatMessage message = event.message();
 
+        var sender = userQueryUseCase.getUser(message.getSenderId());
+
         MessageResult messageResult = new MessageResult(
                 message.getId(),
                 message.getContent(),
                 message.getCreatedAt(),
-                resolveNickname(message.getSenderId()),
-                null,
+                sender.getUserNameOrEmpty(),
+                sender.getImageColor(),
                 voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode(),
                 false
         );
@@ -62,11 +65,5 @@ public class ChatMessageEventListener {
                     new UnreadPayload(message.getVoteId(), unreadCount)
             );
         }
-    }
-
-    private String resolveNickname(Long userId) {
-        return userQueryUseCase.findById(userId)
-                .map(User::getUserNameOrEmpty)
-                .orElse(null);
     }
 }

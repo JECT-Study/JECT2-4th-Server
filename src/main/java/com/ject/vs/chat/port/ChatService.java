@@ -15,6 +15,7 @@ import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import com.ject.vs.vote.domain.VoteStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,13 +45,14 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         }
 
         ChatMessage saved = chatMessageRepository.save(message);
+        var sender = userQueryUseCase.getUser(command.senderId());
 
         return new MessageResult(
                 saved.getId(),
                 saved.getContent(),
                 saved.getCreatedAt(),
-                resolveNickname(command.senderId()),
-                null,
+                sender.getUserNameOrEmpty(),
+                sender.getImageColor(),
                 voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode(),
                 true
         );
@@ -131,23 +133,21 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         Long nextCursor = hasNext ? pageMessages.get(pageMessages.size() - 1).getId() : null;
 
         List<MessageResult> results = pageMessages.stream()
-                .map(msg -> new MessageResult(
-                        msg.getId(),
-                        msg.getContent(),
-                        msg.getCreatedAt(),
-                        resolveNickname(msg.getSenderId()),
-                        null,
-                        voteQueryUseCase.getSelectedOption(voteId, userId).getCode(),
-                        msg.getSenderId().equals(userId)
-                ))
+                .map(msg -> {
+                    var sender = userQueryUseCase.getUser(msg.getSenderId());
+
+                    return new MessageResult(
+                            msg.getId(),
+                            msg.getContent(),
+                            msg.getCreatedAt(),
+                            sender.getUserNameOrEmpty(),
+                            sender.getImageColor(),
+                            voteQueryUseCase.getSelectedOption(voteId, userId).getCode(),
+                            msg.getSenderId().equals(userId)
+                    );
+                })
                 .toList();
 
         return new MessagePageResult(results, nextCursor, hasNext);
-    }
-
-    private String resolveNickname(Long userId) {
-        return userQueryUseCase.findById(userId)
-                .map(User::getUserNameOrEmpty)
-                .orElse(null);
     }
 }
