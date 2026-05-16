@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface NotificationCommandUseCase {
     void markAsRead(Long notificationId, Long userId);
-    void markAllAsRead(Long userId);
+    int markAllAsRead(Long userId);
 
     // 이벤트 핸들러용 — 생성된 Notification 목록 반환 (FCM 발송 시 notificationId 필요)
     List<Notification> createBatch(List<NotificationCreateCommand> commands);

@@ -29,11 +29,11 @@ public class Notification extends BaseEntity {
     private Instant readAt;
     private Instant createdAt;
 
-    public static Notification ofVoteResultPublished(
+    public static Notification ofVoteEnded(
             Long userId, Long voteId, String voteTitle, String thumbnailUrl, Clock clock) {
         Notification n = new Notification();
         n.userId = userId;
-        n.type = NotificationType.VOTE_RESULT_PUBLISHED;
+        n.type = NotificationType.VOTE_ENDED;
         n.voteId = voteId;
         n.title = voteTitle;
         n.body = "투표 결과가 공개됐어요";

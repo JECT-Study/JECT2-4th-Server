@@ -1,6 +1,7 @@
 package com.ject.vs.notification.adapter.web;
 
 import com.ject.vs.notification.adapter.web.dto.NotificationListResponse;
+import com.ject.vs.notification.adapter.web.dto.ReadAllResponse;
 import com.ject.vs.notification.adapter.web.dto.UnreadCountResponse;
 import com.ject.vs.notification.port.in.NotificationCommandUseCase;
 import com.ject.vs.notification.port.in.NotificationQueryUseCase;
@@ -43,9 +44,9 @@ public class NotificationController {
     }
 
     @PostMapping("/read-all")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void markAllAsRead(@AuthenticationPrincipal Long userId) {
+    public ReadAllResponse markAllAsRead(@AuthenticationPrincipal Long userId) {
         if (userId == null) throw new UnauthorizedException();
-        commandUseCase.markAllAsRead(userId);
+        int updatedCount = commandUseCase.markAllAsRead(userId);
+        return new ReadAllResponse(updatedCount);
     }
 }

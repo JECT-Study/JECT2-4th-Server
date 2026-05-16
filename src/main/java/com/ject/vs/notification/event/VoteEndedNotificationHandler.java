@@ -57,7 +57,7 @@ public class VoteEndedNotificationHandler {
         // 3. Notification batch insert — notificationId가 포함된 결과 반환
         List<NotificationCreateCommand> commands = participantUserIds.stream()
                 .map(uid -> new NotificationCreateCommand(
-                        uid, NotificationType.VOTE_RESULT_PUBLISHED,
+                        uid, NotificationType.VOTE_ENDED,
                         vote.getId(), vote.getTitle(),
                         "투표 결과가 공개됐어요", vote.getThumbnailUrl()))
                 .toList();
@@ -88,7 +88,7 @@ public class VoteEndedNotificationHandler {
             if (notifId == null) continue;
 
             FcmPayload payload = new FcmPayload(
-                    NotificationType.VOTE_RESULT_PUBLISHED,
+                    NotificationType.VOTE_ENDED,
                     "투표 결과가 공개됐어요",
                     vote.getTitle(),
                     notifId,

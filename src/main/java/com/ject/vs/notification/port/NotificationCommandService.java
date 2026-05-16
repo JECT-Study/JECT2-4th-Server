@@ -31,8 +31,8 @@ public class NotificationCommandService implements NotificationCommandUseCase {
     }
 
     @Override
-    public void markAllAsRead(Long userId) {
-        notificationRepository.markAllAsRead(userId, Instant.now(clock));
+    public int markAllAsRead(Long userId) {
+        return notificationRepository.markAllAsRead(userId, Instant.now(clock));
     }
 
     @Override
@@ -40,8 +40,8 @@ public class NotificationCommandService implements NotificationCommandUseCase {
         if (commands.isEmpty()) return List.of();
         List<Notification> notifications = commands.stream()
                 .map(c -> {
-                    if (c.type() == NotificationType.VOTE_RESULT_PUBLISHED) {
-                        return Notification.ofVoteResultPublished(
+                    if (c.type() == NotificationType.VOTE_ENDED) {
+                        return Notification.ofVoteEnded(
                                 c.userId(), c.voteId(), c.title(), c.thumbnailUrl(), clock);
                     }
                     throw new IllegalArgumentException("Unsupported type: " + c.type());
