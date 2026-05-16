@@ -2,6 +2,7 @@ package com.ject.vs.vote.domain;
 
 import com.ject.vs.common.domain.BaseTimeEntity;
 import com.ject.vs.vote.exception.ImageRequiredException;
+import com.ject.vs.vote.exception.VoteOptionNotFoundException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -62,7 +63,9 @@ public class Vote extends BaseTimeEntity {
         return vote;
     }
 
-    /** 진실의 원천: endAt만 본다. status 컬럼은 보지 않는다. */
+    /**
+     * 진실의 원천: endAt만 본다. status 컬럼은 보지 않는다.
+     */
     public boolean isOngoing(Clock clock) {
         return Instant.now(clock).isBefore(endAt);
     }
@@ -75,30 +78,31 @@ public class Vote extends BaseTimeEntity {
         return isOngoing(clock) ? VoteStatus.ONGOING : VoteStatus.ENDED;
     }
 
-    public VoteStatus getStatus(){
+    public VoteStatus getStatus() {
         return getStatus(Clock.systemUTC());
     }
 
-    public String getOptionALabel() {
-        return getOptionLabel(0).orElse(null);
+    public VoteOption getOptionA() {
+        return getOption(VoteOptionCode.A)
+                .orElseThrow(VoteOptionNotFoundException::new);
     }
 
-    public String getOptionBLabel() {
-        return getOptionLabel(1).orElse(null);
+    public VoteOption getOptionB() {
+        return getOption(VoteOptionCode.B)
+                .orElseThrow(VoteOptionNotFoundException::new);
     }
 
-    public Optional<VoteOptionCode> getOptionCode(Long optionId) {
-        if (optionId == null) {
-            return Optional.empty();
-        }
+    public VoteOption getOption(Long optionId) {
+        return orderedOptions().stream()
+                .filter(opt -> opt.isIdEqualTo(optionId))
+                .findFirst()
+                .orElseThrow(VoteOptionNotFoundException::new);
+    }
 
-        List<VoteOption> orderedOptions = orderedOptions();
-        for (int i = 0; i < orderedOptions.size(); i++) {
-            if (optionId.equals(orderedOptions.get(i).getId())) {
-                return Optional.of(i == 0 ? VoteOptionCode.A : VoteOptionCode.B);
-            }
-        }
-        return Optional.empty();
+    private Optional<VoteOption> getOption(VoteOptionCode code) {
+        return orderedOptions().stream()
+                .filter(opt -> opt.isCodeEqualTo(code))
+                .findFirst();
     }
 
     private Optional<String> getOptionLabel(int index) {

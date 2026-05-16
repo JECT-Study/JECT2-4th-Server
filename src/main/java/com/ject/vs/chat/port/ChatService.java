@@ -137,7 +137,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                         msg.getCreatedAt(),
                         resolveNickname(msg.getSenderId()),
                         null,
-                        resolveSelectedOptionCode(voteId, msg.getSenderId()),
+                        voteQueryUseCase.getSelectedOption(voteId, userId).getCode(),
                         msg.getSenderId().equals(userId)
                 ))
                 .toList();
@@ -148,12 +148,6 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     private String resolveNickname(Long userId) {
         return userQueryUseCase.findById(userId)
                 .map(User::getUserNameOrEmpty)
-                .orElse(null);
-    }
-
-    private String resolveSelectedOptionCode(Long voteId, Long userId) {
-        return voteQueryUseCase.getSelectedOptionCode(voteId, userId)
-                .map(Enum::name)
                 .orElse(null);
     }
 }

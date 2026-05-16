@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port.in;
 
+import com.ject.vs.vote.domain.VoteOption;
 import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.vote.domain.VoteOptionCode;
 
@@ -19,7 +20,7 @@ public interface VoteQueryUseCase {
 
     VoteRatio getRatio(Long voteId);
 
-    Optional<VoteOptionCode> getSelectedOptionCode(Long voteId, Long userId);
+    VoteOption getSelectedOption(Long voteId, Long userId);
 
     int getParticipantCount(Long voteId);
 

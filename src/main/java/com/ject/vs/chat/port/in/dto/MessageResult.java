@@ -1,5 +1,7 @@
 package com.ject.vs.chat.port.in.dto;
 
+import com.ject.vs.vote.domain.VoteOptionCode;
+
 import java.time.Instant;
 
 public record MessageResult(
@@ -8,6 +10,6 @@ public record MessageResult(
         Instant sentAt,
         String senderNickname,
         String senderProfileIcon,
-        String senderVoteOption,
+        VoteOptionCode senderVoteOption,
         boolean isMine
 ) {}

@@ -37,7 +37,7 @@ public class ChatMessageEventListener {
                 message.getCreatedAt(),
                 resolveNickname(message.getSenderId()),
                 null,
-                resolveSelectedOptionCode(message.getVoteId(), message.getSenderId()),
+                voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode(),
                 false
         );
 
@@ -67,12 +67,6 @@ public class ChatMessageEventListener {
     private String resolveNickname(Long userId) {
         return userQueryUseCase.findById(userId)
                 .map(User::getUserNameOrEmpty)
-                .orElse(null);
-    }
-
-    private String resolveSelectedOptionCode(Long voteId, Long userId) {
-        return voteQueryUseCase.getSelectedOptionCode(voteId, userId)
-                .map(Enum::name)
                 .orElse(null);
     }
 }

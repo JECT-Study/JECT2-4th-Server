@@ -49,8 +49,8 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
                 vote.getThumbnailUrl(),
                 vote.getStatus(clock),
                 vote.getEndAt(),
-                vote.getOptionALabel(),
-                vote.getOptionBLabel()
+                vote.getOptionA().getLabel(),
+                vote.getOptionB().getLabel()
         );
     }
 
@@ -65,14 +65,11 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
     }
 
     @Override
-    public Optional<VoteOptionCode> getSelectedOptionCode(Long voteId, Long userId) {
+    public VoteOption getSelectedOption(Long voteId, Long userId) {
         Optional<Long> selectedOptionId = getSelectedOptionId(voteId, userId);
-        if (selectedOptionId.isEmpty()) {
-            return Optional.empty();
-        }
 
         Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
-        return vote.getOptionCode(selectedOptionId.get());
+        return vote.getOption(selectedOptionId.get());
     }
 
     @Override

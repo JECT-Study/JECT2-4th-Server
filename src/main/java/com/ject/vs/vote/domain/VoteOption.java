@@ -29,4 +29,12 @@ public class VoteOption extends BaseEntity {
         option.position = position;
         return option;
     }
+
+    public VoteOptionCode getCode() {
+        return position == 0 ? VoteOptionCode.A : VoteOptionCode.B;
+    }
+
+    public Boolean isCodeEqualTo(VoteOptionCode code) {
+        return getCode().equals(code);
+    }
 }
