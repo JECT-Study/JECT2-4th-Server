@@ -148,7 +148,10 @@ class ChatServiceTest {
             ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
-            given(userQueryUseCase.getUser(2L)).willReturn(null);
+            User sender = mock(User.class);
+            given(sender.getNickname()).willReturn("");
+            given(sender.getImageColor()).willReturn(ImageColor.GREEN);
+            given(userQueryUseCase.getUser(2L)).willReturn(sender);
             given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
             given(selectedOption.getCode()).willReturn(null);
 
@@ -167,7 +170,10 @@ class ChatServiceTest {
             ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.findAllByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
-            given(userQueryUseCase.getUser(2L)).willReturn(null);
+            User sender = mock(User.class);
+            given(sender.getNickname()).willReturn("");
+            given(sender.getImageColor()).willReturn(ImageColor.GREEN);
+            given(userQueryUseCase.getUser(2L)).willReturn(sender);
             given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
             given(selectedOption.getCode()).willReturn(null);
 
