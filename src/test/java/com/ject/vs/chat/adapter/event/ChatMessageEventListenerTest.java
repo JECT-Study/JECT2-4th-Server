@@ -7,7 +7,7 @@ import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
-import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.port.in.UserQueryUseCase;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import org.junit.jupiter.api.Nested;
@@ -50,7 +50,7 @@ class ChatMessageEventListenerTest {
     private ChatRoomUnreadRepository chatRoomUnreadRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserQueryUseCase userQueryUseCase;
 
     @Nested
     class handle {
@@ -73,6 +73,7 @@ class ChatMessageEventListenerTest {
         void 채팅_broadcast_payload는_메시지_정보를_담고_수신자_관점_isMine은_false다() {
             // given
             ChatMessage message = ChatMessage.of(7L, 2L, "hello payload");
+            given(userQueryUseCase.findById(2L)).willReturn(Optional.empty());
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(7L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(7L)).willReturn(0L);
 
@@ -107,6 +108,7 @@ class ChatMessageEventListenerTest {
         void 닉네임은_userId_기반_플레이스홀더로_설정된다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
+            given(userQueryUseCase.findById(2L)).willReturn(Optional.empty());
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(1L)).willReturn(0L);
 

@@ -7,7 +7,7 @@ import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
 import com.ject.vs.user.domain.User;
-import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.port.in.UserQueryUseCase;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class ChatMessageEventListener {
     private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
-    private final UserRepository userRepository;
+    private final UserQueryUseCase userQueryUseCase;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ChatMessageSentEvent event) {
@@ -65,10 +65,9 @@ public class ChatMessageEventListener {
     }
 
     private String resolveNickname(Long userId) {
-        return userRepository.findById(userId)
-                .map(User::getNickname)
-                .filter(nickname -> !nickname.isBlank())
-                .orElse("User#" + userId);
+        return userQueryUseCase.findById(userId)
+                .map(User::getUserNameOrEmpty)
+                .orElse(null);
     }
 
     private String resolveSelectedOptionCode(Long voteId, Long userId) {
