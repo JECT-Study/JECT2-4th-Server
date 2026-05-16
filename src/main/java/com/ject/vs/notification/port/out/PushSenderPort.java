@@ -1,12 +1,11 @@
 package com.ject.vs.notification.port.out;
 
-import com.ject.vs.notification.domain.PushSubscription;
+import java.util.List;
 
 public interface PushSenderPort {
 
-    SendResult send(PushSubscription subscription, PushPayload payload);
-
-    enum SendResult {
-        OK, GONE, RETRYABLE_ERROR
-    }
+    /**
+     * 멀티캐스트 발송. 만료된 토큰(UNREGISTERED / INVALID_ARGUMENT) 목록 반환.
+     */
+    List<String> sendMulticast(List<String> tokens, FcmPayload payload);
 }
