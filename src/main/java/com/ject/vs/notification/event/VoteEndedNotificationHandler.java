@@ -1,13 +1,12 @@
 package com.ject.vs.notification.event;
 
-import com.ject.vs.notification.domain.NotificationSetting;
-import com.ject.vs.notification.domain.NotificationSettingRepository;
+import com.ject.vs.notification.domain.Notification;
 import com.ject.vs.notification.domain.NotificationType;
-import com.ject.vs.notification.domain.PushSubscription;
-import com.ject.vs.notification.domain.PushSubscriptionRepository;
+import com.ject.vs.notification.domain.PushToken;
+import com.ject.vs.notification.domain.PushTokenRepository;
 import com.ject.vs.notification.port.in.NotificationCommandUseCase;
 import com.ject.vs.notification.port.in.NotificationCommandUseCase.NotificationCreateCommand;
-import com.ject.vs.notification.port.out.PushPayload;
+import com.ject.vs.notification.port.out.FcmPayload;
 import com.ject.vs.notification.port.out.PushSenderPort;
 import com.ject.vs.vote.domain.Vote;
 import com.ject.vs.vote.domain.VoteParticipationRepository;
@@ -20,8 +19,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -31,9 +34,9 @@ public class VoteEndedNotificationHandler {
     private final VoteRepository voteRepository;
     private final VoteParticipationRepository voteParticipationRepository;
     private final NotificationCommandUseCase notificationCommandUseCase;
-    private final NotificationSettingRepository settingRepository;
-    private final PushSubscriptionRepository pushSubscriptionRepository;
+    private final PushTokenRepository pushTokenRepository;
     private final PushSenderPort pushSender;
+    private final Clock clock;
 
     @EventListener
     @Async("notificationExecutor")
@@ -51,46 +54,56 @@ public class VoteEndedNotificationHandler {
                 .findAllUserIdsByVoteId(event.voteId());
         if (participantUserIds.isEmpty()) return;
 
-        // 3. Notification batch insert
+        // 3. Notification batch insert — notificationId가 포함된 결과 반환
         List<NotificationCreateCommand> commands = participantUserIds.stream()
                 .map(uid -> new NotificationCreateCommand(
                         uid, NotificationType.VOTE_RESULT_PUBLISHED,
                         vote.getId(), vote.getTitle(),
                         "투표 결과가 공개됐어요", vote.getThumbnailUrl()))
                 .toList();
-        notificationCommandUseCase.createBatch(commands);
+        List<Notification> created = notificationCommandUseCase.createBatch(commands);
 
-        // 4. push_enabled=true 인 사용자 필터
-        List<Long> enabledUserIds = settingRepository.findAllById(participantUserIds).stream()
-                .filter(NotificationSetting::isPushEnabled)
-                .map(NotificationSetting::getUserId)
-                .toList();
-        if (enabledUserIds.isEmpty()) return;
+        // 4. userId → notificationId 매핑
+        Map<Long, Long> userNotifIdMap = created.stream()
+                .collect(Collectors.toMap(Notification::getUserId, Notification::getId));
 
-        // 5. PushSubscription 일괄 조회 + 발송
-        List<PushSubscription> subscriptions =
-                pushSubscriptionRepository.findAllByUserIdIn(enabledUserIds);
+        // 5. 토큰 보유 회원별 토큰 목록 (토큰이 있으면 push ON 상태)
+        Map<Long, List<String>> tokensByUserId = pushTokenRepository
+                .findAllByUserIdIn(participantUserIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        PushToken::getUserId,
+                        Collectors.mapping(PushToken::getToken, Collectors.toList())));
 
-        PushPayload payload = new PushPayload(
-                NotificationType.VOTE_RESULT_PUBLISHED,
-                "투표 결과가 공개됐어요",
-                vote.getTitle(),
-                vote.getId(),
-                "/votes/" + vote.getId() + "/result"
-        );
+        if (tokensByUserId.isEmpty()) return;
 
-        List<PushSubscription> goneSubs = new ArrayList<>();
-        for (PushSubscription sub : subscriptions) {
-            PushSenderPort.SendResult result = pushSender.send(sub, payload);
-            if (result == PushSenderPort.SendResult.GONE) {
-                goneSubs.add(sub);
-            }
+        // 6. 회원별 FCM 발송 (notificationId가 회원마다 다르므로 개별 멀티캐스트)
+        List<String> allExpiredTokens = new ArrayList<>();
+        Instant now = Instant.now(clock);
+
+        for (Map.Entry<Long, List<String>> entry : tokensByUserId.entrySet()) {
+            Long userId = entry.getKey();
+            List<String> tokens = entry.getValue();
+            Long notifId = userNotifIdMap.get(userId);
+            if (notifId == null) continue;
+
+            FcmPayload payload = new FcmPayload(
+                    NotificationType.VOTE_RESULT_PUBLISHED,
+                    "투표 결과가 공개됐어요",
+                    vote.getTitle(),
+                    notifId,
+                    vote.getId(),
+                    vote.getThumbnailUrl(),
+                    now);
+
+            List<String> expired = pushSender.sendMulticast(tokens, payload);
+            allExpiredTokens.addAll(expired);
         }
 
-        // 6. 만료된 구독 정리
-        if (!goneSubs.isEmpty()) {
-            pushSubscriptionRepository.deleteAll(goneSubs);
-            log.info("Cleaned up {} stale push subscriptions", goneSubs.size());
+        // 7. 만료된 토큰 일괄 삭제
+        if (!allExpiredTokens.isEmpty()) {
+            pushTokenRepository.deleteAllByTokenIn(allExpiredTokens);
+            log.info("Cleaned up {} expired FCM tokens", allExpiredTokens.size());
         }
     }
 }

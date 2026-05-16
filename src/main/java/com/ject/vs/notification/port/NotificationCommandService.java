@@ -36,8 +36,8 @@ public class NotificationCommandService implements NotificationCommandUseCase {
     }
 
     @Override
-    public void createBatch(List<NotificationCreateCommand> commands) {
-        if (commands.isEmpty()) return;
+    public List<Notification> createBatch(List<NotificationCreateCommand> commands) {
+        if (commands.isEmpty()) return List.of();
         List<Notification> notifications = commands.stream()
                 .map(c -> {
                     if (c.type() == NotificationType.VOTE_RESULT_PUBLISHED) {
@@ -46,6 +46,6 @@ public class NotificationCommandService implements NotificationCommandUseCase {
                     }
                     throw new IllegalArgumentException("Unsupported type: " + c.type());
                 }).toList();
-        notificationRepository.saveAll(notifications);
+        return notificationRepository.saveAll(notifications);
     }
 }
