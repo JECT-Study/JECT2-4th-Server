@@ -9,6 +9,10 @@ import lombok.NoArgsConstructor;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 import static lombok.AccessLevel.PROTECTED;
 
@@ -32,12 +36,12 @@ public class Vote extends BaseTimeEntity {
 
     private String imageUrl;
 
-//    @Enumerated(EnumType.STRING)
-//    @Column(nullable = false)
-//    private VoteStatus status;
-
     @Column(nullable = false)
     private Instant endAt;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vote_id", insertable = false, updatable = false)
+    private List<VoteOption> options = new ArrayList<>();
 
     private String aiInsightHeadline;
     private String aiInsightBody;
@@ -54,7 +58,6 @@ public class Vote extends BaseTimeEntity {
         vote.content = content;
         vote.thumbnailUrl = thumbnailUrl;
         vote.imageUrl = imageUrl;
-//        vote.status = VoteStatus.ONGOING;
         vote.endAt = Instant.now(clock).plus(validityPeriod);
         return vote;
     }
@@ -76,10 +79,41 @@ public class Vote extends BaseTimeEntity {
         return getStatus(Clock.systemUTC());
     }
 
-//    /** 스케줄러용 — status 컬럼을 ENDED로 마킹 (캐시 갱신) */
-//    public void markEnded() {
-//        this.status = VoteStatus.ENDED;
-//    }
+    public String getOptionALabel() {
+        return getOptionLabel(0).orElse(null);
+    }
+
+    public String getOptionBLabel() {
+        return getOptionLabel(1).orElse(null);
+    }
+
+    public Optional<VoteOptionCode> getOptionCode(Long optionId) {
+        if (optionId == null) {
+            return Optional.empty();
+        }
+
+        List<VoteOption> orderedOptions = orderedOptions();
+        for (int i = 0; i < orderedOptions.size(); i++) {
+            if (optionId.equals(orderedOptions.get(i).getId())) {
+                return Optional.of(i == 0 ? VoteOptionCode.A : VoteOptionCode.B);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> getOptionLabel(int index) {
+        List<VoteOption> orderedOptions = orderedOptions();
+        if (orderedOptions.size() <= index) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(orderedOptions.get(index).getLabel());
+    }
+
+    private List<VoteOption> orderedOptions() {
+        return options.stream()
+                .sorted(Comparator.comparingInt(VoteOption::getPosition))
+                .toList();
+    }
 
     public void cacheAiInsight(String headline, String body) {
         this.aiInsightHeadline = headline;

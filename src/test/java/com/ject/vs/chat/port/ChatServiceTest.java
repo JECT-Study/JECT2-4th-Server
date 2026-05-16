@@ -10,6 +10,7 @@ import com.ject.vs.chat.port.in.dto.MarkAsReadCommand;
 import com.ject.vs.chat.port.in.dto.MessagePageResult;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.SendMessageCommand;
+import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import org.junit.jupiter.api.Nested;
@@ -47,6 +48,9 @@ class ChatServiceTest {
 
     @Mock
     private ChatRoomUnreadRepository chatRoomUnreadRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Nested
     class sendMessage {

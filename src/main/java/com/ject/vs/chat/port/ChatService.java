@@ -9,6 +9,8 @@ import com.ject.vs.chat.exception.InvalidMessageException;
 import com.ject.vs.chat.port.in.ChatCommandUseCase;
 import com.ject.vs.chat.port.in.ChatQueryUseCase;
 import com.ject.vs.chat.port.in.dto.*;
+import com.ject.vs.user.domain.User;
+import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import com.ject.vs.vote.domain.VoteStatus;
@@ -28,6 +30,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
+    private final UserRepository userRepository;
 
     @Override
     public MessageResult sendMessage(SendMessageCommand command) {
@@ -46,9 +49,9 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 saved.getId(),
                 saved.getContent(),
                 saved.getCreatedAt(),
-                "User#" + command.senderId(), // TODO: User.nickname 추가 후 교체
+                resolveNickname(command.senderId()),
                 null,
-                null,   // TODO: Vote 도메인 연동 후 senderVoteOption 채워야 함
+                resolveSelectedOptionCode(command.voteId(), command.senderId()),
                 true
         );
     }
@@ -73,6 +76,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
         return filteredVoteIds.stream()
                 .map(voteId -> {
+                    VoteQueryUseCase.VoteChatSummary vote = voteQueryUseCase.getVoteChatSummary(voteId);
                     long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
 
                     ChatMessage lastMsg = chatMessageRepository.findFirstByVoteIdOrderByIdDesc(voteId).orElse(null);
@@ -84,7 +88,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                             .orElse(0);
 
                     return ChatListItemResult.of(
-                            voteId,
+                            vote,
                             (int) participantCount,
                             lastMessage,
                             lastMsg != null ? lastMsg.getCreatedAt() : null,
@@ -97,16 +101,16 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     @Override
     @Transactional(readOnly = true)
     public ChatRoomResult getChatRoom(Long voteId) {
+        VoteQueryUseCase.VoteChatSummary vote = voteQueryUseCase.getVoteChatSummary(voteId);
         long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
-        return ChatRoomResult.of(voteId, (int) participantCount);
+        return ChatRoomResult.of(vote, (int) participantCount);
     }
 
     @Override
     @Transactional(readOnly = true)
     public GaugeResult getGauge(Long voteId) {
-        // TODO: Vote 도메인 연동 후 실제 득표율로 교체
-        long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
-        return new GaugeResult(50, 50, (int) participantCount);
+        VoteQueryUseCase.VoteRatio ratio = voteQueryUseCase.getRatio(voteId);
+        return new GaugeResult(ratio.optionARatio(), ratio.optionBRatio(), ratio.participantCount());
     }
 
     @Override
@@ -131,13 +135,26 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                         msg.getId(),
                         msg.getContent(),
                         msg.getCreatedAt(),
-                        "User#" + msg.getSenderId(), // TODO: User.nickname 추가 후 교체
+                        resolveNickname(msg.getSenderId()),
                         null,
-                        null,   // TODO: Vote 도메인 연동 후 senderVoteOption 채워야 함
+                        resolveSelectedOptionCode(voteId, msg.getSenderId()),
                         msg.getSenderId().equals(userId)
                 ))
                 .toList();
 
         return new MessagePageResult(results, nextCursor, hasNext);
+    }
+
+    private String resolveNickname(Long userId) {
+        return userRepository.findById(userId)
+                .map(User::getNickname)
+                .filter(nickname -> !nickname.isBlank())
+                .orElse("User#" + userId);
+    }
+
+    private String resolveSelectedOptionCode(Long voteId, Long userId) {
+        return voteQueryUseCase.getSelectedOptionCode(voteId, userId)
+                .map(Enum::name)
+                .orElse(null);
     }
 }

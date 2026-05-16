@@ -1,6 +1,7 @@
 package com.ject.vs.vote.port.in;
 
 import com.ject.vs.vote.domain.VoteStatus;
+import com.ject.vs.vote.domain.VoteOptionCode;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,7 +15,11 @@ public interface VoteQueryUseCase {
 
     VoteSummary getVoteSummary(Long voteId);
 
+    VoteChatSummary getVoteChatSummary(Long voteId);
+
     VoteRatio getRatio(Long voteId);
+
+    Optional<VoteOptionCode> getSelectedOptionCode(Long voteId, Long userId);
 
     int getParticipantCount(Long voteId);
 
@@ -22,6 +27,17 @@ public interface VoteQueryUseCase {
     List<Long> findAllVoteIdsByStatus(List<Long> voteIds, VoteStatus status);
 
     record VoteSummary(Long voteId, String title, VoteStatus status, Instant endAt) {
+    }
+
+    record VoteChatSummary(
+            Long voteId,
+            String title,
+            String thumbnailUrl,
+            VoteStatus status,
+            Instant endAt,
+            String optionA,
+            String optionB
+    ) {
     }
 
     record VoteRatio(int optionARatio, int optionBRatio, int participantCount) {

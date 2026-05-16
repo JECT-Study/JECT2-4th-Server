@@ -33,8 +33,8 @@ public class VoteCommandService implements VoteCommandUseCase {
                 clock
         );
         Vote saved = voteRepository.save(vote);
-        voteOptionRepository.save(VoteOption.of(saved.getId(), cmd.optionA(), 0));
-        voteOptionRepository.save(VoteOption.of(saved.getId(), cmd.optionB(), 1));
+        voteOptionRepository.save(VoteOption.of(saved, cmd.optionA(), 0));
+        voteOptionRepository.save(VoteOption.of(saved, cmd.optionB(), 1));
         return VoteCreateResult.from(saved, clock);
     }
 

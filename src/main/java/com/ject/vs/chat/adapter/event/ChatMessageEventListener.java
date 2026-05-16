@@ -6,7 +6,10 @@ import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
+import com.ject.vs.user.domain.User;
+import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
+import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -19,8 +22,10 @@ public class ChatMessageEventListener {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
+    private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
+    private final UserRepository userRepository;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ChatMessageSentEvent event) {
@@ -30,9 +35,9 @@ public class ChatMessageEventListener {
                 message.getId(),
                 message.getContent(),
                 message.getCreatedAt(),
-                "User#" + message.getSenderId(), // TODO: User.nickname 추가 후 교체
+                resolveNickname(message.getSenderId()),
                 null,
-                null,   // TODO: Vote 도메인 연동 후 senderVoteOption 채워야 함
+                resolveSelectedOptionCode(message.getVoteId(), message.getSenderId()),
                 false
         );
 
@@ -57,5 +62,18 @@ public class ChatMessageEventListener {
                     new UnreadPayload(message.getVoteId(), unreadCount)
             );
         }
+    }
+
+    private String resolveNickname(Long userId) {
+        return userRepository.findById(userId)
+                .map(User::getNickname)
+                .filter(nickname -> !nickname.isBlank())
+                .orElse("User#" + userId);
+    }
+
+    private String resolveSelectedOptionCode(Long voteId, Long userId) {
+        return voteQueryUseCase.getSelectedOptionCode(voteId, userId)
+                .map(Enum::name)
+                .orElse(null);
     }
 }
