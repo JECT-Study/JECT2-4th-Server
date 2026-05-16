@@ -6,8 +6,10 @@ import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
+import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.port.in.UserQueryUseCase;
+import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import lombok.RequiredArgsConstructor;
@@ -32,15 +34,17 @@ public class ChatMessageEventListener {
     public void handle(ChatMessageSentEvent event) {
         ChatMessage message = event.message();
 
-        var sender = userQueryUseCase.getUser(message.getSenderId());
+        User sender = userQueryUseCase.getUser(message.getSenderId());
+        VoteOptionCode voteOptionCode =
+                voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode();
 
         MessageResult messageResult = new MessageResult(
                 message.getId(),
                 message.getContent(),
                 message.getCreatedAt(),
-                sender.getUserNameOrEmpty(),
+                sender.getNickname(),
                 sender.getImageColor(),
-                voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode(),
+                voteOptionCode,
                 false
         );
 

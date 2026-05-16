@@ -110,7 +110,7 @@ class ChatWebSocketE2ETest {
         MessageResult chatPayload = chatMessages.poll(5, TimeUnit.SECONDS);
         assertThat(chatPayload).isNotNull();
         assertThat(chatPayload.content()).isEqualTo("hello e2e websocket");
-        assertThat(chatPayload.senderNickname()).isEqualTo("User#" + fixture.senderId());
+        assertThat(chatPayload.senderNickname()).isEqualTo(""); // 프로필 미설정 사용자 (정식 스펙상 User# 플레이스홀더 없음)
         assertThat(chatPayload.isMine()).isFalse();
 
         UnreadPayload unreadPayload = unreadMessages.poll(5, TimeUnit.SECONDS);
@@ -121,7 +121,7 @@ class ChatWebSocketE2ETest {
         User sender = userRepository.saveAndFlush(User.createWithEmail("e2e-sender-" + System.nanoTime() + "@test.com"));
         User receiver = userRepository.saveAndFlush(User.createWithEmail("e2e-receiver-" + System.nanoTime() + "@test.com"));
         Vote vote = voteRepository.saveAndFlush(Vote.create(VoteType.GENERAL, "e2e chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
-        VoteOption option = voteOptionRepository.saveAndFlush(VoteOption.of(vote.getId(), "A", 1));
+        VoteOption option = voteOptionRepository.saveAndFlush(VoteOption.of(vote, "A", 1));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), sender.getId(), option.getId()));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), receiver.getId(), option.getId()));
         return new TestFixture(vote.getId(), sender.getId(), receiver.getId());

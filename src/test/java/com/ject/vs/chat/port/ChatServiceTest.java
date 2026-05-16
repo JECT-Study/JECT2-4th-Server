@@ -10,9 +10,15 @@ import com.ject.vs.chat.port.in.dto.MarkAsReadCommand;
 import com.ject.vs.chat.port.in.dto.MessagePageResult;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.SendMessageCommand;
-import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.domain.ImageColor;
+import com.ject.vs.user.domain.User;
+import com.ject.vs.user.port.in.UserQueryUseCase;
+import com.ject.vs.vote.domain.VoteOption;
+import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
+
+import static org.mockito.Mockito.mock;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +56,10 @@ class ChatServiceTest {
     private ChatRoomUnreadRepository chatRoomUnreadRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserQueryUseCase userQueryUseCase;
+
+    @Mock
+    private VoteOption selectedOption;
 
     @Nested
     class sendMessage {
@@ -82,13 +91,21 @@ class ChatServiceTest {
             ChatMessage savedMessage = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
 
+            User sender = mock(User.class);
+            given(sender.getNickname()).willReturn("테스트유저");
+            given(sender.getImageColor()).willReturn(ImageColor.GREEN);
+            given(userQueryUseCase.getUser(2L)).willReturn(sender);
+            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
+            given(selectedOption.getCode()).willReturn(VoteOptionCode.A);
+
             // when
             MessageResult result = chatService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
 
             // then
             assertThat(result).isNotNull();
             assertThat(result.content()).isEqualTo("hello");
-            assertThat(result.senderNickname()).isEqualTo("User#2");
+            assertThat(result.senderNickname()).isEqualTo("테스트유저");
+            assertThat(result.senderVoteOption()).isEqualTo(VoteOptionCode.A);
             verify(chatMessageRepository).save(any(ChatMessage.class));
         }
     }
@@ -131,6 +148,9 @@ class ChatServiceTest {
             ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
+            given(userQueryUseCase.getUser(2L)).willReturn(null);
+            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
+            given(selectedOption.getCode()).willReturn(null);
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, null, 30);
@@ -147,6 +167,9 @@ class ChatServiceTest {
             ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
             given(chatMessageRepository.findAllByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
+            given(userQueryUseCase.getUser(2L)).willReturn(null);
+            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
+            given(selectedOption.getCode()).willReturn(null);
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, 100L, 30);

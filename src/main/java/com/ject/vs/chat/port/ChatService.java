@@ -9,11 +9,13 @@ import com.ject.vs.chat.exception.InvalidMessageException;
 import com.ject.vs.chat.port.in.ChatCommandUseCase;
 import com.ject.vs.chat.port.in.ChatQueryUseCase;
 import com.ject.vs.chat.port.in.dto.*;
+import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.port.in.UserQueryUseCase;
+import com.ject.vs.vote.domain.VoteOptionCode;
+import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
-import com.ject.vs.vote.domain.VoteStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.springframework.data.domain.PageRequest;
@@ -45,15 +47,17 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         }
 
         ChatMessage saved = chatMessageRepository.save(message);
-        var sender = userQueryUseCase.getUser(command.senderId());
+        User sender = userQueryUseCase.getUser(command.senderId());
+        VoteOptionCode voteOptionCode =
+                voteQueryUseCase.getSelectedOption(command.voteId(), command.senderId()).getCode();
 
         return new MessageResult(
                 saved.getId(),
                 saved.getContent(),
                 saved.getCreatedAt(),
-                sender.getUserNameOrEmpty(),
+                sender.getNickname(),
                 sender.getImageColor(),
-                voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode(),
+                voteOptionCode,
                 true
         );
     }
@@ -134,15 +138,17 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
         List<MessageResult> results = pageMessages.stream()
                 .map(msg -> {
-                    var sender = userQueryUseCase.getUser(msg.getSenderId());
+                    User sender = userQueryUseCase.getUser(msg.getSenderId());
+                    VoteOptionCode voteOptionCode =
+                            voteQueryUseCase.getSelectedOption(voteId, msg.getSenderId()).getCode();
 
                     return new MessageResult(
                             msg.getId(),
                             msg.getContent(),
                             msg.getCreatedAt(),
-                            sender.getUserNameOrEmpty(),
+                            sender.getNickname(),
                             sender.getImageColor(),
-                            voteQueryUseCase.getSelectedOption(voteId, userId).getCode(),
+                            voteOptionCode,
                             msg.getSenderId().equals(userId)
                     );
                 })

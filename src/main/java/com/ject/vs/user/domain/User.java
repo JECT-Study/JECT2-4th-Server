@@ -57,11 +57,4 @@ public class User {
         this.imageColor = ImageColor.GREEN;
         this.nickname = nickname;
     }
-
-    public String getUserNameOrEmpty() {
-        if (nickname != null && !nickname.isBlank()) {
-            return nickname;
-        }
-        return "";
-    }
 }

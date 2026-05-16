@@ -7,9 +7,13 @@ import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
+import com.ject.vs.user.domain.ImageColor;
+import com.ject.vs.user.domain.User;
 import com.ject.vs.user.port.in.UserQueryUseCase;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
+
+import static org.mockito.Mockito.mock;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,6 +63,7 @@ class ChatMessageEventListenerTest {
         void 메시지를_채팅방_토픽으로_broadcast한다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
+            given(userQueryUseCase.getUser(2L)).willReturn(mock(User.class));
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(1L)).willReturn(0L);
 
@@ -73,7 +78,12 @@ class ChatMessageEventListenerTest {
         void 채팅_broadcast_payload는_메시지_정보를_담고_수신자_관점_isMine은_false다() {
             // given
             ChatMessage message = ChatMessage.of(7L, 2L, "hello payload");
-            given(userQueryUseCase.findById(2L)).willReturn(Optional.empty());
+
+            User sender = mock(User.class);
+            given(sender.getNickname()).willReturn("슈퍼강아지_485");
+            given(sender.getImageColor()).willReturn(ImageColor.GREEN);
+            given(userQueryUseCase.getUser(2L)).willReturn(sender);
+
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(7L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(7L)).willReturn(0L);
 
@@ -85,7 +95,7 @@ class ChatMessageEventListenerTest {
             verify(messagingTemplate).convertAndSend(eq("/topic/chat/7"), captor.capture());
             MessageResult payload = captor.getValue();
             assertThat(payload.content()).isEqualTo("hello payload");
-            assertThat(payload.senderNickname()).isEqualTo("User#2");
+            assertThat(payload.senderNickname()).isEqualTo("슈퍼강아지_485");
             assertThat(payload.isMine()).isFalse();
         }
 
@@ -93,6 +103,7 @@ class ChatMessageEventListenerTest {
         void voteId별로_다른_topic에_broadcast한다() {
             // given
             ChatMessage message = ChatMessage.of(2L, 9L, "vote 2 message");
+            given(userQueryUseCase.getUser(9L)).willReturn(mock(User.class));
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(2L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(2L)).willReturn(0L);
 
@@ -104,22 +115,6 @@ class ChatMessageEventListenerTest {
             verify(messagingTemplate, never()).convertAndSend(eq("/topic/chat/1"), any(Object.class));
         }
 
-        @Test
-        void 닉네임은_userId_기반_플레이스홀더로_설정된다() {
-            // given
-            ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userQueryUseCase.findById(2L)).willReturn(Optional.empty());
-            given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
-            given(chatMessageRepository.countByVoteId(1L)).willReturn(0L);
-
-            // when
-            listener.handle(new ChatMessageSentEvent(message));
-
-            // then
-            ArgumentCaptor<MessageResult> captor = ArgumentCaptor.forClass(MessageResult.class);
-            verify(messagingTemplate).convertAndSend(eq("/topic/chat/1"), captor.capture());
-            assertThat(captor.getValue().senderNickname()).isEqualTo("User#2");
-        }
     }
 
     @Nested
@@ -129,6 +124,7 @@ class ChatMessageEventListenerTest {
         void 읽음_기록이_없는_참여자에게는_전체_메시지_수를_전송한다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
+            given(userQueryUseCase.getUser(2L)).willReturn(mock(User.class));
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of(3L));
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(3L, 1L)).willReturn(Optional.empty());
             given(chatMessageRepository.countByVoteId(1L)).willReturn(5L);
@@ -146,6 +142,7 @@ class ChatMessageEventListenerTest {
         void 읽음_기록이_있으면_lastReadMessageId_이후_메시지_수를_전송한다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
+            given(userQueryUseCase.getUser(2L)).willReturn(mock(User.class));
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of(3L));
             ChatRoomUnread unread = ChatRoomUnread.of(3L, 1L, 10L);
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(3L, 1L)).willReturn(Optional.of(unread));
