@@ -47,9 +47,8 @@ dependencies {
 	// Swagger / OpenAPI
 	implementation(Dependencies.Swagger.SPRINGDOC)
 
-	// Web Push (VAPID)
-	implementation(Dependencies.WebPush.WEB_PUSH)
-	implementation(Dependencies.WebPush.BOUNCY_CASTLE)
+	// Firebase (FCM)
+	implementation(Dependencies.Firebase.ADMIN)
 
 	compileOnly(Dependencies.Lombok.LOMBOK)
 	annotationProcessor(Dependencies.Lombok.LOMBOK)

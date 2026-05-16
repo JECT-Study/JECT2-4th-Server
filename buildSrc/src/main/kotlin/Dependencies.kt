@@ -40,8 +40,7 @@ object Dependencies {
         const val JUNIT_LAUNCHER = "org.junit.platform:junit-platform-launcher"
     }
 
-    object WebPush {
-        const val WEB_PUSH = "nl.martijndwars:web-push:5.1.1"
-        const val BOUNCY_CASTLE = "org.bouncycastle:bcprov-jdk18on:1.78.1"
+    object Firebase {
+        const val ADMIN = "com.google.firebase:firebase-admin:9.3.0"
     }
 }
