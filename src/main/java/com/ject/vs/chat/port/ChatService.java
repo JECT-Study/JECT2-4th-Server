@@ -9,10 +9,15 @@ import com.ject.vs.chat.exception.InvalidMessageException;
 import com.ject.vs.chat.port.in.ChatCommandUseCase;
 import com.ject.vs.chat.port.in.ChatQueryUseCase;
 import com.ject.vs.chat.port.in.dto.*;
+import com.ject.vs.user.domain.ImageColor;
+import com.ject.vs.user.domain.User;
+import com.ject.vs.user.port.in.UserQueryUseCase;
+import com.ject.vs.vote.domain.VoteOptionCode;
+import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
-import com.ject.vs.vote.domain.VoteStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +33,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
+    private final UserQueryUseCase userQueryUseCase;
 
     @Override
     public MessageResult sendMessage(SendMessageCommand command) {
@@ -41,14 +47,17 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         }
 
         ChatMessage saved = chatMessageRepository.save(message);
+        User sender = userQueryUseCase.getUser(command.senderId());
+        VoteOptionCode voteOptionCode =
+                voteQueryUseCase.getSelectedOption(command.voteId(), command.senderId()).getCode();
 
         return new MessageResult(
                 saved.getId(),
                 saved.getContent(),
                 saved.getCreatedAt(),
-                "User#" + command.senderId(), // TODO: User.nickname 추가 후 교체
-                null,
-                null,   // TODO: Vote 도메인 연동 후 senderVoteOption 채워야 함
+                sender.getNickname(),
+                sender.getImageColor(),
+                voteOptionCode,
                 true
         );
     }
@@ -73,6 +82,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
         return filteredVoteIds.stream()
                 .map(voteId -> {
+                    VoteQueryUseCase.VoteChatSummary vote = voteQueryUseCase.getVoteChatSummary(voteId);
                     long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
 
                     ChatMessage lastMsg = chatMessageRepository.findFirstByVoteIdOrderByIdDesc(voteId).orElse(null);
@@ -84,7 +94,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                             .orElse(0);
 
                     return ChatListItemResult.of(
-                            voteId,
+                            vote,
                             (int) participantCount,
                             lastMessage,
                             lastMsg != null ? lastMsg.getCreatedAt() : null,
@@ -97,16 +107,16 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     @Override
     @Transactional(readOnly = true)
     public ChatRoomResult getChatRoom(Long voteId) {
+        VoteQueryUseCase.VoteChatSummary vote = voteQueryUseCase.getVoteChatSummary(voteId);
         long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
-        return ChatRoomResult.of(voteId, (int) participantCount);
+        return ChatRoomResult.of(vote, (int) participantCount);
     }
 
     @Override
     @Transactional(readOnly = true)
     public GaugeResult getGauge(Long voteId) {
-        // TODO: Vote 도메인 연동 후 실제 득표율로 교체
-        long participantCount = voteParticipationQueryUseCase.countParticipantsByVoteId(voteId);
-        return new GaugeResult(50, 50, (int) participantCount);
+        VoteQueryUseCase.VoteRatio ratio = voteQueryUseCase.getRatio(voteId);
+        return new GaugeResult(ratio.optionARatio(), ratio.optionBRatio(), ratio.participantCount());
     }
 
     @Override
@@ -127,15 +137,21 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         Long nextCursor = hasNext ? pageMessages.get(pageMessages.size() - 1).getId() : null;
 
         List<MessageResult> results = pageMessages.stream()
-                .map(msg -> new MessageResult(
-                        msg.getId(),
-                        msg.getContent(),
-                        msg.getCreatedAt(),
-                        "User#" + msg.getSenderId(), // TODO: User.nickname 추가 후 교체
-                        null,
-                        null,   // TODO: Vote 도메인 연동 후 senderVoteOption 채워야 함
-                        msg.getSenderId().equals(userId)
-                ))
+                .map(msg -> {
+                    User sender = userQueryUseCase.getUser(msg.getSenderId());
+                    VoteOptionCode voteOptionCode =
+                            voteQueryUseCase.getSelectedOption(voteId, msg.getSenderId()).getCode();
+
+                    return new MessageResult(
+                            msg.getId(),
+                            msg.getContent(),
+                            msg.getCreatedAt(),
+                            sender.getNickname(),
+                            sender.getImageColor(),
+                            voteOptionCode,
+                            msg.getSenderId().equals(userId)
+                    );
+                })
                 .toList();
 
         return new MessagePageResult(results, nextCursor, hasNext);

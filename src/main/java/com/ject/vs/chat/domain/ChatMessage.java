@@ -2,9 +2,8 @@ package com.ject.vs.chat.domain;
 
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.common.domain.BaseAggregateEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.ject.vs.vote.domain.Vote;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

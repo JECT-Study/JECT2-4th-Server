@@ -1,27 +1,28 @@
 package com.ject.vs.chat.port.in.dto;
 
 import com.ject.vs.vote.domain.VoteStatus;
+import com.ject.vs.vote.port.in.VoteQueryUseCase.VoteChatSummary;
 
 import java.time.Instant;
 
 public record ChatRoomResult(
         Long voteId,
-        String title,       // TODO: Vote 도메인 연동 후 채워야 함
-        VoteStatus status,  // TODO: Vote 도메인 연동 후 채워야 함
+        String title,
+        VoteStatus status,
         int participantCount,
-        String optionA,     // TODO: Vote 도메인 연동 후 채워야 함
-        String optionB,     // TODO: Vote 도메인 연동 후 채워야 함
-        Instant endAt       // TODO: Vote 도메인 연동 후 채워야 함
+        String optionA,
+        String optionB,
+        Instant endAt
 ) {
-    public static ChatRoomResult of(Long voteId, int participantCount) {
+    public static ChatRoomResult of(VoteChatSummary vote, int participantCount) {
         return new ChatRoomResult(
-                voteId,
-                null,   // TODO: Vote 도메인 연동 후 채워야 함
-                null,   // TODO: Vote 도메인 연동 후 채워야 함
+                vote.voteId(),
+                vote.title(),
+                vote.status(),
                 participantCount,
-                null,   // TODO: Vote 도메인 연동 후 채워야 함
-                null,   // TODO: Vote 도메인 연동 후 채워야 함
-                null    // TODO: Vote 도메인 연동 후 채워야 함
+                vote.optionA(),
+                vote.optionB(),
+                vote.endAt()
         );
     }
 }
