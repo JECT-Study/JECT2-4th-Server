@@ -51,7 +51,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 saved.getCreatedAt(),
                 resolveNickname(command.senderId()),
                 null,
-                resolveSelectedOptionCode(command.voteId(), command.senderId()),
+                voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode(),
                 true
         );
     }
