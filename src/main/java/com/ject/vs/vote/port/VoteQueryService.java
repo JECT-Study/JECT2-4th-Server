@@ -87,4 +87,9 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
     public List<Long> findAllUserIdsByVoteId(Long voteId) {
         return voteParticipationRepository.findAllUserIdsByVoteId(voteId);
     }
+
+    @Override
+    public long countParticipationByUserId(Long userId) {
+        return voteParticipationRepository.countByUserId(userId);
+    }
 }

@@ -4,3 +4,6 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+
+firebase:
+  service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:}

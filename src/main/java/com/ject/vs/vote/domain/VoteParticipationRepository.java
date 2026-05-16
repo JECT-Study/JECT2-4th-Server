@@ -31,6 +31,8 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
 
     void deleteByVoteIdAndUserId(Long voteId, Long userId);
 
+    long countByUserId(Long userId);
+
     @Query("""
             SELECT new com.ject.vs.vote.domain.GenderCount(u.gender, COUNT(p))
             FROM VoteParticipation p, com.ject.vs.user.domain.User u

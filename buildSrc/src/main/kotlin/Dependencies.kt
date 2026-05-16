@@ -39,4 +39,8 @@ object Dependencies {
     object Test {
         const val JUNIT_LAUNCHER = "org.junit.platform:junit-platform-launcher"
     }
+
+    object Firebase {
+        const val ADMIN = "com.google.firebase:firebase-admin:9.3.0"
+    }
 }

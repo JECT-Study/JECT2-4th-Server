@@ -47,6 +47,9 @@ dependencies {
 	// Swagger / OpenAPI
 	implementation(Dependencies.Swagger.SPRINGDOC)
 
+	// Firebase (FCM)
+	implementation(Dependencies.Firebase.ADMIN)
+
 	compileOnly(Dependencies.Lombok.LOMBOK)
 	annotationProcessor(Dependencies.Lombok.LOMBOK)
 	testImplementation(Dependencies.SpringBoot.TEST)

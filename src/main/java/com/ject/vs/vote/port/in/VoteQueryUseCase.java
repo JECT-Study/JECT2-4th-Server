@@ -21,6 +21,9 @@ public interface VoteQueryUseCase {
     /** 채팅 도메인 getChatList() 호환용 — 실제 Vote.endAt 기준으로 필터링 */
     List<Long> findAllVoteIdsByStatus(List<Long> voteIds, VoteStatus status);
 
+    /** 알림 도메인 1-8 팝업 트리거 판정용 — 회원의 누적 투표 참여 수 */
+    long countParticipationByUserId(Long userId);
+
     record VoteSummary(Long voteId, String title, VoteStatus status, Instant endAt) {
     }
 
