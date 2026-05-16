@@ -162,6 +162,7 @@ class ChatMessageEventListenerTest {
         void 참여자가_여러_명이면_각_user_destination으로_개별_unreadCount를_전송한다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
+            given(userQueryUseCase.getUser(2L)).willReturn(mock(User.class));
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of(3L, 4L));
             given(chatMessageRepository.countByVoteId(1L)).willReturn(7L);
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(3L, 1L)).willReturn(Optional.empty());
@@ -189,6 +190,7 @@ class ChatMessageEventListenerTest {
         void 참여자가_없으면_개인_unreadCount는_전송하지_않는다() {
             // given
             ChatMessage message = ChatMessage.of(1L, 2L, "hello");
+            given(userQueryUseCase.getUser(2L)).willReturn(mock(User.class));
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(1L)).willReturn(0L);
 
