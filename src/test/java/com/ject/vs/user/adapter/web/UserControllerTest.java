@@ -3,6 +3,8 @@ package com.ject.vs.user.adapter.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
+import com.ject.vs.config.TestPropertiesConfig;
+import org.springframework.context.annotation.Import;
 import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
 import com.ject.vs.user.adapter.web.dto.UserProfileResponse;
 import com.ject.vs.user.domain.Gender;
@@ -32,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
+@Import(TestPropertiesConfig.class)
 class UserControllerTest {
     @Autowired
     private MockMvc mockMvc;
