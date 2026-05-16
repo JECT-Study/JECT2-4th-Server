@@ -8,7 +8,6 @@ import com.ject.vs.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -23,21 +22,9 @@ import java.io.IOException;
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final AuthService authService;
-
-    @Value("${app.oauth2.redirect-success-url}")
-    private String homeUrl;
-
-    @Value("${app.oauth2.extra-info-url}")
-    private String extraInfoUrl;
-
-    @Value("${app.jwt.access-token-expiration-seconds}")
-    private long accessTokenExpiration;
-
-    @Value("${app.jwt.refresh-token-expiration-seconds}")
-    private long refreshTokenExpiration;
-
-    @Value("${app.cookie.secure:false}")
-    private boolean secureCookie;
+    private final OAuth2Properties oauth2Properties;
+    private final JwtProperties jwtProperties;
+    private final CookieProperties cookieProperties;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -62,20 +49,23 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     }
 
     private void addTokenCookies(HttpServletResponse response, LoginTokenResponse loginResponse) {
+        long accessTokenExpiration = jwtProperties.accessTokenExpirationSeconds();
+        long refreshTokenExpiration = jwtProperties.refreshTokenExpirationSeconds();
+
         ResponseCookie accessTokenCookie = ResponseCookie.from(CookieUtil.CookieType.ACCESS_TOKEN, loginResponse.getAccessToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieProperties.secure())
                 .path("/")
                 .maxAge(accessTokenExpiration)
-                .sameSite("Lax")
+                .sameSite(cookieProperties.sameSite())
                 .build();
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from(CookieUtil.CookieType.REFRESH_TOKEN, loginResponse.getRefreshToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieProperties.secure())
                 .path("/")
                 .maxAge(refreshTokenExpiration)
-                .sameSite("Lax")
+                .sameSite(cookieProperties.sameSite())
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
@@ -83,9 +73,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     }
 
     private String determineTargetUrl(UserStatus status) {
-        if(UserStatus.REGISTER.equals(status)) {
-            return homeUrl;
+        if (UserStatus.REGISTER.equals(status)) {
+            return oauth2Properties.redirectSuccessUrl();
         }
-        return extraInfoUrl;
+        return oauth2Properties.extraInfoUrl();
     }
 }

@@ -17,7 +17,8 @@ class AnonymousIdResolverTest {
 
     @BeforeEach
     void setUp() {
-        resolver = new AnonymousIdResolver();
+        CookieProperties cookieProperties = new CookieProperties(false, "None");
+        resolver = new AnonymousIdResolver(cookieProperties);
     }
 
     @Nested
