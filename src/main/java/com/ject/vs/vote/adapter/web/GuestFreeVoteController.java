@@ -2,6 +2,7 @@ package com.ject.vs.vote.adapter.web;
 
 import com.ject.vs.config.AnonymousId;
 import com.ject.vs.vote.adapter.web.dto.FreeVotesResponse;
+import com.ject.vs.vote.domain.GuestFreeVote;
 import com.ject.vs.vote.port.GuestFreeVoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,9 @@ public class GuestFreeVoteController {
 
     @GetMapping("/free-votes")
     public FreeVotesResponse getFreeVotes(@AnonymousId String anonymousId) {
-        return new FreeVotesResponse(guestFreeVoteService.remaining(anonymousId));
+        return new FreeVotesResponse(
+                guestFreeVoteService.remaining(anonymousId),
+                GuestFreeVote.totalFreeVotes()
+        );
     }
 }
