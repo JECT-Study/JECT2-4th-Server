@@ -2,6 +2,7 @@ package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.user.domain.ImageColor;
+import com.ject.vs.vote.domain.VoteOptionCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
@@ -24,20 +25,19 @@ public record MessageResponse(
         ImageColor senderProfileIcon,
 
         @Schema(description = "메시지를 보낸 사용자가 선택한 투표 선택지", example = "A", allowableValues = {"A", "B"}, nullable = true)
-        String senderVoteOption,
+        VoteOptionCode senderVoteOption,
 
         @Schema(description = "현재 로그인 사용자가 보낸 메시지인지 여부", example = "false")
         boolean isMine
 ) {
     public static MessageResponse from(MessageResult result) {
-        String voteOption = result.senderVoteOption() != null ? result.senderVoteOption().name() : null;
         return new MessageResponse(
                 result.messageId(),
                 result.content(),
                 result.sentAt(),
                 result.senderNickname(),
                 result.senderProfileIcon(),
-                voteOption,
+                result.senderVoteOption(),
                 result.isMine()
         );
     }

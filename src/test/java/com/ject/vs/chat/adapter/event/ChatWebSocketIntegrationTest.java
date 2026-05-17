@@ -103,7 +103,7 @@ class ChatWebSocketIntegrationTest {
         assertThat(received).isNotNull();
         assertThat(received.messageId()).isEqualTo(message.getId());
         assertThat(received.content()).isEqualTo("hello websocket");
-        assertThat(received.senderNickname()).isEqualTo(""); // 프로필 미설정 사용자 (정식 스펙상 User# 플레이스홀더 없음)
+        assertThat(received.senderNickname()).isNull(); // 프로필 미설정 사용자는 null
         assertThat(received.isMine()).isFalse();
     }
 

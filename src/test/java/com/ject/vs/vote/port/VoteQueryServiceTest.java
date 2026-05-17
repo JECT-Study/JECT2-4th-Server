@@ -116,7 +116,6 @@ class VoteQueryServiceTest {
         @Test
         void 옵션_비율을_올바르게_계산한다() {
             Vote dummyVote = mock(Vote.class);
-            given(dummyVote.getId()).willReturn(1L);
             VoteOption optA = VoteOption.of(dummyVote, "A", 0);
             VoteOption optB = VoteOption.of(dummyVote, "B", 1);
             given(voteOptionRepository.findByVoteIdOrderByPosition(1L)).willReturn(List.of(optA, optB));
@@ -133,7 +132,6 @@ class VoteQueryServiceTest {
         @Test
         void 참여자_없으면_비율_0() {
             Vote dummyVote = mock(Vote.class);
-            given(dummyVote.getId()).willReturn(1L);
             VoteOption optA = VoteOption.of(dummyVote, "A", 0);
             VoteOption optB = VoteOption.of(dummyVote, "B", 1);
             given(voteOptionRepository.findByVoteIdOrderByPosition(1L)).willReturn(List.of(optA, optB));

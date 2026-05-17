@@ -110,7 +110,7 @@ class ChatWebSocketE2ETest {
         MessageResult chatPayload = chatMessages.poll(5, TimeUnit.SECONDS);
         assertThat(chatPayload).isNotNull();
         assertThat(chatPayload.content()).isEqualTo("hello e2e websocket");
-        assertThat(chatPayload.senderNickname()).isEqualTo(""); // 프로필 미설정 사용자 (정식 스펙상 User# 플레이스홀더 없음)
+        assertThat(chatPayload.senderNickname()).isNull(); // 프로필 미설정 사용자는 null
         assertThat(chatPayload.isMine()).isFalse();
 
         UnreadPayload unreadPayload = unreadMessages.poll(5, TimeUnit.SECONDS);
