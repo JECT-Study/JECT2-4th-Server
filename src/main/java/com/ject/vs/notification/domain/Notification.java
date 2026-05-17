@@ -29,6 +29,9 @@ public class Notification extends BaseEntity {
     private Instant readAt;
     private Instant createdAt;
 
+    private boolean sent;
+    private Instant sentAt;
+
     public static Notification ofVoteEnded(
             Long userId, Long voteId, String voteTitle, String thumbnailUrl, Clock clock) {
         Notification n = new Notification();
@@ -40,6 +43,7 @@ public class Notification extends BaseEntity {
         n.thumbnailUrl = thumbnailUrl;
         n.isRead = false;
         n.createdAt = Instant.now(clock);
+        n.sent = false;
         return n;
     }
 
@@ -47,6 +51,12 @@ public class Notification extends BaseEntity {
         if (this.isRead) return;
         this.isRead = true;
         this.readAt = Instant.now(clock);
+    }
+
+    public void markSent(Clock clock) {
+        if (this.sent) return;
+        this.sent = true;
+        this.sentAt = Instant.now(clock);
     }
 
     public boolean isOwnedBy(Long userId) {
