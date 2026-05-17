@@ -15,10 +15,14 @@ public interface VoteResultQueryUseCase {
     record VoteResultDetail(
             Long voteId,
             String title,
+            Instant createdAt,
+            String content,
+            String thumbnailUrl,
             VoteStatus status,
             Instant endAt,
             int participantCount,
             List<VoteCommandUseCase.OptionResult> options,
+            boolean voted,
             Long mySelectedOptionId,
             Insight insight,
             AiInsightView aiInsight
@@ -37,7 +41,7 @@ public interface VoteResultQueryUseCase {
         }
     }
 
-    record GenderDistribution(int maleRatio, int femaleRatio) {
+    record GenderDistribution(long maleCount, int maleRatio, long femaleCount, int femaleRatio) {
     }
 
     record AgeDistribution(String ageGroup, int ratio, boolean isMyGroup) {
@@ -53,6 +57,6 @@ public interface VoteResultQueryUseCase {
         }
     }
 
-    record ShareLinkResult(String url) {
+    record ShareLinkResult(String shareUrl, String title, String thumbnailUrl) {
     }
 }

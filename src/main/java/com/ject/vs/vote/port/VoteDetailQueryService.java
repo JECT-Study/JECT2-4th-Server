@@ -67,10 +67,12 @@ public class VoteDetailQueryService {
                     .orElse(null);
         }
 
+        boolean voted = mySelectedOptionId != null;
+
         return new VoteDetailResult(
-                vote.getId(), vote.getType(), vote.getTitle(), vote.getContent(),
+                vote.getId(), vote.getType(), vote.getTitle(), vote.getCreatedAt(), vote.getContent(),
                 vote.getThumbnailUrl(), vote.getImageUrl(), status, vote.getEndAt(),
-                (int) total, optionResults, mySelectedOptionId, emojiSummary, myEmoji
+                (int) total, optionResults, voted, mySelectedOptionId, emojiSummary, myEmoji, 0
         );
     }
 
@@ -78,6 +80,7 @@ public class VoteDetailQueryService {
             Long voteId,
             VoteType type,
             String title,
+            Instant createdAt,
             String content,
             String thumbnailUrl,
             String imageUrl,
@@ -85,9 +88,11 @@ public class VoteDetailQueryService {
             Instant endAt,
             int participantCount,
             List<OptionResult> options,
+            boolean voted,
             Long mySelectedOptionId,
             Map<VoteEmoji, Long> emojiSummary,
-            VoteEmoji myEmoji
+            VoteEmoji myEmoji,
+            int commentCount
     ) {
     }
 }

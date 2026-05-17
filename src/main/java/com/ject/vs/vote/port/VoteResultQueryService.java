@@ -45,8 +45,9 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
         }).toList();
 
         if (userId == null) {
-            return new VoteResultDetail(voteId, vote.getTitle(), VoteStatus.ENDED,
-                    vote.getEndAt(), (int) total, optionResults, null,
+            return new VoteResultDetail(voteId, vote.getTitle(), vote.getCreatedAt(),
+                    vote.getContent(), vote.getThumbnailUrl(), VoteStatus.ENDED,
+                    vote.getEndAt(), (int) total, optionResults, false, null,
                     Insight.ofLocked(), AiInsightView.unavailable());
         }
 
@@ -68,14 +69,20 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
             aiInsight = AiInsightView.unavailable();
         }
 
-        return new VoteResultDetail(voteId, vote.getTitle(), VoteStatus.ENDED,
-                vote.getEndAt(), (int) total, optionResults, mySelectedOptionId, insight, aiInsight);
+        boolean voted = myParticipation.isPresent();
+        return new VoteResultDetail(voteId, vote.getTitle(), vote.getCreatedAt(),
+                vote.getContent(), vote.getThumbnailUrl(), VoteStatus.ENDED,
+                vote.getEndAt(), (int) total, optionResults, voted, mySelectedOptionId, insight, aiInsight);
     }
 
     @Override
     public ShareLinkResult getShareLink(Long voteId) {
-        if (!voteRepository.existsById(voteId)) throw new VoteNotFoundException();
-        return new ShareLinkResult("https://vs.app/poll/result/" + voteId);
+        Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
+        return new ShareLinkResult(
+                "https://vs.app/poll/result/" + voteId,
+                vote.getTitle(),
+                vote.getThumbnailUrl()
+        );
     }
 
     private Insight buildMySelectionInsight(Long voteId, Long optionId, Long userId) {
@@ -108,12 +115,14 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
 
     private GenderDistribution computeGenderDistribution(List<GenderCount> genderCounts) {
         long totalGender = genderCounts.stream().mapToLong(GenderCount::count).sum();
-        if (totalGender == 0) return new GenderDistribution(0, 0);
+        if (totalGender == 0) return new GenderDistribution(0, 0, 0, 0);
 
         long maleCount = genderCounts.stream()
                 .filter(gc -> Gender.MALE == gc.gender()).mapToLong(GenderCount::count).sum();
+        long femaleCount = totalGender - maleCount;
         int maleRatio = (int) Math.round(maleCount * 100.0 / totalGender);
-        return new GenderDistribution(maleRatio, 100 - maleRatio);
+        int femaleRatio = 100 - maleRatio;
+        return new GenderDistribution(maleCount, maleRatio, femaleCount, femaleRatio);
     }
 
     private List<AgeDistribution> computeAgeDistributionByOption(Long voteId, Long optionId, AgeGroup myGroup) {
