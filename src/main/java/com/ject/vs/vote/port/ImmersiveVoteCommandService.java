@@ -65,8 +65,16 @@ public class ImmersiveVoteCommandService implements ImmersiveVoteCommandUseCase 
     private ImmersiveParticipateResult buildResult(Long voteId, ImmersiveVoteAction action,
                                                     Long selectedOptionId, Integer remainingFreeVotes) {
         List<VoteOption> options = voteOptionRepository.findByVoteIdOrderByPosition(voteId);
-        long total = voteParticipationRepository.countByVoteId(voteId);
 
+        // CANCELED 시 voteCount/ratio를 null로 반환
+        if (action == ImmersiveVoteAction.CANCELED) {
+            List<OptionResult> optionResults = options.stream()
+                    .map(opt -> new OptionResult(opt.getId(), opt.getLabel(), null, null))
+                    .toList();
+            return new ImmersiveParticipateResult(voteId, action, selectedOptionId, optionResults, remainingFreeVotes);
+        }
+
+        long total = voteParticipationRepository.countByVoteId(voteId);
         List<OptionResult> optionResults = options.stream().map(opt -> {
             long count = voteParticipationRepository.countByVoteIdAndOptionId(voteId, opt.getId());
             int ratio = total == 0 ? 0 : (int) Math.round(count * 100.0 / total);

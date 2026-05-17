@@ -72,8 +72,8 @@ public class PushNotificationSender {
 
             FcmPayload payload = new FcmPayload(
                     notification.getType(),
-                    notification.getBody(),
                     notification.getTitle(),
+                    notification.getBody(),
                     notification.getId(),
                     notification.getVoteId(),
                     notification.getThumbnailUrl(),

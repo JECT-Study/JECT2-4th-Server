@@ -50,10 +50,18 @@ class ImmersiveVoteCommandServiceTest {
                 Duration.ofHours(1), FIXED_CLOCK);
     }
 
-    private void stubOngoing(Long voteId) {
+    private void stubOngoingBase(Long voteId) {
         given(clock.instant()).willReturn(Instant.parse("2025-01-01T00:00:00Z"));
         given(voteRepository.findById(voteId)).willReturn(Optional.of(ongoingVote()));
-        given(voteOptionRepository.existsByIdAndVoteId(10L, voteId)).willReturn(true);
+    }
+
+    private void stubOngoing(Long voteId, Long optionId) {
+        stubOngoingBase(voteId);
+        given(voteOptionRepository.existsByIdAndVoteId(optionId, voteId)).willReturn(true);
+    }
+
+    private void stubOngoingForVoted(Long voteId, Long optionId) {
+        stubOngoing(voteId, optionId);
         given(voteOptionRepository.findByVoteIdOrderByPosition(voteId)).willReturn(List.of());
         given(voteParticipationRepository.countByVoteId(voteId)).willReturn(0L);
     }
@@ -63,7 +71,7 @@ class ImmersiveVoteCommandServiceTest {
 
         @Test
         void 신규_참여시_VOTED_반환() {
-            stubOngoing(1L);
+            stubOngoingForVoted(1L, 10L);
             given(voteParticipationRepository.findByVoteIdAndUserId(1L, 2L)).willReturn(Optional.empty());
             given(voteParticipationRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
@@ -77,18 +85,21 @@ class ImmersiveVoteCommandServiceTest {
 
         @Test
         void 다른_옵션_클릭시_VOTED_반환_및_옵션_변경() {
-            stubOngoing(1L);
+            stubOngoingForVoted(1L, 11L);
             VoteParticipation existing = VoteParticipation.ofMember(1L, 2L, 10L);
             given(voteParticipationRepository.findByVoteIdAndUserId(1L, 2L)).willReturn(Optional.of(existing));
 
-            ImmersiveParticipateResult result = service.participateOrCancel(1L, 2L, null, 10L);
-            // same option → CANCELED
-            assertThat(result.action()).isEqualTo(ImmersiveVoteAction.CANCELED);
+            ImmersiveParticipateResult result = service.participateOrCancel(1L, 2L, null, 11L);
+
+            assertThat(result.action()).isEqualTo(ImmersiveVoteAction.VOTED);
+            assertThat(result.selectedOptionId()).isEqualTo(11L);
+            assertThat(existing.getOptionId()).isEqualTo(11L);
         }
 
         @Test
         void 같은_옵션_재클릭시_CANCELED() {
-            stubOngoing(1L);
+            stubOngoing(1L, 10L);
+            given(voteOptionRepository.findByVoteIdOrderByPosition(1L)).willReturn(List.of());
             VoteParticipation existing = VoteParticipation.ofMember(1L, 2L, 10L);
             given(voteParticipationRepository.findByVoteIdAndUserId(1L, 2L)).willReturn(Optional.of(existing));
 
@@ -105,7 +116,7 @@ class ImmersiveVoteCommandServiceTest {
 
         @Test
         void 신규_비회원_참여시_차감_후_VOTED() {
-            stubOngoing(1L);
+            stubOngoingForVoted(1L, 10L);
             given(voteParticipationRepository.findByVoteIdAndAnonymousId(1L, "anon")).willReturn(Optional.empty());
             given(voteParticipationRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
             given(guestFreeVoteService.remaining("anon")).willReturn(4);
@@ -119,7 +130,7 @@ class ImmersiveVoteCommandServiceTest {
 
         @Test
         void 비회원_옵션_변경시_차감_없음() {
-            stubOngoing(1L);
+            stubOngoingForVoted(1L, 10L);
             VoteParticipation existing = VoteParticipation.ofGuest(1L, "anon", 20L);
             given(voteParticipationRepository.findByVoteIdAndAnonymousId(1L, "anon")).willReturn(Optional.of(existing));
             given(guestFreeVoteService.remaining("anon")).willReturn(3);

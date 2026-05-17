@@ -11,7 +11,7 @@ public record ParticipateResponse(
         int participantCount,
         Integer remainingFreeVotes
 ) {
-    public record OptionItem(Long optionId, String label, long voteCount, Integer ratio) {
+    public record OptionItem(Long optionId, String label, Long voteCount, Integer ratio) {
     }
 
     public static ParticipateResponse from(ParticipateResult result) {

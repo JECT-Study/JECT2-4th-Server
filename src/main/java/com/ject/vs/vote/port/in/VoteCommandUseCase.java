@@ -46,6 +46,6 @@ public interface VoteCommandUseCase {
     ) {
     }
 
-    record OptionResult(Long optionId, String label, long voteCount, Integer ratio) {
+    record OptionResult(Long optionId, String label, Long voteCount, Integer ratio) {
     }
 }
