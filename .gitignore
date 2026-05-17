@@ -37,6 +37,13 @@ out/
 ### VS Code ###
 .vscode/
 
+### Metals (Scala LSP) ###
+.metals/
+.bloop/
+
+### Kotlin build cache ###
+buildSrc/.kotlin/
+
 ### API Client Generation ###
 swagger.json
 generated-api-client/

@@ -64,8 +64,8 @@ class VoteCommandServiceTest {
             Vote fakeVote = Vote.create(VoteType.GENERAL, "제목", null, "thumb", null,
                     Duration.ofHours(24), FIXED_CLOCK);
             given(voteRepository.save(any())).willReturn(fakeVote);
-            VoteOption optA = VoteOption.of(1L, "A", 0);
-            VoteOption optB = VoteOption.of(1L, "B", 1);
+            VoteOption optA = VoteOption.of(fakeVote, "A", 0);
+            VoteOption optB = VoteOption.of(fakeVote, "B", 1);
             given(voteOptionRepository.save(any())).willReturn(optA, optB);
 
             VoteCreateResult result = service.create(cmd);

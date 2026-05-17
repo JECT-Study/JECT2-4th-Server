@@ -48,8 +48,8 @@ class VoteParticipationRepositoryTest {
                 Vote.create(VoteType.GENERAL, "테스트 투표", null, "thumb", null,
                         Duration.ofHours(24), FIXED_CLOCK)
         );
-        optionA = voteOptionRepository.save(VoteOption.of(vote.getId(), "A", 0));
-        voteOptionRepository.save(VoteOption.of(vote.getId(), "B", 1));
+        optionA = voteOptionRepository.save(VoteOption.of(vote, "A", 0));
+        voteOptionRepository.save(VoteOption.of(vote, "B", 1));
     }
 
     @Nested

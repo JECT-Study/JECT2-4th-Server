@@ -15,7 +15,8 @@ public enum VoteErrorCode implements ErrorCode {
     INVALID_EMOJI("유효하지 않은 이모지입니다.", 400),
     UNAUTHORIZED("인증이 필요합니다.", 401),
     IMAGE_REQUIRED("몰입형 투표에는 이미지가 필요합니다.", 400),
-    INVALID_DURATION("유효하지 않은 시간입니다.", 400);
+    INVALID_DURATION("유효하지 않은 시간입니다.", 400),
+    VOTE_OPTION_NOT_FOUND("투표 선택지가 존재하지 않습니다.", 404);
 
     private final String message;
     private final Integer statusCode;

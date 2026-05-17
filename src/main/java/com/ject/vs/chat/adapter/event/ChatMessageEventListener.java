@@ -6,8 +6,14 @@ import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
+import com.ject.vs.user.domain.ImageColor;
+import com.ject.vs.user.domain.User;
+import com.ject.vs.user.port.in.UserQueryUseCase;
+import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
+import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -19,20 +25,26 @@ public class ChatMessageEventListener {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
+    private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
+    private final UserQueryUseCase userQueryUseCase;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ChatMessageSentEvent event) {
         ChatMessage message = event.message();
 
+        User sender = userQueryUseCase.getUser(message.getSenderId());
+        VoteOptionCode voteOptionCode =
+                voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode();
+
         MessageResult messageResult = new MessageResult(
                 message.getId(),
                 message.getContent(),
                 message.getCreatedAt(),
-                "User#" + message.getSenderId(), // TODO: User.nickname 추가 후 교체
-                null,
-                null,   // TODO: Vote 도메인 연동 후 senderVoteOption 채워야 함
+                sender.getNickname(),
+                sender.getImageColor(),
+                voteOptionCode,
                 false
         );
 
