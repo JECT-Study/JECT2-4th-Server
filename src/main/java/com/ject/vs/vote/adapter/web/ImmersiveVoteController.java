@@ -9,6 +9,7 @@ import com.ject.vs.vote.adapter.web.dto.ShareLinkResponse;
 import com.ject.vs.vote.port.in.ImmersiveVoteCommandUseCase;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase;
 import com.ject.vs.vote.port.in.VoteResultQueryUseCase;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,7 +29,7 @@ public class ImmersiveVoteController {
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal Long userId,
-            @AnonymousId String anonymousId) {
+            @Parameter(hidden = true) @AnonymousId String anonymousId) {
         return ImmersiveFeedResponse.from(immersiveVoteQueryUseCase.getFeed(cursor, size, userId, anonymousId));
     }
 
@@ -36,7 +37,7 @@ public class ImmersiveVoteController {
     public ImmersiveParticipateResponse participateOrCancel(
             @PathVariable Long voteId,
             @AuthenticationPrincipal Long userId,
-            @AnonymousId String anonymousId,
+            @Parameter(hidden = true) @AnonymousId String anonymousId,
             @RequestBody @Valid ParticipateRequest request) {
         ImmersiveVoteCommandUseCase.ImmersiveParticipateResult result =
                 immersiveVoteCommandUseCase.participateOrCancel(voteId, userId, anonymousId, request.optionId());

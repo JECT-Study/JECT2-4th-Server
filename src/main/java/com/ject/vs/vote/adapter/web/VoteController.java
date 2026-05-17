@@ -5,6 +5,7 @@ import com.ject.vs.vote.adapter.web.dto.*;
 import com.ject.vs.vote.exception.UnauthorizedException;
 import com.ject.vs.vote.port.VoteDetailQueryService;
 import com.ject.vs.vote.port.in.VoteCommandUseCase;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,7 @@ public class VoteController {
     public VoteDetailResponse getDetail(
             @PathVariable Long voteId,
             @AuthenticationPrincipal Long userId,
-            @AnonymousId String anonymousId) {
+            @Parameter(hidden = true) @AnonymousId String anonymousId) {
         return VoteDetailResponse.from(voteDetailQueryService.getDetail(voteId, userId, anonymousId));
     }
 
@@ -40,7 +41,7 @@ public class VoteController {
     public ParticipateResponse participate(
             @PathVariable Long voteId,
             @AuthenticationPrincipal Long userId,
-            @AnonymousId String anonymousId,
+            @Parameter(hidden = true) @AnonymousId String anonymousId,
             @RequestBody @Valid ParticipateRequest request) {
         VoteCommandUseCase.ParticipateResult result = userId != null
                 ? voteCommandUseCase.participateAsMember(voteId, userId, request.optionId())
