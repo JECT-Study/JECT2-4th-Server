@@ -41,15 +41,17 @@ public record VoteResultResponse(
             List<AgeDistributionResponse> ageDistribution
     ) {
         public record GenderDistributionResponse(
+                int total,
                 GenderDetail female,
-                GenderDetail male
+                GenderDetail male,
+                String highlightedGender
         ) {
         }
 
         public record GenderDetail(long count, int ratio) {
         }
 
-        public record AgeDistributionResponse(String ageGroup, int ratio, boolean isMyGroup) {
+        public record AgeDistributionResponse(String ageGroup, int ratio, boolean isHighlighted) {
         }
 
         static InsightResponse from(Insight insight) {
@@ -60,15 +62,17 @@ public record VoteResultResponse(
             if (insight.genderDistribution() != null) {
                 GenderDistribution g = insight.genderDistribution();
                 gender = new GenderDistributionResponse(
+                        g.total(),
                         new GenderDetail(g.femaleCount(), g.femaleRatio()),
-                        new GenderDetail(g.maleCount(), g.maleRatio())
+                        new GenderDetail(g.maleCount(), g.maleRatio()),
+                        g.highlightedGender()
                 );
             }
 
             List<AgeDistributionResponse> ages = null;
             if (insight.ageDistribution() != null) {
                 ages = insight.ageDistribution().stream()
-                        .map(a -> new AgeDistributionResponse(a.ageGroup(), a.ratio(), a.isMyGroup()))
+                        .map(a -> new AgeDistributionResponse(a.ageGroup(), a.ratio(), a.isHighlighted()))
                         .toList();
             }
 
