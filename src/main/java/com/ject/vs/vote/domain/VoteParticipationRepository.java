@@ -53,4 +53,15 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
             GROUP BY u.gender
             """)
     List<GenderCount> findGenderDistributionByVote(@Param("voteId") Long voteId);
+
+    @Query("""
+            SELECT new com.ject.vs.vote.domain.VoteParticipationRepository$VoteParticipantCount(p.voteId, COUNT(p))
+            FROM VoteParticipation p
+            WHERE p.voteId IN :voteIds
+            GROUP BY p.voteId
+            """)
+    List<VoteParticipantCount> countByVoteIds(@Param("voteIds") List<Long> voteIds);
+
+    record VoteParticipantCount(Long voteId, Long count) {
+    }
 }
