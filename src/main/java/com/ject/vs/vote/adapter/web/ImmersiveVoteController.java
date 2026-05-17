@@ -32,7 +32,7 @@ public class ImmersiveVoteController {
         return ImmersiveFeedResponse.from(immersiveVoteQueryUseCase.getFeed(cursor, size, userId, anonymousId));
     }
 
-    @PutMapping("/{voteId}/participate")
+    @PostMapping("/{voteId}/participate")
     public ImmersiveParticipateResponse participateOrCancel(
             @PathVariable Long voteId,
             @AuthenticationPrincipal Long userId,
