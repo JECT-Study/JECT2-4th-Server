@@ -50,6 +50,9 @@ dependencies {
 	// Firebase (FCM)
 	implementation(Dependencies.Firebase.ADMIN)
 
+	// AWS S3
+	implementation(Dependencies.Aws.S3)
+
 	compileOnly(Dependencies.Lombok.LOMBOK)
 	annotationProcessor(Dependencies.Lombok.LOMBOK)
 	testImplementation(Dependencies.SpringBoot.TEST)
