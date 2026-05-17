@@ -1,4 +1,4 @@
 package com.ject.vs.vote.adapter.web.dto;
 
-public record FreeVotesResponse(int remaining) {
+public record FreeVotesResponse(int remainingFreeVotes, int totalFreeVotes) {
 }
