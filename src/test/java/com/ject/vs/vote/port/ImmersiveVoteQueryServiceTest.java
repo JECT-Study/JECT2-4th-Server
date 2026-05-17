@@ -153,6 +153,7 @@ class ImmersiveVoteQueryServiceTest {
 
         @Test
         void 참여자_없으면_비율_0() {
+            given(voteRepository.existsById(1L)).willReturn(true);
             Vote dummyVote = mock(Vote.class);
             VoteOption optA = VoteOption.of(dummyVote, "A", 1);
             VoteOption optB = VoteOption.of(dummyVote, "B", 2);
@@ -170,6 +171,7 @@ class ImmersiveVoteQueryServiceTest {
 
         @Test
         void A_3표_B_1표이면_A비율_75_B비율_25() {
+            given(voteRepository.existsById(1L)).willReturn(true);
             Vote dummyVote = mock(Vote.class);
             VoteOption optA = VoteOption.of(dummyVote, "A", 1);
             VoteOption optB = VoteOption.of(dummyVote, "B", 2);
