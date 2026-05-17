@@ -8,9 +8,9 @@ import com.ject.vs.notification.port.in.NotificationCommandUseCase;
 import com.ject.vs.notification.port.in.NotificationCommandUseCase.NotificationCreateCommand;
 import com.ject.vs.notification.port.out.FcmPayload;
 import com.ject.vs.notification.port.out.PushSenderPort;
+import com.ject.vs.notification.port.out.VoteQueryPort;
 import com.ject.vs.vote.domain.Vote;
 import com.ject.vs.vote.domain.VoteParticipationRepository;
-import com.ject.vs.vote.domain.VoteRepository;
 import com.ject.vs.vote.event.VoteEndedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class VoteEndedNotificationHandler {
 
-    private final VoteRepository voteRepository;
+    private final VoteQueryPort voteQueryPort;
     private final VoteParticipationRepository voteParticipationRepository;
     private final NotificationCommandUseCase notificationCommandUseCase;
     private final PushTokenRepository pushTokenRepository;
@@ -43,11 +43,7 @@ public class VoteEndedNotificationHandler {
     @Transactional
     public void on(VoteEndedEvent event) {
         // 1. Vote 정보 조회
-        Vote vote = voteRepository.findById(event.voteId()).orElse(null);
-        if (vote == null) {
-            log.warn("Vote not found for VoteEndedEvent voteId={}", event.voteId());
-            return;
-        }
+        Vote vote = voteQueryPort.getById(event.voteId());
 
         // 2. 참여 회원(userId != null) 목록 조회
         List<Long> participantUserIds = voteParticipationRepository
