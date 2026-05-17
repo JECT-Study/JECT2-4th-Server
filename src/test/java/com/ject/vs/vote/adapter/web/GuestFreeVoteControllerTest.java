@@ -38,7 +38,8 @@ class GuestFreeVoteControllerTest {
 
         mockMvc.perform(get("/api/me/free-votes"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.remaining").value(3));
+                .andExpect(jsonPath("$.remainingFreeVotes").value(3))
+                .andExpect(jsonPath("$.totalFreeVotes").value(5));
     }
 
     @Test
@@ -49,5 +50,27 @@ class GuestFreeVoteControllerTest {
         mockMvc.perform(get("/api/me/free-votes"))
                 .andExpect(status().isOk())
                 .andExpect(header().exists("Set-Cookie"));
+    }
+
+    @Test
+    @WithMockUser
+    void 무료투표_5회_모두_사용시_0_반환() throws Exception {
+        given(guestFreeVoteService.remaining(any())).willReturn(0);
+
+        mockMvc.perform(get("/api/me/free-votes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.remainingFreeVotes").value(0))
+                .andExpect(jsonPath("$.totalFreeVotes").value(5));
+    }
+
+    @Test
+    @WithMockUser
+    void 신규_비회원은_5회_잔여() throws Exception {
+        given(guestFreeVoteService.remaining(any())).willReturn(5);
+
+        mockMvc.perform(get("/api/me/free-votes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.remainingFreeVotes").value(5))
+                .andExpect(jsonPath("$.totalFreeVotes").value(5));
     }
 }
