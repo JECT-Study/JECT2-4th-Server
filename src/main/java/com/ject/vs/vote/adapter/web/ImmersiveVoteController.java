@@ -5,8 +5,10 @@ import com.ject.vs.vote.adapter.web.dto.ImmersiveFeedResponse;
 import com.ject.vs.vote.adapter.web.dto.ImmersiveLiveResponse;
 import com.ject.vs.vote.adapter.web.dto.ImmersiveParticipateResponse;
 import com.ject.vs.vote.adapter.web.dto.ParticipateRequest;
+import com.ject.vs.vote.adapter.web.dto.ShareLinkResponse;
 import com.ject.vs.vote.port.in.ImmersiveVoteCommandUseCase;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase;
+import com.ject.vs.vote.port.in.VoteResultQueryUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +21,7 @@ public class ImmersiveVoteController {
 
     private final ImmersiveVoteCommandUseCase immersiveVoteCommandUseCase;
     private final ImmersiveVoteQueryUseCase immersiveVoteQueryUseCase;
+    private final VoteResultQueryUseCase voteResultQueryUseCase;
 
     @GetMapping
     public ImmersiveFeedResponse getFeed(
@@ -43,5 +46,10 @@ public class ImmersiveVoteController {
     @GetMapping("/{voteId}/live")
     public ImmersiveLiveResponse getLive(@PathVariable Long voteId) {
         return ImmersiveLiveResponse.from(immersiveVoteQueryUseCase.getLive(voteId));
+    }
+
+    @GetMapping("/{voteId}/share")
+    public ShareLinkResponse getShareLink(@PathVariable Long voteId) {
+        return ShareLinkResponse.from(voteResultQueryUseCase.getShareLink(voteId));
     }
 }

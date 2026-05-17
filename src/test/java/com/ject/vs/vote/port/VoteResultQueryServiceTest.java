@@ -82,6 +82,7 @@ class VoteResultQueryServiceTest {
             assertThat(result.insight().locked()).isTrue();
             assertThat(result.insight().scope()).isNull();
             assertThat(result.aiInsight().available()).isFalse();
+            assertThat(result.voted()).isFalse();
             assertThat(result.mySelectedOptionId()).isNull();
         }
 
@@ -104,6 +105,7 @@ class VoteResultQueryServiceTest {
             assertThat(result.insight().locked()).isFalse();
             assertThat(result.insight().scope()).isEqualTo(InsightScope.MY_SELECTION);
             assertThat(result.insight().selectionCount()).isEqualTo(6);
+            assertThat(result.voted()).isTrue();
             assertThat(result.mySelectedOptionId()).isEqualTo(10L);
         }
 
@@ -122,6 +124,7 @@ class VoteResultQueryServiceTest {
             assertThat(result.insight().locked()).isFalse();
             assertThat(result.insight().scope()).isEqualTo(InsightScope.TOTAL);
             assertThat(result.insight().selectionCount()).isEqualTo(10);
+            assertThat(result.voted()).isFalse();
             assertThat(result.mySelectedOptionId()).isNull();
             assertThat(result.aiInsight().available()).isFalse();
         }
@@ -154,15 +157,15 @@ class VoteResultQueryServiceTest {
 
         @Test
         void 공유링크_반환() {
-            given(voteRepository.existsById(1L)).willReturn(true);
+            given(voteRepository.findById(1L)).willReturn(Optional.of(endedVote));
 
-            assertThat(service.getShareLink(1L).url())
+            assertThat(service.getShareLink(1L).shareUrl())
                     .isEqualTo("https://vs.app/poll/result/1");
         }
 
         @Test
         void 존재하지_않는_투표_예외() {
-            given(voteRepository.existsById(99L)).willReturn(false);
+            given(voteRepository.findById(99L)).willReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.getShareLink(99L))
                     .isInstanceOf(VoteNotFoundException.class);

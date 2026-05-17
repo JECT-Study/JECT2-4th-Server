@@ -23,6 +23,6 @@ public class VoteResultController {
 
     @GetMapping("/share")
     public ShareLinkResponse getShareLink(@PathVariable Long voteId) {
-        return new ShareLinkResponse(voteResultQueryUseCase.getShareLink(voteId).url());
+        return ShareLinkResponse.from(voteResultQueryUseCase.getShareLink(voteId));
     }
 }

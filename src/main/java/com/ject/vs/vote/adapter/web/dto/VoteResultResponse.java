@@ -1,6 +1,5 @@
 package com.ject.vs.vote.adapter.web.dto;
 
-import com.ject.vs.vote.port.in.VoteResultQueryUseCase.AgeDistribution;
 import com.ject.vs.vote.port.in.VoteResultQueryUseCase.AiInsightView;
 import com.ject.vs.vote.port.in.VoteResultQueryUseCase.GenderDistribution;
 import com.ject.vs.vote.port.in.VoteResultQueryUseCase.Insight;
@@ -14,15 +13,24 @@ import java.util.List;
 public record VoteResultResponse(
         Long voteId,
         String title,
+        OffsetDateTime createdAt,
+        String content,
+        String thumbnailUrl,
         String status,
         OffsetDateTime endAt,
         int participantCount,
-        List<OptionItem> options,
-        Long mySelectedOptionId,
+        ResultOptions result,
+        MyVote myVote,
         InsightResponse insight,
         AiInsightResponse aiInsight
 ) {
-    public record OptionItem(Long optionId, String label, long voteCount, Integer ratio) {
+    public record ResultOptions(List<OptionItem> options) {
+    }
+
+    public record OptionItem(Long optionId, String label, long voteCount, int ratio) {
+    }
+
+    public record MyVote(boolean voted, Long selectedOptionId) {
     }
 
     public record InsightResponse(
@@ -32,7 +40,13 @@ public record VoteResultResponse(
             GenderDistributionResponse genderDistribution,
             List<AgeDistributionResponse> ageDistribution
     ) {
-        public record GenderDistributionResponse(int maleRatio, int femaleRatio) {
+        public record GenderDistributionResponse(
+                GenderDetail female,
+                GenderDetail male
+        ) {
+        }
+
+        public record GenderDetail(long count, int ratio) {
         }
 
         public record AgeDistributionResponse(String ageGroup, int ratio, boolean isMyGroup) {
@@ -45,7 +59,10 @@ public record VoteResultResponse(
             GenderDistributionResponse gender = null;
             if (insight.genderDistribution() != null) {
                 GenderDistribution g = insight.genderDistribution();
-                gender = new GenderDistributionResponse(g.maleRatio(), g.femaleRatio());
+                gender = new GenderDistributionResponse(
+                        new GenderDetail(g.femaleCount(), g.femaleRatio()),
+                        new GenderDetail(g.maleCount(), g.maleRatio())
+                );
             }
 
             List<AgeDistributionResponse> ages = null;
@@ -78,11 +95,14 @@ public record VoteResultResponse(
         return new VoteResultResponse(
                 result.voteId(),
                 result.title(),
+                toKst(result.createdAt()),
+                result.content(),
+                result.thumbnailUrl(),
                 result.status().name(),
                 toKst(result.endAt()),
                 result.participantCount(),
-                items,
-                result.mySelectedOptionId(),
+                new ResultOptions(items),
+                new MyVote(result.voted(), result.mySelectedOptionId()),
                 InsightResponse.from(result.insight()),
                 AiInsightResponse.from(result.aiInsight())
         );

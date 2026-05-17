@@ -1,9 +1,10 @@
 package com.ject.vs.vote.port.in;
 
-import com.ject.vs.vote.domain.VoteStatus;
+import com.ject.vs.vote.domain.VoteEmoji;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 public interface ImmersiveVoteQueryUseCase {
 
@@ -17,21 +18,30 @@ public interface ImmersiveVoteQueryUseCase {
     record ImmersiveFeedItem(
             Long voteId,
             String title,
+            String content,
             String imageUrl,
-            VoteStatus status,
             Instant endAt,
-            int participantCount,
-            int currentViewerCount,
-            Long mySelectedOptionId
+            List<FeedOptionItem> options,
+            boolean voted,
+            Long mySelectedOptionId,
+            Map<VoteEmoji, Long> emojiSummary,
+            long emojiTotal,
+            VoteEmoji myEmoji,
+            int commentCount,
+            int currentViewerCount
     ) {
     }
 
+    record FeedOptionItem(Long optionId, String label, Long voteCount, Integer ratio) {
+    }
+
     record ImmersiveLiveResult(
-            Long voteId,
-            int optionARatio,
-            int optionBRatio,
-            int participantCount,
-            int currentViewerCount
+            List<LiveOptionItem> options,
+            int currentViewerCount,
+            int totalParticipantCount
     ) {
+    }
+
+    record LiveOptionItem(Long optionId, long voteCount, int ratio) {
     }
 }
