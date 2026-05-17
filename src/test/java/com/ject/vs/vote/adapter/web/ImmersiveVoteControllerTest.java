@@ -88,7 +88,7 @@ class ImmersiveVoteControllerTest {
             given(immersiveVoteCommandUseCase.participateOrCancel(eq(1L), eq(1L), any(), eq(10L)))
                     .willReturn(new ImmersiveParticipateResult(1L, ImmersiveVoteAction.VOTED, 10L, List.of(), null));
 
-            mockMvc.perform(put("/api/immersive-votes/1/participate")
+            mockMvc.perform(post("/api/immersive-votes/1/participate")
                             .with(authentication(AUTH)).with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new ParticipateRequest(10L))))
@@ -103,7 +103,7 @@ class ImmersiveVoteControllerTest {
             given(immersiveVoteCommandUseCase.participateOrCancel(eq(1L), isNull(), any(), eq(10L)))
                     .willReturn(new ImmersiveParticipateResult(1L, ImmersiveVoteAction.VOTED, 10L, List.of(), 4));
 
-            mockMvc.perform(put("/api/immersive-votes/1/participate")
+            mockMvc.perform(post("/api/immersive-votes/1/participate")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new ParticipateRequest(10L))))
@@ -156,7 +156,7 @@ class ImmersiveVoteControllerTest {
             given(immersiveVoteCommandUseCase.participateOrCancel(eq(1L), eq(1L), any(), eq(10L)))
                     .willReturn(new ImmersiveParticipateResult(1L, ImmersiveVoteAction.CANCELED, null, List.of(), null));
 
-            mockMvc.perform(put("/api/immersive-votes/1/participate")
+            mockMvc.perform(post("/api/immersive-votes/1/participate")
                             .with(authentication(AUTH)).with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new ParticipateRequest(10L))))
@@ -175,7 +175,7 @@ class ImmersiveVoteControllerTest {
             given(immersiveVoteCommandUseCase.participateOrCancel(eq(1L), isNull(), any(), eq(10L)))
                     .willThrow(new VoteFreeLimitExceededException());
 
-            mockMvc.perform(put("/api/immersive-votes/1/participate")
+            mockMvc.perform(post("/api/immersive-votes/1/participate")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new ParticipateRequest(10L))))
@@ -193,7 +193,7 @@ class ImmersiveVoteControllerTest {
             given(immersiveVoteCommandUseCase.participateOrCancel(eq(1L), isNull(), any(), eq(11L)))
                     .willReturn(new ImmersiveParticipateResult(1L, ImmersiveVoteAction.VOTED, 11L, options, 2));
 
-            mockMvc.perform(put("/api/immersive-votes/1/participate")
+            mockMvc.perform(post("/api/immersive-votes/1/participate")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new ParticipateRequest(11L))))
@@ -212,7 +212,7 @@ class ImmersiveVoteControllerTest {
             given(immersiveVoteCommandUseCase.participateOrCancel(eq(1L), eq(1L), any(), eq(10L)))
                     .willThrow(new VoteEndedException());
 
-            mockMvc.perform(put("/api/immersive-votes/1/participate")
+            mockMvc.perform(post("/api/immersive-votes/1/participate")
                             .with(authentication(AUTH)).with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new ParticipateRequest(10L))))
