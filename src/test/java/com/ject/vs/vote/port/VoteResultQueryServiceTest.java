@@ -72,15 +72,21 @@ class VoteResultQueryServiceTest {
         }
 
         @Test
-        void 비회원_locked_insight_반환() {
+        void 비회원_분석인사이트는_보이고_성별연령대는_잠금() {
             given(voteRepository.findById(1L)).willReturn(Optional.of(endedVote));
             given(voteOptionRepository.findByVoteIdOrderByPosition(1L)).willReturn(List.of());
-            given(voteParticipationRepository.countByVoteId(1L)).willReturn(0L);
+            given(voteParticipationRepository.countByVoteId(1L)).willReturn(50L);
 
             VoteResultDetail result = service.getResult(1L, null);
 
+            // 비회원: locked=true, scope=TOTAL, selectionCount=전체참여자수
             assertThat(result.insight().locked()).isTrue();
-            assertThat(result.insight().scope()).isNull();
+            assertThat(result.insight().scope()).isEqualTo(InsightScope.TOTAL);
+            assertThat(result.insight().selectionCount()).isEqualTo(50);
+            // 성별/연령대 인사이트는 잠금
+            assertThat(result.insight().genderDistribution()).isNull();
+            assertThat(result.insight().ageDistribution()).isNull();
+            // AI 인사이트 없음
             assertThat(result.aiInsight().available()).isFalse();
             assertThat(result.voted()).isFalse();
             assertThat(result.mySelectedOptionId()).isNull();
@@ -97,6 +103,7 @@ class VoteResultQueryServiceTest {
                     .willReturn(Optional.of(participation));
             given(voteParticipationRepository.countByVoteIdAndOptionId(1L, 10L)).willReturn(6L);
             given(voteParticipationRepository.findGenderDistribution(1L, 10L)).willReturn(List.of());
+            given(voteParticipationRepository.findGenderDistributionByVote(1L)).willReturn(List.of());
             given(voteParticipationRepository.findUserIdsByVoteIdAndOptionId(1L, 10L)).willReturn(List.of());
             given(userRepository.findById(1L)).willReturn(Optional.empty());
 
@@ -141,6 +148,7 @@ class VoteResultQueryServiceTest {
                     .willReturn(Optional.of(participation));
             given(voteParticipationRepository.countByVoteIdAndOptionId(1L, 10L)).willReturn(3L);
             given(voteParticipationRepository.findGenderDistribution(1L, 10L)).willReturn(List.of());
+            given(voteParticipationRepository.findGenderDistributionByVote(1L)).willReturn(List.of());
             given(voteParticipationRepository.findUserIdsByVoteIdAndOptionId(1L, 10L)).willReturn(List.of());
             given(userRepository.findById(1L)).willReturn(Optional.empty());
 
