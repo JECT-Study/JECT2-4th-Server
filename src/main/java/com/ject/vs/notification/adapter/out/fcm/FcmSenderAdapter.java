@@ -5,12 +5,14 @@ import com.ject.vs.notification.port.out.FcmPayload;
 import com.ject.vs.notification.port.out.PushSenderPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@ConditionalOnBean(FirebaseMessaging.class)
 @RequiredArgsConstructor
 @Slf4j
 public class FcmSenderAdapter implements PushSenderPort {
