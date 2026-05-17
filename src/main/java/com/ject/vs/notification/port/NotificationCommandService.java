@@ -3,7 +3,6 @@ package com.ject.vs.notification.port;
 import com.ject.vs.notification.domain.Notification;
 import com.ject.vs.notification.domain.NotificationRepository;
 import com.ject.vs.notification.domain.NotificationType;
-import com.ject.vs.notification.exception.NotificationAccessDeniedException;
 import com.ject.vs.notification.exception.NotificationNotFoundException;
 import com.ject.vs.notification.port.in.NotificationCommandUseCase;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,7 @@ public class NotificationCommandService implements NotificationCommandUseCase {
     public void markAsRead(Long notificationId, Long userId) {
         Notification n = notificationRepository.findById(notificationId)
                 .orElseThrow(NotificationNotFoundException::new);
-        if (!n.isOwnedBy(userId)) throw new NotificationAccessDeniedException();
+        if (!n.isOwnedBy(userId)) throw new NotificationNotFoundException();
         n.markRead(clock);
     }
 
