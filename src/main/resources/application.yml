@@ -14,3 +14,9 @@ aws:
     region: ${AWS_S3_REGION:ap-northeast-2}
     access-key: ${AWS_S3_ACCESS_KEY:}
     secret-key: ${AWS_S3_SECRET_KEY:}
+
+gemini:
+  project-id: ${GEMINI_PROJECT_ID:}
+  location: ${GEMINI_LOCATION:asia-northeast3}
+  model: ${GEMINI_MODEL:gemini-1.5-flash}
+  enabled: ${GEMINI_ENABLED:true}

@@ -47,4 +47,8 @@ object Dependencies {
     object Aws {
         const val S3 = "software.amazon.awssdk:s3:2.25.60"
     }
+
+    object Ai {
+        const val GEMINI = "com.google.cloud:google-cloud-vertexai:1.14.0"
+    }
 }

@@ -53,6 +53,9 @@ dependencies {
 	// AWS S3
 	implementation(Dependencies.Aws.S3)
 
+	// Google Gemini AI
+	implementation(Dependencies.Ai.GEMINI)
+
 	compileOnly(Dependencies.Lombok.LOMBOK)
 	annotationProcessor(Dependencies.Lombok.LOMBOK)
 	testImplementation(Dependencies.SpringBoot.TEST)
