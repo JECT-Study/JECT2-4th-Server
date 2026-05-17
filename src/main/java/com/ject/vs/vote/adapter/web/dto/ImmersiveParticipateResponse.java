@@ -11,7 +11,7 @@ public record ImmersiveParticipateResponse(
         List<OptionItem> options,
         Integer remainingFreeVotes
 ) {
-    public record OptionItem(Long optionId, String label, long voteCount, Integer ratio) {
+    public record OptionItem(Long optionId, String label, Long voteCount, Integer ratio) {
     }
 
     public static ImmersiveParticipateResponse from(ImmersiveParticipateResult result) {
