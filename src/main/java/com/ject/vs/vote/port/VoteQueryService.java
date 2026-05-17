@@ -40,6 +40,21 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
     }
 
     @Override
+    public VoteChatSummary getVoteChatSummary(Long voteId) {
+        Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
+
+        return new VoteChatSummary(
+                vote.getId(),
+                vote.getTitle(),
+                vote.getThumbnailUrl(),
+                vote.getStatus(clock),
+                vote.getEndAt(),
+                vote.getOptionA().getLabel(),
+                vote.getOptionB().getLabel()
+        );
+    }
+
+    @Override
     public VoteRatio getRatio(Long voteId) {
         List<VoteOption> options = voteOptionRepository.findByVoteIdOrderByPosition(voteId);
         if (options.size() != 2) throw new IllegalStateException("Vote must have exactly 2 options");
@@ -47,6 +62,14 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
         long aCount = voteParticipationRepository.countByVoteIdAndOptionId(voteId, options.get(0).getId());
         int aRatio = total == 0 ? 0 : (int) Math.round(aCount * 100.0 / total);
         return new VoteRatio(aRatio, 100 - aRatio, (int) total);
+    }
+
+    @Override
+    public VoteOption getSelectedOption(Long voteId, Long userId) {
+        Optional<Long> selectedOptionId = getSelectedOptionId(voteId, userId);
+
+        Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
+        return vote.getOption(selectedOptionId.get());
     }
 
     @Override

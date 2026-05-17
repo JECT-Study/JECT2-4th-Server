@@ -10,6 +10,7 @@ import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.config.TestPropertiesConfig;
 import org.springframework.context.annotation.Import;
+import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
@@ -144,7 +145,7 @@ class ChatControllerTest {
         @WithMockUser
         void 정상이면_201을_반환한다() throws Exception {
             // given
-            MessageResult result = new MessageResult(1L, "hello", Instant.now(), "nick", null, "A", true);
+            MessageResult result = new MessageResult(1L, "hello", Instant.now(), "nick", null, VoteOptionCode.A, true);
             given(chatCommandUseCase.sendMessage(any(SendMessageCommand.class))).willReturn(result);
 
             // when & then

@@ -23,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
+import com.ject.vs.vote.domain.Vote;
 
 @ExtendWith(MockitoExtension.class)
 class ImmersiveVoteQueryServiceTest {
@@ -141,8 +144,10 @@ class ImmersiveVoteQueryServiceTest {
 
         @Test
         void 참여자_없으면_비율_0() {
-            VoteOption optA = VoteOption.of(1L, "A", 1);
-            VoteOption optB = VoteOption.of(1L, "B", 2);
+            Vote dummyVote = mock(Vote.class);
+            given(dummyVote.getId()).willReturn(1L);
+            VoteOption optA = VoteOption.of(dummyVote, "A", 1);
+            VoteOption optB = VoteOption.of(dummyVote, "B", 2);
             given(voteOptionRepository.findByVoteIdOrderByPosition(1L)).willReturn(List.of(optA, optB));
             given(voteParticipationRepository.countByVoteId(1L)).willReturn(0L);
 
@@ -155,8 +160,10 @@ class ImmersiveVoteQueryServiceTest {
 
         @Test
         void A_3표_B_1표이면_A비율_75_B비율_25() {
-            VoteOption optA = VoteOption.of(1L, "A", 1);
-            VoteOption optB = VoteOption.of(1L, "B", 2);
+            Vote dummyVote = mock(Vote.class);
+            given(dummyVote.getId()).willReturn(1L);
+            VoteOption optA = VoteOption.of(dummyVote, "A", 1);
+            VoteOption optB = VoteOption.of(dummyVote, "B", 2);
             given(voteOptionRepository.findByVoteIdOrderByPosition(1L)).willReturn(List.of(optA, optB));
             given(voteParticipationRepository.countByVoteId(1L)).willReturn(4L);
             given(voteParticipationRepository.countByVoteIdAndOptionId(eq(1L), any())).willReturn(3L);

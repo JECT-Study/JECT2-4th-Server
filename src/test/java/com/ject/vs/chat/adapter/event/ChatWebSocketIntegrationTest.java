@@ -103,7 +103,7 @@ class ChatWebSocketIntegrationTest {
         assertThat(received).isNotNull();
         assertThat(received.messageId()).isEqualTo(message.getId());
         assertThat(received.content()).isEqualTo("hello websocket");
-        assertThat(received.senderNickname()).isEqualTo("User#" + fixture.senderId());
+        assertThat(received.senderNickname()).isEqualTo(""); // 프로필 미설정 사용자 (정식 스펙상 User# 플레이스홀더 없음)
         assertThat(received.isMine()).isFalse();
     }
 
@@ -156,7 +156,7 @@ class ChatWebSocketIntegrationTest {
         User sender = userRepository.saveAndFlush(User.createWithEmail("sender-" + System.nanoTime() + "@test.com"));
         User receiver = userRepository.saveAndFlush(User.createWithEmail("receiver-" + System.nanoTime() + "@test.com"));
         Vote vote = voteRepository.saveAndFlush(Vote.create(VoteType.GENERAL, "chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
-        VoteOption option = voteOptionRepository.saveAndFlush(VoteOption.of(vote.getId(), "A", 1));
+        VoteOption option = voteOptionRepository.saveAndFlush(VoteOption.of(vote, "A", 1));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), sender.getId(), option.getId()));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), receiver.getId(), option.getId()));
         return new TestFixture(vote.getId(), sender.getId(), receiver.getId());

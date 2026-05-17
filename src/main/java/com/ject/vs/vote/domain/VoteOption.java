@@ -1,9 +1,7 @@
 package com.ject.vs.vote.domain;
 
 import com.ject.vs.common.domain.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -14,9 +12,9 @@ import static lombok.AccessLevel.PROTECTED;
 @Getter
 @NoArgsConstructor(access = PROTECTED)
 public class VoteOption extends BaseEntity {
-
-    @Column(nullable = false)
-    private Long voteId;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "vote_id", nullable = false, updatable = false)
+    private Vote vote;
 
     @Column(nullable = false)
     private String label;
@@ -24,11 +22,19 @@ public class VoteOption extends BaseEntity {
     @Column(nullable = false)
     private int position;
 
-    public static VoteOption of(Long voteId, String label, int position) {
+    public static VoteOption of(Vote vote, String label, int position) {
         VoteOption option = new VoteOption();
-        option.voteId = voteId;
+        option.vote = vote;
         option.label = label;
         option.position = position;
         return option;
+    }
+
+    public VoteOptionCode getCode() {
+        return position == 0 ? VoteOptionCode.A : VoteOptionCode.B;
+    }
+
+    public Boolean isCodeEqualTo(VoteOptionCode code) {
+        return getCode().equals(code);
     }
 }
