@@ -195,8 +195,8 @@ class VoteControllerTest {
         @WithMockUser
         void 비회원_참여_성공_200_반환() throws Exception {
             List<OptionResult> options = List.of(
-                    new OptionResult(10L, "혼밥이 편하다", 22, 70),
-                    new OptionResult(11L, "같이 먹기", 9, 30)
+                    new OptionResult(10L, "혼밥이 편하다", 22L, 70),
+                    new OptionResult(11L, "같이 먹기", 9L, 30)
             );
             given(voteCommandUseCase.participateAsGuest(eq(1L), any(), eq(10L)))
                     .willReturn(new ParticipateResult(1L, 10L, options, 31, 4));

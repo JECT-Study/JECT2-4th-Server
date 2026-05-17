@@ -138,8 +138,8 @@ class VoteResultControllerTest {
         @Test
         void 회원_참여O_MY_SELECTION_스코프() throws Exception {
             List<OptionResult> options = List.of(
-                    new OptionResult(10L, "혼밥이 편하다", 364, 70),
-                    new OptionResult(11L, "같이 먹기", 156, 30)
+                    new OptionResult(10L, "혼밥이 편하다", 364L, 70),
+                    new OptionResult(11L, "같이 먹기", 156L, 30)
             );
             Insight insight = new Insight(
                     false,
@@ -191,8 +191,8 @@ class VoteResultControllerTest {
         @Test
         void 회원_참여X_TOTAL_스코프() throws Exception {
             List<OptionResult> options = List.of(
-                    new OptionResult(10L, "혼밥이 편하다", 364, 70),
-                    new OptionResult(11L, "같이 먹기", 156, 30)
+                    new OptionResult(10L, "혼밥이 편하다", 364L, 70),
+                    new OptionResult(11L, "같이 먹기", 156L, 30)
             );
             Insight insight = new Insight(
                     false,
@@ -230,8 +230,8 @@ class VoteResultControllerTest {
         @WithMockUser
         void 비회원_insight_locked() throws Exception {
             List<OptionResult> options = List.of(
-                    new OptionResult(10L, "혼밥이 편하다", 364, 70),
-                    new OptionResult(11L, "같이 먹기", 156, 30)
+                    new OptionResult(10L, "혼밥이 편하다", 364L, 70),
+                    new OptionResult(11L, "같이 먹기", 156L, 30)
             );
             VoteResultDetail result = new VoteResultDetail(
                     1L, "직장인 점심시간 혼밥 vs 같이 먹기",

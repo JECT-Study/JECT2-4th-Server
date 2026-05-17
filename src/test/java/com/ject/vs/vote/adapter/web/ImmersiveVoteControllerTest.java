@@ -187,8 +187,8 @@ class ImmersiveVoteControllerTest {
         @WithMockUser
         void 옵션_변경은_무료투표_차감_안함() throws Exception {
             List<OptionResult> options = List.of(
-                    new OptionResult(10L, "스윙칩만 3달 먹기", 99, 76),
-                    new OptionResult(11L, "스윙스한테 30만원 주기", 32, 24)
+                    new OptionResult(10L, "스윙칩만 3달 먹기", 99L, 76),
+                    new OptionResult(11L, "스윙스한테 30만원 주기", 32L, 24)
             );
             given(immersiveVoteCommandUseCase.participateOrCancel(eq(1L), isNull(), any(), eq(11L)))
                     .willReturn(new ImmersiveParticipateResult(1L, ImmersiveVoteAction.VOTED, 11L, options, 2));
