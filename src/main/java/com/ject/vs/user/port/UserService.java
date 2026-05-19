@@ -1,12 +1,7 @@
 package com.ject.vs.user.port;
 
 import com.ject.vs.common.exception.BusinessException;
-import com.ject.vs.user.adapter.web.dto.NicknameCheckResponse;
-import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
-import com.ject.vs.user.adapter.web.dto.UserNicknameRec;
-import com.ject.vs.user.adapter.web.dto.UserProfileDefaultResponse;
-import com.ject.vs.user.adapter.web.dto.UserProfileRequest;
-import com.ject.vs.user.adapter.web.dto.UserProfileResponse;
+import com.ject.vs.user.adapter.web.dto.*;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
@@ -70,5 +65,30 @@ public class UserService {
         user.initializeDefault(request, nickname.nickname());
 
         return UserProfileDefaultResponse.from(nickname.nickname(), ImageColor.GREEN.name());
+   }
+
+   public UserMyPageResponse getMyPage(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
+   }
+
+   public UserMyPageResponse modifyNickname(Long userId, String nickname) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        User.modifyName(user, nickname);
+
+        return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
+   }
+
+   public UserMyPageResponse modifyImageColor(Long userId, ImageColor imageColor) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        User.modifyImageColor(user, imageColor);
+
+        return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }
 }

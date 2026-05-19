@@ -57,4 +57,12 @@ public class User {
         this.imageColor = ImageColor.GREEN;
         this.nickname = nickname;
     }
+
+    public static void modifyName(User user, String nickname) {
+        user.nickname = nickname;
+    }
+
+    public static void modifyImageColor(User user, ImageColor imageColor) {
+        user.imageColor = imageColor;
+    }
 }

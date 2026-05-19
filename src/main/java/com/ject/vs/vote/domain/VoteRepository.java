@@ -19,4 +19,6 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     Slice<Vote> findByTypeOrderByEndAtDesc(VoteType type, Pageable pageable);
 
     Slice<Vote> findByTypeAndIdLessThanOrderByEndAtDesc(VoteType type, Long cursor, Pageable pageable);
+
+
 }
