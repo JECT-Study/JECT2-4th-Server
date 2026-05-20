@@ -45,9 +45,12 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
         }).toList();
 
         if (userId == null) {
-            return new VoteResultDetail(voteId, vote.getTitle(), VoteStatus.ENDED,
-                    vote.getEndAt(), (int) total, optionResults, null,
-                    Insight.ofLocked(), AiInsightView.unavailable());
+            // 비회원: 분석 인사이트(selectionCount)는 보여주고, 성별/연령대는 잠금
+            Insight guestInsight = new Insight(true, InsightScope.TOTAL, (int) total, null, null);
+            return new VoteResultDetail(voteId, vote.getTitle(), vote.getCreatedAt(),
+                    vote.getContent(), vote.getThumbnailUrl(), VoteStatus.ENDED,
+                    vote.getEndAt(), (int) total, optionResults, false, null,
+                    guestInsight, AiInsightView.unavailable());
         }
 
         Optional<VoteParticipation> myParticipation =
@@ -68,21 +71,34 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
             aiInsight = AiInsightView.unavailable();
         }
 
-        return new VoteResultDetail(voteId, vote.getTitle(), VoteStatus.ENDED,
-                vote.getEndAt(), (int) total, optionResults, mySelectedOptionId, insight, aiInsight);
+        boolean voted = myParticipation.isPresent();
+        return new VoteResultDetail(voteId, vote.getTitle(), vote.getCreatedAt(),
+                vote.getContent(), vote.getThumbnailUrl(), VoteStatus.ENDED,
+                vote.getEndAt(), (int) total, optionResults, voted, mySelectedOptionId, insight, aiInsight);
     }
 
     @Override
     public ShareLinkResult getShareLink(Long voteId) {
-        if (!voteRepository.existsById(voteId)) throw new VoteNotFoundException();
-        return new ShareLinkResult("https://vs.app/poll/result/" + voteId);
+        Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
+        return new ShareLinkResult(
+                "https://vs.app/poll/result/" + voteId,
+                vote.getTitle(),
+                vote.getThumbnailUrl()
+        );
     }
 
     private Insight buildMySelectionInsight(Long voteId, Long optionId, Long userId) {
         int selectionCount = (int) voteParticipationRepository.countByVoteIdAndOptionId(voteId, optionId);
 
-        List<GenderCount> genderCounts = voteParticipationRepository.findGenderDistribution(voteId, optionId);
-        GenderDistribution genderDistribution = computeGenderDistribution(genderCounts);
+        // 해당 선택 기준 성별 카운트
+        List<GenderCount> selectionGenderCounts = voteParticipationRepository.findGenderDistribution(voteId, optionId);
+        // 전체 투표 기준 성별 카운트 (비율 계산용)
+        List<GenderCount> totalGenderCounts = voteParticipationRepository.findGenderDistributionByVote(voteId);
+        // 사용자 성별
+        String myGender = resolveMyGender(userId);
+
+        GenderDistribution genderDistribution = computeGenderDistribution(
+                selectionCount, selectionGenderCounts, totalGenderCounts, myGender);
 
         AgeGroup myGroup = resolveMyAgeGroup(userId);
         List<AgeDistribution> ageDistribution = computeAgeDistributionByOption(voteId, optionId, myGroup);
@@ -92,10 +108,12 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
 
     private Insight buildTotalInsight(Long voteId, long total, Long userId) {
         List<GenderCount> genderCounts = voteParticipationRepository.findGenderDistributionByVote(voteId);
-        GenderDistribution genderDistribution = computeGenderDistribution(genderCounts);
+        // 미참여자: 다수 성별 강조
+        String majorityGender = resolveMajorityGender(genderCounts);
+        GenderDistribution genderDistribution = computeGenderDistributionForTotal((int) total, genderCounts, majorityGender);
 
-        AgeGroup myGroup = resolveMyAgeGroup(userId);
-        List<AgeDistribution> ageDistribution = computeAgeDistributionByVote(voteId, myGroup);
+        // 미참여자: 다수 연령대 강조
+        List<AgeDistribution> ageDistribution = computeAgeDistributionByVoteWithMajority(voteId);
 
         return new Insight(false, InsightScope.TOTAL, (int) total, genderDistribution, ageDistribution);
     }
@@ -106,14 +124,91 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
                 .orElse(null);
     }
 
-    private GenderDistribution computeGenderDistribution(List<GenderCount> genderCounts) {
-        long totalGender = genderCounts.stream().mapToLong(GenderCount::count).sum();
-        if (totalGender == 0) return new GenderDistribution(0, 0);
+    private String resolveMyGender(Long userId) {
+        return userRepository.findById(userId)
+                .map(u -> u.getGender() != null ? u.getGender().name() : null)
+                .orElse(null);
+    }
 
+    private String resolveMajorityGender(List<GenderCount> genderCounts) {
+        long femaleCount = genderCounts.stream()
+                .filter(gc -> Gender.FEMALE == gc.gender())
+                .mapToLong(GenderCount::count).sum();
         long maleCount = genderCounts.stream()
-                .filter(gc -> Gender.MALE == gc.gender()).mapToLong(GenderCount::count).sum();
-        int maleRatio = (int) Math.round(maleCount * 100.0 / totalGender);
-        return new GenderDistribution(maleRatio, 100 - maleRatio);
+                .filter(gc -> Gender.MALE == gc.gender())
+                .mapToLong(GenderCount::count).sum();
+
+        if (femaleCount == 0 && maleCount == 0) return null;
+        return femaleCount >= maleCount ? Gender.FEMALE.name() : Gender.MALE.name();
+    }
+
+    /**
+     * 나의 선택 기준 성별 분포 계산
+     * @param selectionCount 해당 선택에 참여한 전체 인원
+     * @param selectionGenderCounts 해당 선택 기준 성별 카운트
+     * @param totalGenderCounts 전체 투표 기준 성별 카운트 (비율 계산용)
+     * @param myGender 사용자 성별
+     */
+    private GenderDistribution computeGenderDistribution(
+            int selectionCount,
+            List<GenderCount> selectionGenderCounts,
+            List<GenderCount> totalGenderCounts,
+            String myGender) {
+
+        // 해당 선택 기준 성별별 인원 수
+        long femaleCountInSelection = selectionGenderCounts.stream()
+                .filter(gc -> Gender.FEMALE == gc.gender())
+                .mapToLong(GenderCount::count).sum();
+        long maleCountInSelection = selectionGenderCounts.stream()
+                .filter(gc -> Gender.MALE == gc.gender())
+                .mapToLong(GenderCount::count).sum();
+
+        // 전체 투표 기준 성별 비율
+        long totalInVote = totalGenderCounts.stream().mapToLong(GenderCount::count).sum();
+        long femaleInVote = totalGenderCounts.stream()
+                .filter(gc -> Gender.FEMALE == gc.gender())
+                .mapToLong(GenderCount::count).sum();
+        long maleInVote = totalInVote - femaleInVote;
+
+        int femaleRatioInVote = totalInVote == 0 ? 0 : (int) Math.round(femaleInVote * 100.0 / totalInVote);
+        int maleRatioInVote = totalInVote == 0 ? 0 : 100 - femaleRatioInVote;
+
+        return new GenderDistribution(
+                selectionCount,
+                femaleCountInSelection,
+                femaleRatioInVote,
+                maleCountInSelection,
+                maleRatioInVote,
+                myGender
+        );
+    }
+
+    /**
+     * 전체 투표 기준 성별 분포 계산 (투표 미참여자용)
+     */
+    private GenderDistribution computeGenderDistributionForTotal(
+            int total,
+            List<GenderCount> totalGenderCounts,
+            String myGender) {
+
+        long femaleCount = totalGenderCounts.stream()
+                .filter(gc -> Gender.FEMALE == gc.gender())
+                .mapToLong(GenderCount::count).sum();
+        long maleCount = totalGenderCounts.stream()
+                .filter(gc -> Gender.MALE == gc.gender())
+                .mapToLong(GenderCount::count).sum();
+
+        int femaleRatio = total == 0 ? 0 : (int) Math.round(femaleCount * 100.0 / total);
+        int maleRatio = total == 0 ? 0 : 100 - femaleRatio;
+
+        return new GenderDistribution(
+                total,
+                femaleCount,
+                femaleRatio,
+                maleCount,
+                maleRatio,
+                myGender
+        );
     }
 
     private List<AgeDistribution> computeAgeDistributionByOption(Long voteId, Long optionId, AgeGroup myGroup) {
@@ -124,6 +219,11 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
     private List<AgeDistribution> computeAgeDistributionByVote(Long voteId, AgeGroup myGroup) {
         List<Long> userIds = voteParticipationRepository.findAllUserIdsByVoteId(voteId);
         return buildAgeDistributions(userIds, myGroup);
+    }
+
+    private List<AgeDistribution> computeAgeDistributionByVoteWithMajority(Long voteId) {
+        List<Long> userIds = voteParticipationRepository.findAllUserIdsByVoteId(voteId);
+        return buildAgeDistributionsWithMajority(userIds);
     }
 
     private List<AgeDistribution> buildAgeDistributions(List<Long> userIds, AgeGroup myGroup) {
@@ -142,6 +242,32 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
                     long count = groupCounts.getOrDefault(group, 0L);
                     int ratio = total == 0 ? 0 : (int) Math.round(count * 100.0 / total);
                     return new AgeDistribution(group.getLabel(), ratio, group == myGroup);
+                })
+                .toList();
+    }
+
+    private List<AgeDistribution> buildAgeDistributionsWithMajority(List<Long> userIds) {
+        List<User> users = userRepository.findAllById(userIds);
+
+        Map<AgeGroup, Long> groupCounts = users.stream()
+                .filter(u -> u.getBirthYear() != null)
+                .collect(Collectors.groupingBy(
+                        u -> AgeGroup.fromBirthYear(u.getBirthYear(), clock),
+                        Collectors.counting()));
+
+        long total = groupCounts.values().stream().mapToLong(Long::longValue).sum();
+
+        // 다수 연령대 찾기
+        AgeGroup majorityGroup = groupCounts.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(null);
+
+        return Arrays.stream(AgeGroup.values())
+                .map(group -> {
+                    long count = groupCounts.getOrDefault(group, 0L);
+                    int ratio = total == 0 ? 0 : (int) Math.round(count * 100.0 / total);
+                    return new AgeDistribution(group.getLabel(), ratio, group == majorityGroup);
                 })
                 .toList();
     }

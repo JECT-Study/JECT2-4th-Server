@@ -1,6 +1,5 @@
 package com.ject.vs.vote.adapter.web.dto;
 
-import com.ject.vs.vote.port.in.VoteResultQueryUseCase.AgeDistribution;
 import com.ject.vs.vote.port.in.VoteResultQueryUseCase.AiInsightView;
 import com.ject.vs.vote.port.in.VoteResultQueryUseCase.GenderDistribution;
 import com.ject.vs.vote.port.in.VoteResultQueryUseCase.Insight;
@@ -14,15 +13,24 @@ import java.util.List;
 public record VoteResultResponse(
         Long voteId,
         String title,
+        OffsetDateTime createdAt,
+        String content,
+        String thumbnailUrl,
         String status,
         OffsetDateTime endAt,
         int participantCount,
-        List<OptionItem> options,
-        Long mySelectedOptionId,
+        ResultOptions result,
+        MyVote myVote,
         InsightResponse insight,
         AiInsightResponse aiInsight
 ) {
-    public record OptionItem(Long optionId, String label, long voteCount, Integer ratio) {
+    public record ResultOptions(List<OptionItem> options) {
+    }
+
+    public record OptionItem(Long optionId, String label, long voteCount, int ratio) {
+    }
+
+    public record MyVote(boolean voted, Long selectedOptionId) {
     }
 
     public record InsightResponse(
@@ -32,7 +40,15 @@ public record VoteResultResponse(
             GenderDistributionResponse genderDistribution,
             List<AgeDistributionResponse> ageDistribution
     ) {
-        public record GenderDistributionResponse(int maleRatio, int femaleRatio) {
+        public record GenderDistributionResponse(
+                int total,
+                GenderDetail female,
+                GenderDetail male,
+                String highlightedGender
+        ) {
+        }
+
+        public record GenderDetail(long count, int ratio) {
         }
 
         public record AgeDistributionResponse(String ageGroup, int ratio, boolean isMyGroup) {
@@ -40,22 +56,26 @@ public record VoteResultResponse(
 
         static InsightResponse from(Insight insight) {
             if (insight == null) return null;
-            if (insight.locked()) return new InsightResponse(true, null, null, null, null);
 
             GenderDistributionResponse gender = null;
             if (insight.genderDistribution() != null) {
                 GenderDistribution g = insight.genderDistribution();
-                gender = new GenderDistributionResponse(g.maleRatio(), g.femaleRatio());
+                gender = new GenderDistributionResponse(
+                        g.total(),
+                        new GenderDetail(g.femaleCount(), g.femaleRatio()),
+                        new GenderDetail(g.maleCount(), g.maleRatio()),
+                        g.highlightedGender()
+                );
             }
 
             List<AgeDistributionResponse> ages = null;
             if (insight.ageDistribution() != null) {
                 ages = insight.ageDistribution().stream()
-                        .map(a -> new AgeDistributionResponse(a.ageGroup(), a.ratio(), a.isMyGroup()))
+                        .map(a -> new AgeDistributionResponse(a.ageGroup(), a.ratio(), a.isHighlighted())) // UseCase의 isHighlighted를 API 스펙의 isMyGroup으로 매핑
                         .toList();
             }
 
-            return new InsightResponse(false, insight.scope() != null ? insight.scope().name() : null,
+            return new InsightResponse(insight.locked(), insight.scope() != null ? insight.scope().name() : null,
                     insight.selectionCount(), gender, ages);
         }
     }
@@ -78,11 +98,14 @@ public record VoteResultResponse(
         return new VoteResultResponse(
                 result.voteId(),
                 result.title(),
+                toKst(result.createdAt()),
+                result.content(),
+                result.thumbnailUrl(),
                 result.status().name(),
                 toKst(result.endAt()),
                 result.participantCount(),
-                items,
-                result.mySelectedOptionId(),
+                new ResultOptions(items),
+                new MyVote(result.voted(), result.mySelectedOptionId()),
                 InsightResponse.from(result.insight()),
                 AiInsightResponse.from(result.aiInsight())
         );

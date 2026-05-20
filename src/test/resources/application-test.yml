@@ -50,3 +50,14 @@ management:
   endpoint:
     health:
       show-details: never
+
+# 테스트 환경에서 S3, Gemini 비활성화
+aws:
+  s3:
+    bucket: ~
+
+gemini:
+  enabled: false
+  project-id: test-project
+  location: us-central1
+  model: gemini-1.5-flash

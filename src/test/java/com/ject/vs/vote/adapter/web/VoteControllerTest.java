@@ -10,11 +10,14 @@ import com.ject.vs.util.JwtProvider;
 import com.ject.vs.vote.adapter.web.dto.ParticipateRequest;
 import com.ject.vs.vote.adapter.web.dto.VoteCreateRequest;
 import com.ject.vs.vote.domain.*;
+import com.ject.vs.vote.exception.InvalidOptionException;
 import com.ject.vs.vote.exception.VoteEndedException;
+import com.ject.vs.vote.exception.VoteFreeLimitExceededException;
 import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.port.VoteDetailQueryService;
 import com.ject.vs.vote.port.VoteDetailQueryService.VoteDetailResult;
 import com.ject.vs.vote.port.in.VoteCommandUseCase;
+import com.ject.vs.vote.port.in.VoteCommandUseCase.OptionResult;
 import com.ject.vs.vote.port.in.VoteCommandUseCase.ParticipateResult;
 import com.ject.vs.vote.port.in.VoteCommandUseCase.VoteCreateResult;
 import org.junit.jupiter.api.Nested;
@@ -35,6 +38,7 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -66,9 +70,9 @@ class VoteControllerTest {
 
     private VoteDetailResult sampleDetail() {
         return new VoteDetailResult(
-                1L, VoteType.GENERAL, "제목", null, "thumb.png", null,
-                VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
-                5, List.of(), null, Map.of(), null
+                1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                null, "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
+                5, List.of(), false, null, Map.of(), null, 0
         );
     }
 
@@ -171,6 +175,110 @@ class VoteControllerTest {
             mockMvc.perform(delete("/api/votes/1/participate")
                             .with(csrf()))
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void 종료된_투표_취소_403() throws Exception {
+            willThrow(new VoteEndedException()).given(voteCommandUseCase).cancel(any(), any());
+
+            mockMvc.perform(delete("/api/votes/1/participate")
+                            .with(authentication(AUTH)).with(csrf()))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("VOTE_ENDED"));
+        }
+    }
+
+    @Nested
+    class 비회원_참여 {
+
+        @Test
+        @WithMockUser
+        void 비회원_참여_성공_200_반환() throws Exception {
+            List<OptionResult> options = List.of(
+                    new OptionResult(10L, "혼밥이 편하다", 22L, 70),
+                    new OptionResult(11L, "같이 먹기", 9L, 30)
+            );
+            given(voteCommandUseCase.participateAsGuest(eq(1L), any(), eq(10L)))
+                    .willReturn(new ParticipateResult(1L, 10L, options, 31, 4));
+
+            mockMvc.perform(post("/api/votes/1/participate")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new ParticipateRequest(10L))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.voteId").value(1))
+                    .andExpect(jsonPath("$.selectedOptionId").value(10))
+                    .andExpect(jsonPath("$.participantCount").value(31))
+                    .andExpect(jsonPath("$.remainingFreeVotes").value(4))
+                    .andExpect(jsonPath("$.options[0].voteCount").value(22))
+                    .andExpect(jsonPath("$.options[0].ratio").value(70));
+        }
+
+        @Test
+        @WithMockUser
+        void 비회원_무료투표_초과_403_반환() throws Exception {
+            given(voteCommandUseCase.participateAsGuest(eq(1L), any(), any()))
+                    .willThrow(new VoteFreeLimitExceededException());
+
+            mockMvc.perform(post("/api/votes/1/participate")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new ParticipateRequest(10L))))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("VOTE_FREE_LIMIT_EXCEEDED"));
+        }
+
+        @Test
+        @WithMockUser
+        void 유효하지_않은_옵션_400_반환() throws Exception {
+            given(voteCommandUseCase.participateAsGuest(eq(1L), any(), eq(999L)))
+                    .willThrow(new InvalidOptionException());
+
+            mockMvc.perform(post("/api/votes/1/participate")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new ParticipateRequest(999L))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_OPTION"));
+        }
+    }
+
+    @Nested
+    class 투표_상세_응답_분기 {
+
+        @Test
+        @WithMockUser
+        void 비회원_조회_voteCount는_null() throws Exception {
+            VoteDetailResult result = new VoteDetailResult(
+                    1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                    "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
+                    31, List.of(), false, null, Map.of(), null, 0
+            );
+            given(voteDetailQueryService.getDetail(eq(1L), any(), any())).willReturn(result);
+
+            mockMvc.perform(get("/api/votes/1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.voteId").value(1))
+                    .andExpect(jsonPath("$.participantCount").value(31))
+                    .andExpect(jsonPath("$.myVote.voted").value(false))
+                    .andExpect(jsonPath("$.myVote.selectedOptionId").doesNotExist());
+        }
+
+        @Test
+        void 회원_투표후_조회_voteCount_노출() throws Exception {
+            VoteDetailResult result = new VoteDetailResult(
+                    1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                    "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
+                    31, List.of(), true, 10L, Map.of(VoteEmoji.WOW, 36L), VoteEmoji.WOW, 0
+            );
+            given(voteDetailQueryService.getDetail(eq(1L), eq(1L), any())).willReturn(result);
+
+            mockMvc.perform(get("/api/votes/1")
+                            .with(authentication(AUTH)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.myVote.voted").value(true))
+                    .andExpect(jsonPath("$.myVote.selectedOptionId").value(10))
+                    .andExpect(jsonPath("$.myEmoji").value("WOW"));
         }
     }
 }

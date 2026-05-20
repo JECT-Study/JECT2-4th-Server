@@ -15,7 +15,8 @@ public class SecurityPaths {
             "/error",
             "/ws/**",
             "/oauth2/authorization/**",
-            "/login/oauth2/code/**"
+            "/login/oauth2/code/**",
+            "/api/home/**"
     );
 
     public static final List<String> JWT_EXCLUDED_PATHS = createJwtExcludedPaths();

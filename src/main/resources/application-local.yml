@@ -53,3 +53,20 @@ management:
   endpoint:
     health:
       show-details: never
+
+# Firebase 푸시 알림 (선택적 - 파일이 없으면 자동 비활성화)
+firebase:
+  service-account-path: secret/firebase-service-account.json
+
+# Gemini AI 인사이트
+gemini:
+  project-id: jectvsserver
+  enabled: true
+
+# AWS S3 이미지 업로드
+aws:
+  s3:
+    bucket: ject-vs-images
+    region: ap-southeast-2
+    access-key: ${AWS_S3_ACCESS_KEY}
+    secret-key: ${AWS_S3_SECRET_KEY}

@@ -1,24 +1,47 @@
 package com.ject.vs.vote.adapter.web.dto;
 
+import com.ject.vs.vote.domain.VoteEmoji;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase.ImmersiveFeedResult;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
-public record ImmersiveFeedResponse(List<FeedItem> items, Long nextCursor, boolean hasNext) {
+public record ImmersiveFeedResponse(List<VoteItem> votes, Long nextCursor, boolean hasNext) {
 
-    public record FeedItem(
+    public record VoteItem(
             Long voteId,
             String title,
+            String content,
             String imageUrl,
-            String status,
             OffsetDateTime endAt,
-            int participantCount,
-            int currentViewerCount,
-            Long mySelectedOptionId
+            List<OptionItem> options,
+            MyVote myVote,
+            EmojiSummary emojiSummary,
+            String myEmoji,
+            int commentCount,
+            int currentViewerCount
     ) {
+    }
+
+    public record OptionItem(Long optionId, String label, Long voteCount, Integer ratio) {
+    }
+
+    public record MyVote(boolean voted, Long selectedOptionId) {
+    }
+
+    public record EmojiSummary(long LIKE, long SAD, long ANGRY, long WOW, long total) {
+        public static EmojiSummary from(Map<VoteEmoji, Long> map, long total) {
+            return new EmojiSummary(
+                    map.getOrDefault(VoteEmoji.LIKE, 0L),
+                    map.getOrDefault(VoteEmoji.SAD, 0L),
+                    map.getOrDefault(VoteEmoji.ANGRY, 0L),
+                    map.getOrDefault(VoteEmoji.WOW, 0L),
+                    total
+            );
+        }
     }
 
     private static OffsetDateTime toKst(Instant instant) {
@@ -26,12 +49,30 @@ public record ImmersiveFeedResponse(List<FeedItem> items, Long nextCursor, boole
     }
 
     public static ImmersiveFeedResponse from(ImmersiveFeedResult result) {
-        List<FeedItem> items = result.items().stream()
-                .map(i -> new FeedItem(
-                        i.voteId(), i.title(), i.imageUrl(), i.status().name(),
-                        toKst(i.endAt()), i.participantCount(), i.currentViewerCount(),
-                        i.mySelectedOptionId()))
+        List<VoteItem> votes = result.items().stream()
+                .map(i -> {
+                    List<OptionItem> options = i.options().stream()
+                            .map(o -> new OptionItem(o.optionId(), o.label(), o.voteCount(), o.ratio()))
+                            .toList();
+                    MyVote myVote = new MyVote(i.voted(), i.mySelectedOptionId());
+                    EmojiSummary emojiSummary = EmojiSummary.from(i.emojiSummary(), i.emojiTotal());
+                    String myEmoji = i.myEmoji() != null ? i.myEmoji().name() : null;
+
+                    return new VoteItem(
+                            i.voteId(),
+                            i.title(),
+                            i.content(),
+                            i.imageUrl(),
+                            toKst(i.endAt()),
+                            options,
+                            myVote,
+                            emojiSummary,
+                            myEmoji,
+                            i.commentCount(),
+                            i.currentViewerCount()
+                    );
+                })
                 .toList();
-        return new ImmersiveFeedResponse(items, result.nextCursor(), result.hasNext());
+        return new ImmersiveFeedResponse(votes, result.nextCursor(), result.hasNext());
     }
 }
