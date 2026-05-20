@@ -56,7 +56,6 @@ public record VoteResultResponse(
 
         static InsightResponse from(Insight insight) {
             if (insight == null) return null;
-            if (insight.locked()) return new InsightResponse(true, null, null, null, null);
 
             GenderDistributionResponse gender = null;
             if (insight.genderDistribution() != null) {
@@ -76,7 +75,7 @@ public record VoteResultResponse(
                         .toList();
             }
 
-            return new InsightResponse(false, insight.scope() != null ? insight.scope().name() : null,
+            return new InsightResponse(insight.locked(), insight.scope() != null ? insight.scope().name() : null,
                     insight.selectionCount(), gender, ages);
         }
     }

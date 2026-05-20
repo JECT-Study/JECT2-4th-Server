@@ -124,7 +124,7 @@ class VoteResultQueryServiceTest {
             given(voteParticipationRepository.findByVoteIdAndUserId(1L, 1L)).willReturn(Optional.empty());
             given(voteParticipationRepository.findGenderDistributionByVote(1L)).willReturn(List.of());
             given(voteParticipationRepository.findAllUserIdsByVoteId(1L)).willReturn(List.of());
-            given(userRepository.findById(1L)).willReturn(Optional.empty());
+            given(userRepository.findAllById(List.of())).willReturn(List.of());
 
             VoteResultDetail result = service.getResult(1L, 1L);
 
