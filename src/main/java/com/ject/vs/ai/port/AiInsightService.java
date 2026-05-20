@@ -17,12 +17,12 @@ import java.util.Optional;
 @Slf4j
 public class AiInsightService implements AiInsightUseCase {
 
-    private final VertexAI vertexAI;
+    private final Optional<VertexAI> vertexAI;
     private final GeminiProperties properties;
 
     @Override
     public Optional<AiInsightResult> generateVoteInsight(VoteInsightRequest request) {
-        if (vertexAI == null || !properties.enabled()) {
+        if (vertexAI.isEmpty() || !properties.enabled()) {
             log.warn("AI insight generation is disabled or Gemini is not configured");
             return Optional.empty();
         }
@@ -30,7 +30,7 @@ public class AiInsightService implements AiInsightUseCase {
         try {
             String prompt = buildPrompt(request);
 
-            GenerativeModel model = new GenerativeModel(properties.model(), vertexAI);
+            GenerativeModel model = new GenerativeModel(properties.model(), vertexAI.get());
             GenerateContentResponse response = model.generateContent(prompt);
             String responseText = ResponseHandler.getText(response);
 

@@ -1,6 +1,7 @@
 package com.ject.vs.ai.config;
 
 import com.google.cloud.vertexai.VertexAI;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,10 +11,8 @@ import org.springframework.context.annotation.Configuration;
 public class GeminiConfig {
 
     @Bean
+    @ConditionalOnProperty(name = "gemini.enabled", havingValue = "true")
     public VertexAI vertexAI(GeminiProperties properties) {
-        if (!properties.enabled() || properties.projectId() == null || properties.projectId().isBlank()) {
-            return null;
-        }
         return new VertexAI(properties.projectId(), properties.location());
     }
 }
