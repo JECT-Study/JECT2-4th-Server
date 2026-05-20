@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.vote.adapter.web.dto.MyParticipatedVoteResponse;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -114,5 +116,30 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
     @Override
     public long countParticipationByUserId(Long userId) {
         return voteParticipationRepository.countByUserId(userId);
+    }
+
+    @Override
+    public MyParticipatedVoteResponse findVotesByOrderBy(Long userId, VoteSortType type) {
+        List<Vote> list;
+        if(type == VoteSortType.END_AT) {       // 종료 임박순
+            list = voteRepository.findVotesByOrderByDeadLine(userId);
+        }
+        else if(type == VoteSortType.POPULAR) {      // 인기순
+            list = voteRepository.findVotesByOrderByPopularity(userId);
+        }
+        else {      // default 최신순
+            list = voteRepository.findVotesByOrderByLatest(userId);
+        }
+
+        List<MyParticipatedVoteResponse.VoteElement> elementList = list.stream()
+                .map(v -> new MyParticipatedVoteResponse.VoteElement(
+                        v.getId(),
+                        v.getTitle(),
+                        v.getContent(),
+                        v.getThumbnailUrl(),
+                        v.getEndAt()
+                )).toList();
+
+        return new MyParticipatedVoteResponse(elementList.size(), elementList);
     }
 }

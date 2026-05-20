@@ -1,5 +1,9 @@
 package com.ject.vs.vote.port.in;
 
+import com.ject.vs.vote.adapter.web.dto.MyParticipatedVoteResponse;
+import com.ject.vs.vote.domain.Vote;
+import com.ject.vs.vote.domain.VoteSortType;
+
 import java.util.List;
 
 public interface VoteParticipationQueryUseCase {
@@ -7,4 +11,5 @@ public interface VoteParticipationQueryUseCase {
     List<Long> findAllVoteIdsByUserId(Long userId);
     long countParticipantsByVoteId(Long voteId);
     List<Long> findAllUserIdsByVoteId(Long voteId);
+    MyParticipatedVoteResponse findVotesByOrderBy(Long userId, VoteSortType type);
 }

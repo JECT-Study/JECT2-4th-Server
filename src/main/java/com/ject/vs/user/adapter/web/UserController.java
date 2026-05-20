@@ -47,20 +47,13 @@ public class UserController {
         return ResponseEntity.ok(userService.initializeDefaultProfile(userId, userInfo));
     }
 
-    @GetMapping("/info/profile")
-    public ResponseEntity<?> getProfileInfo(@AuthenticationPrincipal Long userId) {
-        return ResponseEntity.ok(userService.getMyPage(userId));
-    }
-
-    @PatchMapping("/change/nickname")
+    @PatchMapping("/change/info")
     public ResponseEntity<?> modifyNickname(@AuthenticationPrincipal Long userId, @RequestBody UserMyPageResponse req) {
-        return ResponseEntity.ok(userService.modifyNickname(userId, req.nickname()));
+        return ResponseEntity.ok(userService.modifyInfo(userId, req.nickname(), req.imageColor()));
     }
 
-    @PatchMapping("/change/image")
-    public ResponseEntity<?> modifyImageColor(@AuthenticationPrincipal Long userId, @RequestBody UserProfileImageColorReq req) {
-        return ResponseEntity.ok(userService.modifyImageColor(userId, req.imageColor()));
+    @DeleteMapping("/profile/delete")
+    public ResponseEntity<?> deleteAccount(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(userService.deleteAccount(userId));
     }
-
-
 }

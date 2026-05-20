@@ -6,11 +6,13 @@ import com.ject.vs.vote.adapter.web.dto.ImmersiveLiveResponse;
 import com.ject.vs.vote.adapter.web.dto.ImmersiveParticipateResponse;
 import com.ject.vs.vote.adapter.web.dto.ParticipateRequest;
 import com.ject.vs.vote.adapter.web.dto.ShareLinkResponse;
+import com.ject.vs.vote.domain.VoteSortType;
 import com.ject.vs.vote.port.in.ImmersiveVoteCommandUseCase;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase;
 import com.ject.vs.vote.port.in.VoteResultQueryUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 

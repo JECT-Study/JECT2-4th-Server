@@ -2,12 +2,16 @@ package com.ject.vs.vote.adapter.web;
 
 import com.ject.vs.config.AnonymousId;
 import com.ject.vs.vote.adapter.web.dto.*;
+import com.ject.vs.vote.domain.Vote;
+import com.ject.vs.vote.domain.VoteSortType;
 import com.ject.vs.vote.exception.UnauthorizedException;
 import com.ject.vs.vote.port.VoteDetailQueryService;
 import com.ject.vs.vote.port.in.VoteCommandUseCase;
+import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +22,7 @@ public class VoteController {
 
     private final VoteCommandUseCase voteCommandUseCase;
     private final VoteDetailQueryService voteDetailQueryService;
+    private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -55,5 +60,10 @@ public class VoteController {
             @AuthenticationPrincipal Long userId) {
         if (userId == null) throw new UnauthorizedException();
         voteCommandUseCase.cancel(voteId, userId);
+    }
+
+    @GetMapping("/me/participated")
+    public MyParticipatedVoteResponse getVoteListParticipated(@AuthenticationPrincipal Long userId, @RequestParam VoteSortType type) {
+        return voteParticipationQueryUseCase.findVotesByOrderBy(userId, type);
     }
 }

@@ -1,5 +1,7 @@
 package com.ject.vs.user.port;
 
+import com.ject.vs.auth.domain.Token;
+import com.ject.vs.auth.domain.TokenRepository;
 import com.ject.vs.common.exception.BusinessException;
 import com.ject.vs.user.adapter.web.dto.*;
 import com.ject.vs.user.domain.ImageColor;
@@ -10,12 +12,15 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Transactional
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
     private final WordService wordService;
+    private final TokenRepository tokenRepository;
 
     public User findOrCreate(String email) {
         return userRepository.findByEmail(email)
@@ -74,21 +79,27 @@ public class UserService {
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }
 
-   public UserMyPageResponse modifyNickname(Long userId, String nickname) {
+   public UserMyPageResponse modifyInfo(Long userId, String nickname, ImageColor imageColor) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         User.modifyName(user, nickname);
+        User.modifyImageColor(user, imageColor);
 
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }
 
-   public UserMyPageResponse modifyImageColor(Long userId, ImageColor imageColor) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+   public Void deleteAccount(Long userId) {
+        // user 제거
+       // 기존에 있는 refresh token 제거
+       User user = userRepository.findById(userId)
+               .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
-        User.modifyImageColor(user, imageColor);
+       List<Token> list = tokenRepository.findByUserId(user);
 
-        return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
+       tokenRepository.deleteAll(list);
+       userRepository.delete(user);
+
+       return null;
    }
 }
