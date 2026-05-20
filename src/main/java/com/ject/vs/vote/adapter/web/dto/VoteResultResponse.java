@@ -51,7 +51,7 @@ public record VoteResultResponse(
         public record GenderDetail(long count, int ratio) {
         }
 
-        public record AgeDistributionResponse(String ageGroup, int ratio, boolean isHighlighted) {
+        public record AgeDistributionResponse(String ageGroup, int ratio, boolean isMyGroup) {
         }
 
         static InsightResponse from(Insight insight) {
@@ -71,7 +71,7 @@ public record VoteResultResponse(
             List<AgeDistributionResponse> ages = null;
             if (insight.ageDistribution() != null) {
                 ages = insight.ageDistribution().stream()
-                        .map(a -> new AgeDistributionResponse(a.ageGroup(), a.ratio(), a.isHighlighted()))
+                        .map(a -> new AgeDistributionResponse(a.ageGroup(), a.ratio(), a.isHighlighted())) // UseCase의 isHighlighted를 API 스펙의 isMyGroup으로 매핑
                         .toList();
             }
 
