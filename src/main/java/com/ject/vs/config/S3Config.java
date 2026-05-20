@@ -1,6 +1,6 @@
 package com.ject.vs.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
 @EnableConfigurationProperties(S3Properties.class)
-@ConditionalOnProperty(prefix = "aws.s3", name = "bucket")
+@ConditionalOnExpression("!'${aws.s3.bucket:}'.isEmpty()")
 public class S3Config {
 
     @Bean
