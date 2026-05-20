@@ -3,6 +3,7 @@ package com.ject.vs.vote.adapter.web;
 import com.ject.vs.config.AnonymousId;
 import com.ject.vs.vote.adapter.web.dto.*;
 import com.ject.vs.vote.domain.Vote;
+import com.ject.vs.vote.domain.VoteParticipationRepository;
 import com.ject.vs.vote.domain.VoteSortType;
 import com.ject.vs.vote.exception.UnauthorizedException;
 import com.ject.vs.vote.port.VoteDetailQueryService;
@@ -23,6 +24,7 @@ public class VoteController {
     private final VoteCommandUseCase voteCommandUseCase;
     private final VoteDetailQueryService voteDetailQueryService;
     private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
+    private final VoteParticipationRepository voteParticipationRepository;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -64,6 +66,11 @@ public class VoteController {
 
     @GetMapping("/me/participated")
     public MyParticipatedVoteResponse getVoteListParticipated(@AuthenticationPrincipal Long userId, @RequestParam VoteSortType type) {
-        return voteParticipationQueryUseCase.findVotesByOrderBy(userId, type);
+        return voteParticipationQueryUseCase.findVotesByOrder(userId, type);
+    }
+
+    @GetMapping("/me/participated/end")
+    public MyParticipatedVoteResponse getVoteListEndParticipated(@AuthenticationPrincipal Long userId, @RequestParam VoteSortType type) {
+        return voteParticipationQueryUseCase.findVotesEndByOrder(userId, type);
     }
 }

@@ -38,4 +38,16 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
             "group by v.id " +
             "order by count(ver.id) desc, v.createdAt desc")
     List<Vote> findVotesByOrderByPopularity(@Param("userId") Long userId);
+
+    @Query("select v from Vote v " +
+            "join VoteParticipation vp on vp.voteId = v.id " +
+            "where vp.userId = :userId and v.endAt < current_timestamp " +
+            "order by v.createdAt desc")
+    List<Vote> findVotesEndByLatest(@Param("userId") Long userId);
+
+    @Query("select v from Vote v " +
+            "join VoteParticipation vp on v.id = vp.voteId " +
+            "where vp.userId = :userId and v.endAt < current_timestamp " +
+            "order by v.createdAt asc")
+    List<Vote> findVotesEndByDeadLine(@Param("userId") Long userId);
 }

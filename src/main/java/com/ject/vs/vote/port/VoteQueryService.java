@@ -119,7 +119,7 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
     }
 
     @Override
-    public MyParticipatedVoteResponse findVotesByOrderBy(Long userId, VoteSortType type) {
+    public MyParticipatedVoteResponse findVotesByOrder(Long userId, VoteSortType type) {
         List<Vote> list;
         if(type == VoteSortType.END_AT) {       // 종료 임박순
             list = voteRepository.findVotesByOrderByDeadLine(userId);
@@ -129,6 +129,29 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
         }
         else {      // default 최신순
             list = voteRepository.findVotesByOrderByLatest(userId);
+        }
+
+        List<MyParticipatedVoteResponse.VoteElement> elementList = list.stream()
+                .map(v -> new MyParticipatedVoteResponse.VoteElement(
+                        v.getId(),
+                        v.getTitle(),
+                        v.getContent(),
+                        v.getThumbnailUrl(),
+                        v.getEndAt()
+                )).toList();
+
+        return new MyParticipatedVoteResponse(elementList.size(), elementList);
+    }
+
+    @Override
+    public MyParticipatedVoteResponse findVotesEndByOrder(Long userId, VoteSortType type) {
+        List<Vote> list;
+
+        if(type == VoteSortType.END_AT) {
+            list = voteRepository.findVotesEndByDeadLine(userId);
+        }
+        else {
+            list = voteRepository.findVotesEndByLatest(userId);
         }
 
         List<MyParticipatedVoteResponse.VoteElement> elementList = list.stream()

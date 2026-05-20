@@ -11,5 +11,6 @@ public interface VoteParticipationQueryUseCase {
     List<Long> findAllVoteIdsByUserId(Long userId);
     long countParticipantsByVoteId(Long voteId);
     List<Long> findAllUserIdsByVoteId(Long voteId);
-    MyParticipatedVoteResponse findVotesByOrderBy(Long userId, VoteSortType type);
+    MyParticipatedVoteResponse findVotesByOrder(Long userId, VoteSortType type);
+    MyParticipatedVoteResponse findVotesEndByOrder(Long userId, VoteSortType type);
 }
