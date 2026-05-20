@@ -51,12 +51,11 @@ public record VoteResultResponse(
         public record GenderDetail(long count, int ratio) {
         }
 
-        public record AgeDistributionResponse(String ageGroup, int ratio, boolean isHighlighted) {
+        public record AgeDistributionResponse(String ageGroup, int ratio, boolean isMyGroup) {
         }
 
         static InsightResponse from(Insight insight) {
             if (insight == null) return null;
-            if (insight.locked()) return new InsightResponse(true, null, null, null, null);
 
             GenderDistributionResponse gender = null;
             if (insight.genderDistribution() != null) {
@@ -72,11 +71,11 @@ public record VoteResultResponse(
             List<AgeDistributionResponse> ages = null;
             if (insight.ageDistribution() != null) {
                 ages = insight.ageDistribution().stream()
-                        .map(a -> new AgeDistributionResponse(a.ageGroup(), a.ratio(), a.isHighlighted()))
+                        .map(a -> new AgeDistributionResponse(a.ageGroup(), a.ratio(), a.isHighlighted())) // UseCase의 isHighlighted를 API 스펙의 isMyGroup으로 매핑
                         .toList();
             }
 
-            return new InsightResponse(false, insight.scope() != null ? insight.scope().name() : null,
+            return new InsightResponse(insight.locked(), insight.scope() != null ? insight.scope().name() : null,
                     insight.selectionCount(), gender, ages);
         }
     }

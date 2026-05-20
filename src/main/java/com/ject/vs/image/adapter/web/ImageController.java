@@ -10,11 +10,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @RestController
 @RequestMapping("/api/images")
 @RequiredArgsConstructor
-@ConditionalOnBean(ImageService.class)
+@ConditionalOnBean(S3Client.class)
 public class ImageController {
 
     private final ImageService imageService;

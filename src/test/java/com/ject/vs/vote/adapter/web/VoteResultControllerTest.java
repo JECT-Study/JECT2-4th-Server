@@ -182,7 +182,7 @@ class VoteResultControllerTest {
                     .andExpect(jsonPath("$.insight.genderDistribution.male.ratio").value(38))
                     .andExpect(jsonPath("$.insight.genderDistribution.highlightedGender").value("FEMALE"))
                     .andExpect(jsonPath("$.insight.ageDistribution[0].ageGroup").value("20s"))
-                    .andExpect(jsonPath("$.insight.ageDistribution[0].isHighlighted").value(true))
+                    .andExpect(jsonPath("$.insight.ageDistribution[0].isMyGroup").value(true))
                     .andExpect(jsonPath("$.aiInsight.available").value(true))
                     .andExpect(jsonPath("$.aiInsight.headline").exists());
         }
@@ -223,8 +223,8 @@ class VoteResultControllerTest {
                     .andExpect(jsonPath("$.myVote.selectedOptionId").doesNotExist())
                     .andExpect(jsonPath("$.insight.scope").value("TOTAL"))
                     .andExpect(jsonPath("$.insight.genderDistribution.highlightedGender").value("FEMALE"))
-                    .andExpect(jsonPath("$.insight.ageDistribution[0].isHighlighted").value(false))
-                    .andExpect(jsonPath("$.insight.ageDistribution[1].isHighlighted").value(true))
+                    .andExpect(jsonPath("$.insight.ageDistribution[0].isMyGroup").value(false))
+                    .andExpect(jsonPath("$.insight.ageDistribution[1].isMyGroup").value(true))
                     .andExpect(jsonPath("$.aiInsight.available").value(false))
                     .andExpect(jsonPath("$.aiInsight.headline").doesNotExist());
         }
