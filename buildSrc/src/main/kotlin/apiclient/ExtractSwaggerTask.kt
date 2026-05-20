@@ -43,7 +43,7 @@ abstract class ExtractSwaggerTask : DefaultTask() {
     }
 
     private fun waitForServer() {
-        repeat(30) {
+        repeat(60) {
             try {
                 URI("$serverUrl$apiDocsPath").toURL().readText()
                 return
@@ -51,6 +51,6 @@ abstract class ExtractSwaggerTask : DefaultTask() {
                 Thread.sleep(2000)
             }
         }
-        throw RuntimeException("Server did not start within 60 seconds")
+        throw RuntimeException("Server did not start within 120 seconds")
     }
 }
