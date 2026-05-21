@@ -12,6 +12,7 @@ public record MyParticipatedVoteResponse(
             String title,
             String content,
             String thumbnailUrl,
-            Instant localDate
+            Instant localDate,
+            Instant endAt
     ) {}
 }

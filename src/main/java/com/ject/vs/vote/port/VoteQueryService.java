@@ -137,6 +137,7 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
                         v.getTitle(),
                         v.getContent(),
                         v.getThumbnailUrl(),
+                        v.getEndAt(),
                         v.getEndAt()
                 )).toList();
 
@@ -160,6 +161,7 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
                         v.getTitle(),
                         v.getContent(),
                         v.getThumbnailUrl(),
+                        v.getEndAt(),
                         v.getEndAt()
                 )).toList();
 

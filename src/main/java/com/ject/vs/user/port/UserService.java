@@ -4,9 +4,7 @@ import com.ject.vs.auth.domain.Token;
 import com.ject.vs.auth.domain.TokenRepository;
 import com.ject.vs.common.exception.BusinessException;
 import com.ject.vs.user.adapter.web.dto.*;
-import com.ject.vs.user.domain.ImageColor;
-import com.ject.vs.user.domain.User;
-import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.domain.*;
 import com.ject.vs.user.exception.UserErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +19,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final WordService wordService;
     private final TokenRepository tokenRepository;
+    private final UserDeleteRepository userDeleteRepository;
 
     public User findOrCreate(String email) {
         return userRepository.findByEmail(email)
@@ -89,7 +88,7 @@ public class UserService {
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }
 
-   public Void deleteAccount(Long userId) {
+   public Void deleteAccount(Long userId, UserDeleteReq req) {
         // user 제거
        // 기존에 있는 refresh token 제거
        User user = userRepository.findById(userId)
@@ -97,8 +96,11 @@ public class UserService {
 
        List<Token> list = tokenRepository.findByUserId(user);
 
+       UserDelete delAccount = UserDelete.from(user.getEmail(), req);
+
        tokenRepository.deleteAll(list);
        userRepository.delete(user);
+       userDeleteRepository.save(delAccount);
 
        return null;
    }
