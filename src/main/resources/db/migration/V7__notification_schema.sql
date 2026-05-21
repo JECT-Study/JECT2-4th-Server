@@ -13,9 +13,9 @@ CREATE TABLE notification (
     sent          BOOLEAN NOT NULL DEFAULT FALSE,
     sent_at       TIMESTAMP WITH TIME ZONE
 );
--- CREATE INDEX idx_notification_user_created ON notification (user_id, created_at DESC);
--- CREATE INDEX idx_notification_user_unread  ON notification (user_id) WHERE is_read = false;
--- CREATE INDEX idx_notification_unsent       ON notification (id) WHERE sent = false;
+CREATE INDEX idx_notification_user_created ON notification (user_id, created_at DESC);
+CREATE INDEX idx_notification_user_unread  ON notification (user_id) WHERE is_read = false;
+CREATE INDEX idx_notification_unsent       ON notification (id) WHERE sent = false;
 
 -- 알림 설정
 CREATE TABLE notification_setting (
@@ -46,4 +46,4 @@ CREATE TABLE push_subscription (
     created_at   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     last_used_at TIMESTAMP WITH TIME ZONE
 );
--- CREATE INDEX idx_push_subscription_user ON push_subscription (user_id);
+CREATE INDEX idx_push_subscription_user ON push_subscription (user_id);
