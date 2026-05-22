@@ -1,7 +1,6 @@
 package com.ject.vs.user.domain;
 
 import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
-import com.ject.vs.user.adapter.web.dto.UserProfileRequest;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -50,11 +49,16 @@ public class User {
         this.userStatus = UserStatus.REGISTER;
     }
 
-    public void initializeDefault(UserProfileRequest userInfo, String nickname)  {
-        this.email = userInfo.getEmail();
-        this.birthYear = userInfo.getBirthYear();
-        this.gender = userInfo.getGender();
+    public void initializeDefault(String email, Year birthYear, Gender gender, String nickname)  {
+        this.email = email;
+        this.birthYear = birthYear;
+        this.gender = gender;
         this.imageColor = ImageColor.GREEN;
         this.nickname = nickname;
+    }
+
+    public static void modifyAccount(User user, String nickname, ImageColor imageColor) {
+        user.nickname = nickname;
+        user.imageColor = imageColor;
     }
 }

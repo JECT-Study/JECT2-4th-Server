@@ -1,19 +1,16 @@
 package com.ject.vs.user.port;
 
+import com.ject.vs.auth.domain.Token;
+import com.ject.vs.auth.domain.TokenRepository;
 import com.ject.vs.common.exception.BusinessException;
-import com.ject.vs.user.adapter.web.dto.NicknameCheckResponse;
-import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
-import com.ject.vs.user.adapter.web.dto.UserNicknameRec;
-import com.ject.vs.user.adapter.web.dto.UserProfileDefaultResponse;
-import com.ject.vs.user.adapter.web.dto.UserProfileRequest;
-import com.ject.vs.user.adapter.web.dto.UserProfileResponse;
-import com.ject.vs.user.domain.ImageColor;
-import com.ject.vs.user.domain.User;
-import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.adapter.web.dto.*;
+import com.ject.vs.user.domain.*;
 import com.ject.vs.user.exception.UserErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Transactional
 @Service
@@ -21,6 +18,8 @@ import org.springframework.stereotype.Service;
 public class UserService {
     private final UserRepository userRepository;
     private final WordService wordService;
+    private final TokenRepository tokenRepository;
+    private final UserDeleteRepository userDeleteRepository;
 
     public User findOrCreate(String email) {
         return userRepository.findByEmail(email)
@@ -61,14 +60,49 @@ public class UserService {
         return UserProfileResponse.from(user);
    }
 
-   public UserProfileDefaultResponse initializeDefaultProfile(Long userId, UserProfileRequest request) {
+   public UserProfileDefaultResponse initializeDefaultProfile(Long userId, UserProfileRequest req) {
        User user = userRepository.findById(userId)
                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         UserNicknameRec nickname = suggestNickname(userId);
 
-        user.initializeDefault(request, nickname.nickname());
+        user.initializeDefault(req.email(), req.birthYear(), req.gender(), nickname.nickname());
 
         return UserProfileDefaultResponse.from(nickname.nickname(), ImageColor.GREEN.name());
+   }
+
+   public UserMyPageResponse getMyPage(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
+   }
+
+   public UserMyPageResponse modifyInfo(Long userId, UserModifyInfoRequest req) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        if(userRepository.isNicknameAvailable(req.nickname())) {
+            User.modifyAccount(user, req.nickname(), req.imageColor());
+        }
+
+        return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
+   }
+
+   public Void deleteAccount(Long userId, UserDeleteReq req) {
+        // user 제거
+       // 기존에 있는 refresh token 제거
+       User user = userRepository.findById(userId)
+               .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+       List<Token> list = tokenRepository.findByUserId(user);
+
+       UserDelete delAccount = UserDelete.from(user.getEmail(), req);
+
+       tokenRepository.deleteAll(list);
+       userRepository.delete(user);
+       userDeleteRepository.save(delAccount);
+
+       return null;
    }
 }
