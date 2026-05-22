@@ -60,13 +60,13 @@ public class UserService {
         return UserProfileResponse.from(user);
    }
 
-   public UserProfileDefaultResponse initializeDefaultProfile(Long userId, UserProfileRequest request) {
+   public UserProfileDefaultResponse initializeDefaultProfile(Long userId, UserProfileRequest req) {
        User user = userRepository.findById(userId)
                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         UserNicknameRec nickname = suggestNickname(userId);
 
-        user.initializeDefault(request, nickname.nickname());
+        user.initializeDefault(req.email(), req.birthYear(), req.gender(), nickname.nickname());
 
         return UserProfileDefaultResponse.from(nickname.nickname(), ImageColor.GREEN.name());
    }
@@ -83,7 +83,7 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         if(userRepository.isNicknameAvailable(req.nickname())) {
-            User.modifyAccount(user, req);
+            User.modifyAccount(user, req.nickname(), req.imageColor());
         }
 
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
