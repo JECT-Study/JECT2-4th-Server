@@ -56,6 +56,9 @@ app:
     allow-credentials: ${APP_CORS_ALLOW_CREDENTIALS:true}
     max-age: ${APP_CORS_MAX_AGE:3600}
 
+springdoc:
+  server-url: https://api.vs.io.kr
+
 management:
   server:
     port: 8081
