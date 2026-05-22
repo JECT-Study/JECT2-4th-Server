@@ -141,11 +141,12 @@ class VoteResultControllerTest {
                     new OptionResult(10L, "혼밥이 편하다", 364L, 70),
                     new OptionResult(11L, "같이 먹기", 156L, 30)
             );
+            // GenderDistribution: total, femaleCount, femaleRatio, maleCount, maleRatio, highlightedGender
             Insight insight = new Insight(
                     false,
                     InsightScope.MY_SELECTION,
                     156,
-                    new GenderDistribution(60, 38, 96, 62),
+                    new GenderDistribution(156, 96, 62, 60, 38, "FEMALE"),
                     List.of(
                             new AgeDistribution("20s", 28, true),
                             new AgeDistribution("30s", 52, false),
@@ -174,10 +175,12 @@ class VoteResultControllerTest {
                     .andExpect(jsonPath("$.insight.locked").value(false))
                     .andExpect(jsonPath("$.insight.scope").value("MY_SELECTION"))
                     .andExpect(jsonPath("$.insight.selectionCount").value(156))
+                    .andExpect(jsonPath("$.insight.genderDistribution.total").value(156))
                     .andExpect(jsonPath("$.insight.genderDistribution.female.count").value(96))
                     .andExpect(jsonPath("$.insight.genderDistribution.female.ratio").value(62))
                     .andExpect(jsonPath("$.insight.genderDistribution.male.count").value(60))
                     .andExpect(jsonPath("$.insight.genderDistribution.male.ratio").value(38))
+                    .andExpect(jsonPath("$.insight.genderDistribution.highlightedGender").value("FEMALE"))
                     .andExpect(jsonPath("$.insight.ageDistribution[0].ageGroup").value("20s"))
                     .andExpect(jsonPath("$.insight.ageDistribution[0].isMyGroup").value(true))
                     .andExpect(jsonPath("$.aiInsight.available").value(true))
@@ -194,14 +197,16 @@ class VoteResultControllerTest {
                     new OptionResult(10L, "혼밥이 편하다", 364L, 70),
                     new OptionResult(11L, "같이 먹기", 156L, 30)
             );
+            // GenderDistribution: total, femaleCount, femaleRatio, maleCount, maleRatio, highlightedGender
+            // 미참여자: highlightedGender = 다수 성별 (여기서는 FEMALE이 더 많음)
             Insight insight = new Insight(
                     false,
                     InsightScope.TOTAL,
-                    364,
-                    new GenderDistribution(139, 38, 225, 62),
+                    520,
+                    new GenderDistribution(520, 322, 62, 198, 38, "FEMALE"),
                     List.of(
                             new AgeDistribution("20s", 28, false),
-                            new AgeDistribution("30s", 52, false),
+                            new AgeDistribution("30s", 52, true),
                             new AgeDistribution("40s", 20, false)
                     )
             );
@@ -217,7 +222,9 @@ class VoteResultControllerTest {
                     .andExpect(jsonPath("$.myVote.voted").value(false))
                     .andExpect(jsonPath("$.myVote.selectedOptionId").doesNotExist())
                     .andExpect(jsonPath("$.insight.scope").value("TOTAL"))
+                    .andExpect(jsonPath("$.insight.genderDistribution.highlightedGender").value("FEMALE"))
                     .andExpect(jsonPath("$.insight.ageDistribution[0].isMyGroup").value(false))
+                    .andExpect(jsonPath("$.insight.ageDistribution[1].isMyGroup").value(true))
                     .andExpect(jsonPath("$.aiInsight.available").value(false))
                     .andExpect(jsonPath("$.aiInsight.headline").doesNotExist());
         }
@@ -228,24 +235,28 @@ class VoteResultControllerTest {
 
         @Test
         @WithMockUser
-        void 비회원_insight_locked() throws Exception {
+        void 비회원_분석인사이트는_보이고_성별연령대는_잠금() throws Exception {
             List<OptionResult> options = List.of(
                     new OptionResult(10L, "혼밥이 편하다", 364L, 70),
                     new OptionResult(11L, "같이 먹기", 156L, 30)
             );
+            // 비회원: locked=true, scope=TOTAL, selectionCount 제공, 성별/연령대는 null
+            Insight guestInsight = new Insight(true, InsightScope.TOTAL, 520, null, null);
             VoteResultDetail result = new VoteResultDetail(
                     1L, "직장인 점심시간 혼밥 vs 같이 먹기",
                     Instant.parse("2026-04-14T04:49:00Z"), "내용", "https://cdn.example.com/thumb.jpg",
                     VoteStatus.ENDED, Instant.parse("2026-04-14T14:59:00Z"), 520, options, false, null,
-                    Insight.ofLocked(), AiInsightView.unavailable()
+                    guestInsight, AiInsightView.unavailable()
             );
             given(voteResultQueryUseCase.getResult(eq(1L), isNull())).willReturn(result);
 
             mockMvc.perform(get("/api/votes/1/result"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.insight.locked").value(true))
-                    .andExpect(jsonPath("$.insight.scope").doesNotExist())
+                    .andExpect(jsonPath("$.insight.scope").value("TOTAL"))
+                    .andExpect(jsonPath("$.insight.selectionCount").value(520))
                     .andExpect(jsonPath("$.insight.genderDistribution").doesNotExist())
+                    .andExpect(jsonPath("$.insight.ageDistribution").doesNotExist())
                     .andExpect(jsonPath("$.aiInsight.available").value(false));
         }
     }

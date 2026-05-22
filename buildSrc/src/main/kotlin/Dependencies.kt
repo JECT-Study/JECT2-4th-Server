@@ -43,4 +43,12 @@ object Dependencies {
     object Firebase {
         const val ADMIN = "com.google.firebase:firebase-admin:9.3.0"
     }
+
+    object Aws {
+        const val S3 = "software.amazon.awssdk:s3:2.25.60"
+    }
+
+    object Ai {
+        const val GEMINI = "com.google.cloud:google-cloud-vertexai:1.14.0"
+    }
 }
