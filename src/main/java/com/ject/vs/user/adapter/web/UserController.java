@@ -48,8 +48,8 @@ public class UserController {
     }
 
     @PatchMapping("/change/info")
-    public ResponseEntity<?> modifyNickname(@AuthenticationPrincipal Long userId, @RequestBody UserMyPageResponse req) {
-        return ResponseEntity.ok(userService.modifyInfo(userId, req.nickname(), req.imageColor()));
+    public ResponseEntity<?> modifyNickname(@AuthenticationPrincipal Long userId, @RequestBody UserModifyInfoRequest req) {
+        return ResponseEntity.ok(userService.modifyInfo(userId, req));
     }
 
     @DeleteMapping("/profile/delete")

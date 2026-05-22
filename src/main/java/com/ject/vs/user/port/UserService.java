@@ -78,12 +78,13 @@ public class UserService {
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }
 
-   public UserMyPageResponse modifyInfo(Long userId, String nickname, ImageColor imageColor) {
+   public UserMyPageResponse modifyInfo(Long userId, UserModifyInfoRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
-        User.modifyName(user, nickname);
-        User.modifyImageColor(user, imageColor);
+        if(userRepository.isNicknameAvailable(req.nickname())) {
+            User.modifyAccount(user, req);
+        }
 
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }

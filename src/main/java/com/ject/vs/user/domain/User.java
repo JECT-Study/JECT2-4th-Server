@@ -1,6 +1,7 @@
 package com.ject.vs.user.domain;
 
 import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
+import com.ject.vs.user.adapter.web.dto.UserModifyInfoRequest;
 import com.ject.vs.user.adapter.web.dto.UserProfileRequest;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -58,11 +59,8 @@ public class User {
         this.nickname = nickname;
     }
 
-    public static void modifyName(User user, String nickname) {
-        user.nickname = nickname;
-    }
-
-    public static void modifyImageColor(User user, ImageColor imageColor) {
-        user.imageColor = imageColor;
+    public static void modifyAccount(User user, UserModifyInfoRequest req) {
+        user.nickname = req.nickname();
+        user.imageColor = req.imageColor();
     }
 }
