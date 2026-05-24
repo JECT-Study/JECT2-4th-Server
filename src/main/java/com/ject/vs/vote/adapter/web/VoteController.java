@@ -28,7 +28,6 @@ public class VoteController {
     private final VoteCommandUseCase voteCommandUseCase;
     private final VoteDetailQueryService voteDetailQueryService;
     private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
-    private final VoteParticipationRepository voteParticipationRepository;
 
     @Operation(summary = "투표 생성", description = "새로운 투표를 생성합니다. 회원만 가능합니다.")
     @PostMapping

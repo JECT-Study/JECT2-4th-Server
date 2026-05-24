@@ -13,4 +13,6 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
 
     @Query("Select t from Token t where t.user = :user")
     List<Token> findByUserId(@Param("user") User user);
+
+
 }
