@@ -14,8 +14,8 @@ CREATE TABLE notification (
     sent_at       TIMESTAMP WITH TIME ZONE
 );
 CREATE INDEX idx_notification_user_created ON notification (user_id, created_at DESC);
-CREATE INDEX idx_notification_user_unread  ON notification (user_id) WHERE is_read = false;
-CREATE INDEX idx_notification_unsent       ON notification (id) WHERE sent = false;
+CREATE INDEX idx_notification_user_unread ON notification (user_id, is_read);
+CREATE INDEX idx_notification_unsent      ON notification (id, sent);
 
 -- 알림 설정
 CREATE TABLE notification_setting (
