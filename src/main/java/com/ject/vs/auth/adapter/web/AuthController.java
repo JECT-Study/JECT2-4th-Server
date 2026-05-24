@@ -6,6 +6,8 @@ import com.ject.vs.config.CookieProperties;
 import com.ject.vs.config.JwtProperties;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.util.CookieUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "인증", description = "인증 관련 API")
 @RestController
 @RequiredArgsConstructor
 public class AuthController {
@@ -24,6 +27,7 @@ public class AuthController {
     private final JwtProperties jwtProperties;
     private final CookieProperties cookieProperties;
 
+    @Operation(summary = "토큰 재발급", description = "Refresh Token으로 Access Token을 재발급합니다.")
     @PostMapping("/auth/reissue")
     public ResponseEntity<Void> reissue(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = cookieUtil.getCookieValue(request, CookieUtil.CookieType.REFRESH_TOKEN);

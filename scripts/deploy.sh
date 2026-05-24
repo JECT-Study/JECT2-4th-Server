@@ -107,15 +107,55 @@ fi
 
 # 새 컨테이너 실행 (트래픽 전환 전까지 Docker 기본 bridge에만 둔다)
 log "새 컨테이너($NEW_CONTAINER) 실행 중"
-docker run -d --name "$NEW_CONTAINER" \
-  -e SPRING_PROFILES_ACTIVE=prod \
-  -e DATABASE_HOST \
-  -e DATABASE_USERNAME \
-  -e DATABASE_PASSWORD \
-  -e APP_JWT_SECRET \
-  -e APP_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS \
-  -e APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS \
-  "$IMAGE" >/dev/null
+
+# Docker run 옵션 구성
+DOCKER_OPTS=(
+  -d --name "$NEW_CONTAINER"
+  -e SPRING_PROFILES_ACTIVE=prod
+  -e DATABASE_HOST
+  -e DATABASE_USERNAME
+  -e DATABASE_PASSWORD
+  -e APP_JWT_SECRET
+  -e APP_JWT_ACCESS_TOKEN_EXPIRATION_SECONDS
+  -e APP_JWT_REFRESH_TOKEN_EXPIRATION_SECONDS
+  -e APP_OAUTH2_REDIRECT_SUCCESS_URL
+  -e APP_OAUTH2_EXTRA_INFO_URL
+  -e GOOGLE_CLIENT_ID
+  -e GOOGLE_OAUTH_CLIENT_SECRET
+)
+
+# Firebase + GCP 서비스 계정 설정 (선택적)
+# 이 파일은 Firebase와 Vertex AI(Gemini) 인증에 모두 사용됨
+if [ -f "/home/ubuntu/app/secrets/firebase-service-account.json" ]; then
+  DOCKER_OPTS+=(
+    -v /home/ubuntu/app/secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json:ro
+    -e FIREBASE_SERVICE_ACCOUNT_PATH=/app/secrets/firebase-service-account.json
+    -e GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/firebase-service-account.json
+  )
+  log "Firebase + GCP 서비스 계정 마운트됨"
+fi
+
+# S3 설정 (선택적)
+if [ -n "${AWS_S3_BUCKET:-}" ]; then
+  DOCKER_OPTS+=(
+    -e AWS_S3_BUCKET
+    -e AWS_S3_REGION
+    -e AWS_S3_ACCESS_KEY
+    -e AWS_S3_SECRET_KEY
+  )
+  log "S3 설정 추가됨"
+fi
+
+# Gemini 설정 (선택적)
+if [ -n "${GEMINI_PROJECT_ID:-}" ]; then
+  DOCKER_OPTS+=(
+    -e GEMINI_PROJECT_ID
+    -e GEMINI_ENABLED
+  )
+  log "Gemini 설정 추가됨"
+fi
+
+docker run "${DOCKER_OPTS[@]}" "$IMAGE" >/dev/null
 
 # 헬스체크 (docker inspect로 healthy 상태 확인)
 # Docker health status가 start-period 직후 일시적으로 unhealthy가 될 수 있어
