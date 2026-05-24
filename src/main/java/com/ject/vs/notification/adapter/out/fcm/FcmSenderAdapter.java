@@ -5,6 +5,7 @@ import com.ject.vs.notification.port.out.FcmPayload;
 import com.ject.vs.notification.port.out.PushSenderPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Profile("!test")
 public class FcmSenderAdapter implements PushSenderPort {
 
     private final FirebaseMessaging firebaseMessaging;

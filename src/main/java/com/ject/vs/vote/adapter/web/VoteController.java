@@ -24,7 +24,6 @@ public class VoteController {
     private final VoteCommandUseCase voteCommandUseCase;
     private final VoteDetailQueryService voteDetailQueryService;
     private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
-    private final VoteParticipationRepository voteParticipationRepository;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
