@@ -16,7 +16,6 @@ import java.io.IOException;
 
 @Configuration
 @ConditionalOnExpression("'${firebase.service-account-path:}' != ''")
-@Profile("!test")
 public class FirebaseConfig {
 
     @Value("${firebase.service-account-path}")
