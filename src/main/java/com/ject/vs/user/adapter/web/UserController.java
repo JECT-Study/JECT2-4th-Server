@@ -53,7 +53,7 @@ public class UserController {
     }
 
     @DeleteMapping("/profile/delete")
-    public ResponseEntity<?> deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
-        return ResponseEntity.ok(userService.deleteAccount(userId, req));
+    public Void deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
+        return userService.deleteAccount(userId, req);
     }
 }
