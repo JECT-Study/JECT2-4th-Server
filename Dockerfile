@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ===== 실행 스테이지 =====
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 ARG JAR_FILE=build/libs/app.jar
