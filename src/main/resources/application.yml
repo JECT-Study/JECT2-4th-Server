@@ -19,4 +19,4 @@ gemini:
   project-id: ${GEMINI_PROJECT_ID:}
   location: ${GEMINI_LOCATION:asia-northeast3}
   model: ${GEMINI_MODEL:gemini-1.5-flash}
-  enabled: ${GEMINI_ENABLED:true}
+  enabled: ${GEMINI_ENABLED:false}
