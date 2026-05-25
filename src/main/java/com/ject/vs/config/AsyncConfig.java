@@ -25,9 +25,9 @@ public class AsyncConfig {
     @Bean("aiInsightExecutor")
     public Executor aiInsightExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(4);
-        executor.setQueueCapacity(50);
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(200);
         executor.setThreadNamePrefix("ai-insight-");
         executor.initialize();
         return executor;
