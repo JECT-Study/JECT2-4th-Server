@@ -20,6 +20,37 @@ configurations {
 	}
 }
 
+sourceSets {
+	create("unitTest") {
+		java.setSrcDirs(listOf("src/unitTest/java"))
+		resources.setSrcDirs(listOf("src/unitTest/resources", "src/testFixtures/resources"))
+		compileClasspath += sourceSets.main.get().output
+		runtimeClasspath += output + compileClasspath
+	}
+
+	create("integrationTest") {
+		java.setSrcDirs(listOf("src/integrationTest/java"))
+		resources.setSrcDirs(listOf("src/integrationTest/resources", "src/testFixtures/resources"))
+		compileClasspath += sourceSets.main.get().output
+		runtimeClasspath += output + compileClasspath
+	}
+}
+
+configurations {
+	named("unitTestImplementation") {
+		extendsFrom(configurations.testImplementation.get())
+	}
+	named("unitTestRuntimeOnly") {
+		extendsFrom(configurations.testRuntimeOnly.get())
+	}
+	named("integrationTestImplementation") {
+		extendsFrom(configurations.testImplementation.get())
+	}
+	named("integrationTestRuntimeOnly") {
+		extendsFrom(configurations.testRuntimeOnly.get())
+	}
+}
+
 repositories {
 	mavenCentral()
 }
@@ -65,6 +96,31 @@ dependencies {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	outputs.upToDateWhen { false }
+	outputs.cacheIf { false }
+}
+
+tasks.test {
+	enabled = false
+}
+
+val unitTest by tasks.registering(Test::class) {
+	group = LifecycleBasePlugin.VERIFICATION_GROUP
+	description = "Runs unit tests."
+	testClassesDirs = sourceSets["unitTest"].output.classesDirs
+	classpath = sourceSets["unitTest"].runtimeClasspath
+}
+
+val integrationTest by tasks.registering(Test::class) {
+	group = LifecycleBasePlugin.VERIFICATION_GROUP
+	description = "Runs integration tests."
+	testClassesDirs = sourceSets["integrationTest"].output.classesDirs
+	classpath = sourceSets["integrationTest"].runtimeClasspath
+	shouldRunAfter(unitTest)
+}
+
+tasks.check {
+	setDependsOn(listOf(unitTest, integrationTest))
 }
 
 // API Client Generation Tasks

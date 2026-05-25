@@ -1,11 +1,6 @@
 package com.ject.vs.user.adapter.web;
 
-import com.ject.vs.user.adapter.web.dto.NicknameCheckResponse;
-import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
-import com.ject.vs.user.adapter.web.dto.UserNicknameRec;
-import com.ject.vs.user.adapter.web.dto.UserProfileDefaultResponse;
-import com.ject.vs.user.adapter.web.dto.UserProfileRequest;
-import com.ject.vs.user.adapter.web.dto.UserProfileResponse;
+import com.ject.vs.user.adapter.web.dto.*;
 import com.ject.vs.user.port.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,11 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "사용자", description = "사용자 프로필 관련 API")
 @RestController
@@ -62,5 +53,15 @@ public class UserController {
     @PostMapping("/info")
     public ResponseEntity<UserProfileDefaultResponse> initializeDefaultProfile(@AuthenticationPrincipal Long userId, @RequestBody UserProfileRequest userInfo) {
         return ResponseEntity.ok(userService.initializeDefaultProfile(userId, userInfo));
+    }
+
+    @PatchMapping("/change/info")
+    public ResponseEntity<?> modifyNickname(@AuthenticationPrincipal Long userId, @RequestBody UserModifyInfoRequest req) {
+        return ResponseEntity.ok(userService.modifyInfo(userId, req));
+    }
+
+    @DeleteMapping("/profile/delete")
+    public Void deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
+        return userService.deleteAccount(userId, req);
     }
 }

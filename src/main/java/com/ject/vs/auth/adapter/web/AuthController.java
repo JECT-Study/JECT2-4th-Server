@@ -4,6 +4,7 @@ import com.ject.vs.auth.port.AuthService;
 import com.ject.vs.auth.port.in.dto.TokenReissueResponse;
 import com.ject.vs.config.CookieProperties;
 import com.ject.vs.config.JwtProperties;
+import com.ject.vs.user.domain.User;
 import com.ject.vs.util.CookieUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -61,5 +63,22 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/api/users/logout")
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal Long userId) {
+        authService.logout(userId);
+
+        ResponseCookie cookie = ResponseCookie.from("accessToken, null")
+                .path("/")
+                .httpOnly(true)
+                .secure(true)
+                .maxAge(0)
+                .sameSite("Strict")
+                .build();
+
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .build();
     }
 }

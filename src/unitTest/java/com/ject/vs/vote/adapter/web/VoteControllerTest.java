@@ -3,6 +3,8 @@ package com.ject.vs.vote.adapter.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.config.TestPropertiesConfig;
+import com.ject.vs.notification.port.out.PushSenderPort;
+import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import org.springframework.context.annotation.Import;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.util.CookieUtil;
@@ -28,6 +30,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -57,6 +60,8 @@ class VoteControllerTest {
     @MockBean CookieUtil cookieUtil;
     @MockBean OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     @MockBean CustomOAuth2UserService customOAuth2UserService;
+    @MockBean PushSenderPort pushSenderPort;
+    @MockBean VoteParticipationQueryUseCase voteParticipationQueryUseCase;
 
     private static final UsernamePasswordAuthenticationToken AUTH =
             new UsernamePasswordAuthenticationToken(1L, null, Collections.emptyList());
