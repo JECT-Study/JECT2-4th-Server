@@ -4,6 +4,11 @@
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 
+# HEALTHCHECK에서 wget을 사용하므로 명시적으로 설치
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/*
+
 ARG JAR_FILE=build/libs/app.jar
 COPY ${JAR_FILE} app.jar
 
