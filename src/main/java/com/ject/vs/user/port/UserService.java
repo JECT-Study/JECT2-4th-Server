@@ -90,8 +90,6 @@ public class UserService {
    }
 
    public Void deleteAccount(Long userId, UserDeleteReq req) {
-        // user 제거
-       // 기존에 있는 refresh token 제거
        User user = userRepository.findById(userId)
                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
