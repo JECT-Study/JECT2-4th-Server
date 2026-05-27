@@ -53,6 +53,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         } catch (Exception e) {
             log.error("=== OAuth2 Login Error ===", e);
             response.sendRedirect("/login?error");
+
         }
     }
 
