@@ -26,7 +26,13 @@ public class SecurityPaths {
      */
     public static final List<String> OPTIONAL_AUTH_ENDPOINTS = List.of(
             "/api/immersive-votes",
-            "/api/immersive-votes/**"
+            "/api/immersive-votes/**",
+            "/api/me/free-votes",
+            "/api/votes/*",
+            "/api/votes/*/participate",
+            "/api/votes/*/result",
+            "/api/votes/*/share",
+            "/api/votes/*/emoji"
     );
 
     public static final List<String> JWT_EXCLUDED_PATHS = createJwtExcludedPaths();
