@@ -57,6 +57,8 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
+        if(user.getNickname() == null) throw new BusinessException(UserErrorCode.USER_NOT_REGISTER);
+
         return UserProfileResponse.from(user);
    }
 
@@ -82,9 +84,7 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
-        if(userRepository.isNicknameAvailable(req.nickname())) {
-            User.modifyAccount(user, req.nickname(), req.imageColor());
-        }
+        User.modifyAccount(user, req.nickname(), req.imageColor());
 
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }

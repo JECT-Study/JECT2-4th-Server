@@ -69,7 +69,7 @@ public class AuthController {
     public ResponseEntity<Void> logout(@AuthenticationPrincipal Long userId) {
         authService.logout(userId);
 
-        ResponseCookie cookie = ResponseCookie.from("accessToken, null")
+        ResponseCookie cookie = ResponseCookie.from("accessToken", "null")
                 .path("/")
                 .httpOnly(true)
                 .secure(true)
