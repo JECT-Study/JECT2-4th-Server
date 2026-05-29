@@ -20,7 +20,7 @@ public class UserService {
     private final WordService wordService;
     private final TokenRepository tokenRepository;
     private final UserDeleteRepository userDeleteRepository;
-    private final ImageService imageService;
+    private final UserImageService userImageService;
 
     public User findOrCreate(String email) {
         return userRepository.findByEmail(email)
@@ -102,6 +102,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
-        return new UserImageResponse(imageService.getRandomColor());
+        return new UserImageResponse(userImageService.getRandomColor());
    }
 }

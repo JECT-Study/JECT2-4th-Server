@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
-public class ImageService {
+public class UserImageService {
     public ImageColor getRandomColor() {
         ImageColor[] colors = ImageColor.values();
 
