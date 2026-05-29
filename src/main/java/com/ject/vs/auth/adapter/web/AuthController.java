@@ -44,6 +44,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(cookieProperties.secure())
                 .path("/")
+                .domain(".vs.io.kr")
                 .sameSite(cookieProperties.sameSite())
                 .maxAge(accessTokenExpiration)
                 .build();
@@ -55,6 +56,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(cookieProperties.secure())
                 .path("/")
+                .domain(".vs.io.kr")
                 .sameSite(cookieProperties.sameSite())
                 .maxAge(refreshTokenExpiration)
                 .build();
@@ -69,16 +71,33 @@ public class AuthController {
     public ResponseEntity<Void> logout(@AuthenticationPrincipal Long userId) {
         authService.logout(userId);
 
-        ResponseCookie cookie = ResponseCookie.from("accessToken", "null")
+        ResponseCookie accessTokenCookie = ResponseCookie.from(
+                CookieUtil.CookieType.ACCESS_TOKEN,
+                ""
+        )
                 .path("/")
+                .domain(".vs.io.kr")
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
                 .maxAge(0)
-                .sameSite("Strict")
+                .build();
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(
+                CookieUtil.CookieType.REFRESH_TOKEN,
+                ""
+        )
+                .path("/")
+                .domain(".vs.io.kr")
+                .httpOnly(true)
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
+                .maxAge(0)
                 .build();
 
         return ResponseEntity.noContent()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
                 .build();
     }
 }
