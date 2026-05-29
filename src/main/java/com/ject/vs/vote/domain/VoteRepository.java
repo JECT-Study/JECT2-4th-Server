@@ -92,6 +92,26 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     );
 
     /**
+     * 인기순 Keyset Pagination 전용 (복합 커서)
+     */
+    @Query("""
+        SELECT v FROM Vote v
+        LEFT JOIN VoteStatistics vs ON v.id = vs.voteId
+        WHERE (:lastViewCount IS NULL 
+               OR COALESCE(vs.viewCount, 0) < :lastViewCount
+               OR (COALESCE(vs.viewCount, 0) = :lastViewCount AND v.id < :lastId))
+          AND (:excludeEnded = FALSE OR v.endAt > :now)
+        ORDER BY COALESCE(vs.viewCount, 0) DESC, v.id DESC
+        """)
+    Slice<Vote> findForHomeByPopularWithKeyset(
+            @Param("lastViewCount") Long lastViewCount,
+            @Param("lastId") Long lastId,
+            @Param("now") Instant now,
+            @Param("excludeEnded") boolean excludeEnded,
+            Pageable pageable
+    );
+
+    /**
      * 홈 화면용 종료임박순 조회 (단일 쿼리, 항상 진행 중인 투표만)
      * cursor가 null이면 첫 페이지, 값이 있으면 해당 커서 이후 데이터
      */
@@ -104,6 +124,24 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     Slice<Vote> findForHomeByEndingSoon(
             @Param("now") Instant now,
             @Param("cursor") Long cursor,
+            Pageable pageable
+    );
+
+    /**
+     * 종료임박순 Keyset Pagination 전용 (복합 커서)
+     */
+    @Query("""
+        SELECT v FROM Vote v
+        WHERE v.endAt > :now
+          AND (:lastEndAt IS NULL 
+               OR v.endAt > :lastEndAt 
+               OR (v.endAt = :lastEndAt AND v.id > :lastId))
+        ORDER BY v.endAt ASC, v.id ASC
+        """)
+    Slice<Vote> findForHomeByEndingSoonWithKeyset(
+            @Param("lastEndAt") Instant lastEndAt,
+            @Param("lastId") Long lastId,
+            @Param("now") Instant now,
             Pageable pageable
     );
 }

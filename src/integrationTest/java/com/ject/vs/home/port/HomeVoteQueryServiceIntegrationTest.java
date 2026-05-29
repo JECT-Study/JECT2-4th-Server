@@ -161,6 +161,108 @@ class HomeVoteQueryServiceIntegrationTest extends VoteIntegrationTestSupport {
     }
 
     @Nested
+    @DisplayName("커서 기반 페이지네이션 (Keyset Pagination)")
+    class CursorPagination {
+
+        @Test
+        @DisplayName("LATEST - 문자열 커서로도 정상 페이지네이션 동작")
+        void latestWithStringCursor() {
+            // given
+            createOngoingVote("a");
+            createOngoingVote("b");
+            createOngoingVote("c");
+
+            // when
+            VoteListResult first = homeVoteQueryUseCase.getVoteList(null, 2, VoteSortType.LATEST, true);
+
+            // then
+            assertThat(first.items()).hasSize(2);
+            assertThat(first.hasNext()).isTrue();
+            assertThat(first.nextCursor()).isNotNull();
+
+            VoteListResult second = homeVoteQueryUseCase.getVoteList(first.nextCursor(), 2, VoteSortType.LATEST, true);
+            assertThat(second.items()).hasSize(1);
+            assertThat(second.hasNext()).isFalse();
+            assertThat(second.nextCursor()).isNull();
+        }
+
+        @Test
+        @DisplayName("ENDING_SOON - 복합 커서(endAt:id)로 정확한 Keyset 페이지네이션 동작 (중복/누락 없음)")
+        void endingSoonWithCompositeCursor() {
+            // given: 종료 시간 기준 id2(+1h) < id3(+2h) < id1(+3h)
+            createOngoingVoteWithEndAt("vote-1", FIXED_NOW.plus(Duration.ofHours(3)));
+            createOngoingVoteWithEndAt("vote-2", FIXED_NOW.plus(Duration.ofHours(1)));
+            createOngoingVoteWithEndAt("vote-3", FIXED_NOW.plus(Duration.ofHours(2)));
+
+            // when: size=2로 첫 페이지
+            VoteListResult first = homeVoteQueryUseCase.getVoteList(null, 2, VoteSortType.ENDING_SOON, true);
+
+            // then
+            assertThat(first.items()).hasSize(2);
+            assertThat(first.items().get(0).title()).isEqualTo("vote-2");
+            assertThat(first.items().get(1).title()).isEqualTo("vote-3");
+            assertThat(first.hasNext()).isTrue();
+            assertThat(first.nextCursor()).isNotNull();
+            assertThat(first.nextCursor()).contains(":");
+
+            // when: 두 번째 페이지
+            VoteListResult second = homeVoteQueryUseCase.getVoteList(first.nextCursor(), 2, VoteSortType.ENDING_SOON, true);
+
+            // then: 중복 없이 마지막 항목만 반환
+            assertThat(second.items()).hasSize(1);
+            assertThat(second.items().get(0).title()).isEqualTo("vote-1");
+            assertThat(second.hasNext()).isFalse();
+            assertThat(second.nextCursor()).isNull();
+        }
+
+        @Test
+        @DisplayName("ENDING_SOON - 원본 버그 재현 케이스 (id1+3h, id2+1h, id3+2h, size=2)")
+        void endingSoonBugReproductionCase() {
+            // given (피드백에 나온 정확한 예시)
+            createOngoingVoteWithEndAt("vote-1", FIXED_NOW.plus(Duration.ofHours(3)));
+            createOngoingVoteWithEndAt("vote-2", FIXED_NOW.plus(Duration.ofHours(1)));
+            createOngoingVoteWithEndAt("vote-3", FIXED_NOW.plus(Duration.ofHours(2)));
+
+            // 1페이지
+            VoteListResult page1 = homeVoteQueryUseCase.getVoteList(null, 2, VoteSortType.ENDING_SOON, true);
+            assertThat(page1.items()).extracting(HomeVoteQueryUseCase.VoteListItem::title).containsExactly("vote-2", "vote-3");
+
+            // 2페이지 (이전 버그에서는 id=2가 중복됨)
+            VoteListResult page2 = homeVoteQueryUseCase.getVoteList(page1.nextCursor(), 2, VoteSortType.ENDING_SOON, true);
+
+            assertThat(page2.items()).hasSize(1);
+            assertThat(page2.items().get(0).title()).isEqualTo("vote-1");
+            // id=2가 절대 다시 나오면 안 됨
+            assertThat(page2.items()).extracting(HomeVoteQueryUseCase.VoteListItem::title).doesNotContain("vote-2");
+        }
+
+        @Test
+        @DisplayName("excludeEnded + ENDING_SOON 복합 커서 조합")
+        void endingSoonWithExcludeEnded() {
+            createOngoingVoteWithEndAt("soon", FIXED_NOW.plus(Duration.ofHours(1)));
+            createOngoingVoteWithEndAt("later", FIXED_NOW.plus(Duration.ofHours(5)));
+            createEndedVote("already-ended");
+
+            VoteListResult result = homeVoteQueryUseCase.getVoteList(null, 10, VoteSortType.ENDING_SOON, true);
+
+            assertThat(result.items()).hasSize(2);
+            assertThat(result.items().get(0).title()).isEqualTo("soon");
+        }
+
+        @Test
+        @DisplayName("잘못된 형식의 cursor가 들어와도 첫 페이지로 안전하게 동작")
+        void malformedCursorFallsBackToFirstPage() {
+            createOngoingVote("v1");
+            createOngoingVote("v2");
+
+            VoteListResult result = homeVoteQueryUseCase.getVoteList("invalid-cursor-format", 10, VoteSortType.ENDING_SOON, true);
+
+            assertThat(result.items()).hasSize(2);
+            assertThat(result.hasNext()).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("엣지 케이스")
     class EdgeCases {
 

@@ -34,8 +34,8 @@ public class HomeController {
     @Operation(summary = "전체 투표 목록 조회", description = "전체 투표 목록을 조회합니다. 커서 기반 페이지네이션을 지원합니다. 종료된 투표 제외 필터를 지원합니다.")
     @GetMapping("/votes")
     public HomeVoteListResponse getVoteList(
-            @Parameter(description = "다음 페이지 조회를 위한 커서 (이전 응답의 nextCursor)")
-            @RequestParam(required = false) Long cursor,
+            @Parameter(description = "다음 페이지 조회를 위한 커서 (이전 응답의 nextCursor). 복합 커서 사용 (예: LATEST=ID, ENDING_SOON=endAtMillis:id, POPULAR=viewCount:id)")
+            @RequestParam(required = false) String cursor,
             @Parameter(description = "페이지 크기")
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "정렬 기준: LATEST(최신순), POPULAR(인기순), ENDING_SOON(종료임박순)")

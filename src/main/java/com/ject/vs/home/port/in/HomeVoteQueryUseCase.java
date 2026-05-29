@@ -11,7 +11,7 @@ public interface HomeVoteQueryUseCase {
 
     HotTopicResult getHotTopics();
 
-    VoteListResult getVoteList(Long cursor, int size, VoteSortType sortType, boolean excludeEnded);
+    VoteListResult getVoteList(String cursor, int size, VoteSortType sortType, boolean excludeEnded);
 
     enum VoteSortType {
         LATEST,     // 최신순 (생성일 기준)
@@ -50,7 +50,7 @@ public interface HomeVoteQueryUseCase {
     // 전체 투표 목록 결과
     record VoteListResult(
             List<VoteListItem> items,
-            Long nextCursor,
+            String nextCursor,
             boolean hasNext
     ) {
     }

@@ -175,7 +175,7 @@ class HomeControllerIntegrationTest extends VoteIntegrationTestSupport {
         }
     }
 
-    private HomeVoteListResponse callApi(Long cursor, int size, String sort, boolean excludeEnded) throws Exception {
+    private HomeVoteListResponse callApi(String cursor, int size, String sort, boolean excludeEnded) throws Exception {
         var builder = get("/api/home/votes")
                 .param("size", String.valueOf(size))
                 .param("sort", sort)
@@ -183,7 +183,7 @@ class HomeControllerIntegrationTest extends VoteIntegrationTestSupport {
                 .contentType(MediaType.APPLICATION_JSON);
 
         if (cursor != null) {
-            builder.param("cursor", String.valueOf(cursor));
+            builder.param("cursor", cursor);
         }
 
         MvcResult result = mockMvc.perform(builder)
