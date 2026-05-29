@@ -20,6 +20,7 @@ public class UserService {
     private final WordService wordService;
     private final TokenRepository tokenRepository;
     private final UserDeleteRepository userDeleteRepository;
+    private final UserImageService userImageService;
 
     public User findOrCreate(String email) {
         return userRepository.findByEmail(email)
@@ -57,6 +58,8 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
+        if(user.getNickname() == null) throw new BusinessException(UserErrorCode.USER_NOT_REGISTER);
+
         return UserProfileResponse.from(user);
    }
 
@@ -71,20 +74,11 @@ public class UserService {
         return UserProfileDefaultResponse.from(nickname.nickname(), ImageColor.GREEN.name());
    }
 
-   public UserMyPageResponse getMyPage(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
-
-        return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
-   }
-
    public UserMyPageResponse modifyInfo(Long userId, UserModifyInfoRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
-        if(userRepository.isNicknameAvailable(req.nickname())) {
-            User.modifyAccount(user, req.nickname(), req.imageColor());
-        }
+        User.modifyAccount(user, req.nickname(), req.imageColor());
 
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }
@@ -102,5 +96,12 @@ public class UserService {
        userDeleteRepository.save(delAccount);
 
        return null;
+   }
+
+   public UserImageResponse getRandomColor(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        return new UserImageResponse(userImageService.getRandomColor());
    }
 }

@@ -4,6 +4,7 @@ import com.ject.vs.user.adapter.web.dto.*;
 import com.ject.vs.user.port.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,5 +64,10 @@ public class UserController {
     @DeleteMapping("/profile/delete")
     public Void deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
         return userService.deleteAccount(userId, req);
+    }
+
+    @GetMapping("/imagecolor/suggest")
+    public UserImageResponse getImageColor(@AuthenticationPrincipal Long userId) {
+        return userService.getRandomColor(userId);
     }
 }
