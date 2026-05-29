@@ -123,18 +123,17 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
     }
 
     @Override
-    public VoteListResult getVoteList(Long cursor, int size, VoteSortType sortType) {
+    public VoteListResult getVoteList(Long cursor, int size, VoteSortType sortType, boolean excludeEnded) {
         PageRequest pageable = PageRequest.of(0, size);
         Instant now = Instant.now(clock);
 
+        // ENDING_SOON은 항상 진행 중인 투표만 대상으로 함 (프론트 토글과 무관하게)
+        boolean effectiveExcludeEnded = excludeEnded || sortType == VoteSortType.ENDING_SOON;
+
         Slice<Vote> slice = switch (sortType) {
-            case LATEST -> cursor == null
-                    ? voteRepository.findAllByOrderByIdDesc(pageable)
-                    : voteRepository.findByIdLessThanOrderByIdDesc(cursor, pageable);
-            case POPULAR -> getPopularVotes(cursor, size);
-            case ENDING_SOON -> cursor == null
-                    ? voteRepository.findOngoingOrderByEndAtAsc(now, pageable)
-                    : voteRepository.findOngoingByIdLessThanOrderByEndAtAsc(now, cursor, pageable);
+            case LATEST -> voteRepository.findForHomeByLatest(cursor, now, effectiveExcludeEnded, pageable);
+            case POPULAR -> voteRepository.findForHomeByPopular(cursor, now, effectiveExcludeEnded, pageable);
+            case ENDING_SOON -> voteRepository.findForHomeByEndingSoon(now, cursor, pageable);
         };
 
         List<VoteListItem> items = slice.getContent().stream()
@@ -157,15 +156,5 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
 
     private double calculatePopularityScore(long participantCount, long viewCount) {
         return (participantCount * PARTICIPANT_WEIGHT) + (viewCount * VIEW_WEIGHT);
-    }
-
-    private Slice<Vote> getPopularVotes(Long cursor, int size) {
-        // 인기순은 조회수 기준으로 정렬
-        // VoteStatistics와 조인하여 조회수 기준 정렬 필요
-        PageRequest pageable = PageRequest.of(0, size);
-        if (cursor == null) {
-            return voteRepository.findAllOrderByViewCountDesc(pageable);
-        }
-        return voteRepository.findByIdLessThanOrderByViewCountDesc(cursor, pageable);
     }
 }
