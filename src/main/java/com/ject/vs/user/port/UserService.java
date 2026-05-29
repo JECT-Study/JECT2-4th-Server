@@ -20,6 +20,7 @@ public class UserService {
     private final WordService wordService;
     private final TokenRepository tokenRepository;
     private final UserDeleteRepository userDeleteRepository;
+    private final ImageService imageService;
 
     public User findOrCreate(String email) {
         return userRepository.findByEmail(email)
@@ -73,13 +74,6 @@ public class UserService {
         return UserProfileDefaultResponse.from(nickname.nickname(), ImageColor.GREEN.name());
    }
 
-   public UserMyPageResponse getMyPage(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
-
-        return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
-   }
-
    public UserMyPageResponse modifyInfo(Long userId, UserModifyInfoRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
@@ -102,5 +96,12 @@ public class UserService {
        userDeleteRepository.save(delAccount);
 
        return null;
+   }
+
+   public UserImageResponse getRandomColor(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        return new UserImageResponse(imageService.getRandomColor());
    }
 }
