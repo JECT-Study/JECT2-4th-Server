@@ -10,7 +10,7 @@ import java.util.List;
 
 public record HomeVoteListResponse(
         List<VoteListItem> votes,
-        Long nextCursor,
+        String nextCursor,
         boolean hasNext
 ) {
 

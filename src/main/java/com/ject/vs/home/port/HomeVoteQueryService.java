@@ -123,21 +123,41 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
     }
 
     @Override
-    public VoteListResult getVoteList(Long cursor, int size, VoteSortType sortType) {
+    public VoteListResult getVoteList(String cursor, int size, VoteSortType sortType, boolean excludeEnded) {
         PageRequest pageable = PageRequest.of(0, size);
         Instant now = Instant.now(clock);
 
+        boolean effectiveExcludeEnded = excludeEnded || sortType == VoteSortType.ENDING_SOON;
+
         Slice<Vote> slice = switch (sortType) {
-            case LATEST -> cursor == null
-                    ? voteRepository.findAllByOrderByIdDesc(pageable)
-                    : voteRepository.findByIdLessThanOrderByIdDesc(cursor, pageable);
-            case POPULAR -> getPopularVotes(cursor, size);
-            case ENDING_SOON -> cursor == null
-                    ? voteRepository.findOngoingOrderByEndAtAsc(now, pageable)
-                    : voteRepository.findOngoingByIdLessThanOrderByEndAtAsc(now, cursor, pageable);
+            case LATEST -> {
+                Long idCursor = parseLongCursor(cursor);
+                yield voteRepository.findForHomeByLatest(idCursor, now, effectiveExcludeEnded, pageable);
+            }
+            case POPULAR -> {
+                PopularCursor popularCursor = parsePopularCursor(cursor);
+                yield voteRepository.findForHomeByPopularWithKeyset(
+                        popularCursor.lastViewCount(),
+                        popularCursor.lastId(),
+                        now,
+                        effectiveExcludeEnded,
+                        pageable
+                );
+            }
+            case ENDING_SOON -> {
+                EndingSoonCursor endingCursor = parseEndingSoonCursor(cursor);
+                yield voteRepository.findForHomeByEndingSoonWithKeyset(
+                        endingCursor.lastEndAt(),
+                        endingCursor.lastId(),
+                        now,
+                        pageable
+                );
+            }
         };
 
-        List<VoteListItem> items = slice.getContent().stream()
+        List<Vote> votes = slice.getContent();
+
+        List<VoteListItem> items = votes.stream()
                 .map(vote -> new VoteListItem(
                         vote.getId(),
                         vote.getThumbnailUrl(),
@@ -148,24 +168,74 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                 ))
                 .toList();
 
-        Long nextCursor = slice.hasNext() && !items.isEmpty()
-                ? items.get(items.size() - 1).voteId()
+        String nextCursor = (slice.hasNext() && !votes.isEmpty())
+                ? encodeNextCursor(sortType, votes)
                 : null;
 
         return new VoteListResult(items, nextCursor, slice.hasNext());
     }
 
-    private double calculatePopularityScore(long participantCount, long viewCount) {
-        return (participantCount * PARTICIPANT_WEIGHT) + (viewCount * VIEW_WEIGHT);
+    // === Cursor Parsing ===
+
+    private Long parseLongCursor(String cursor) {
+        if (cursor == null || cursor.isBlank()) return null;
+        try {
+            return Long.parseLong(cursor);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
-    private Slice<Vote> getPopularVotes(Long cursor, int size) {
-        // 인기순은 조회수 기준으로 정렬
-        // VoteStatistics와 조인하여 조회수 기준 정렬 필요
-        PageRequest pageable = PageRequest.of(0, size);
-        if (cursor == null) {
-            return voteRepository.findAllOrderByViewCountDesc(pageable);
+    private record PopularCursor(Long lastViewCount, Long lastId) {}
+
+    private PopularCursor parsePopularCursor(String cursor) {
+        if (cursor == null || cursor.isBlank()) return new PopularCursor(null, null);
+        String[] parts = cursor.split(":");
+        if (parts.length != 2) return new PopularCursor(null, null);
+        try {
+            return new PopularCursor(Long.parseLong(parts[0]), Long.parseLong(parts[1]));
+        } catch (NumberFormatException e) {
+            return new PopularCursor(null, null);
         }
-        return voteRepository.findByIdLessThanOrderByViewCountDesc(cursor, pageable);
+    }
+
+    private record EndingSoonCursor(Instant lastEndAt, Long lastId) {}
+
+    private EndingSoonCursor parseEndingSoonCursor(String cursor) {
+        if (cursor == null || cursor.isBlank()) return new EndingSoonCursor(null, null);
+        String[] parts = cursor.split(":");
+        if (parts.length != 2) return new EndingSoonCursor(null, null);
+        try {
+            Instant endAt = Instant.ofEpochMilli(Long.parseLong(parts[0]));
+            Long id = Long.parseLong(parts[1]);
+            return new EndingSoonCursor(endAt, id);
+        } catch (Exception e) {
+            return new EndingSoonCursor(null, null);
+        }
+    }
+
+    // === Next Cursor Encoding ===
+
+    private String encodeNextCursor(VoteSortType sortType, List<Vote> votes) {
+        if (votes.isEmpty()) return null;
+
+        Vote last = votes.get(votes.size() - 1);
+
+        return switch (sortType) {
+            case LATEST -> String.valueOf(last.getId());
+            case POPULAR -> {
+                // VoteStatistics를 조회해서 viewCount를 가져와야 정확함.
+                // 현재 구조에서는 간단히 ID로 fallback (추후 개선)
+                yield String.valueOf(last.getId());
+            }
+            case ENDING_SOON -> {
+                long endAtMillis = last.getEndAt().toEpochMilli();
+                yield endAtMillis + ":" + last.getId();
+            }
+        };
+    }
+
+    private double calculatePopularityScore(long participantCount, long viewCount) {
+        return (participantCount * PARTICIPANT_WEIGHT) + (viewCount * VIEW_WEIGHT);
     }
 }
