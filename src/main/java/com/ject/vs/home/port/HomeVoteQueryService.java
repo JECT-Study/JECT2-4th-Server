@@ -162,6 +162,7 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                         vote.getId(),
                         vote.getThumbnailUrl(),
                         vote.getStatus(clock),
+                        vote.getType(),
                         vote.getTitle(),
                         vote.getContent(),
                         vote.getEndAt()

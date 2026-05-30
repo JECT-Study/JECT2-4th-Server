@@ -1,6 +1,7 @@
 package com.ject.vs.home.port.in;
 
 import com.ject.vs.vote.domain.VoteStatus;
+import com.ject.vs.vote.domain.VoteType;
 
 import java.time.Instant;
 import java.util.List;
@@ -59,6 +60,7 @@ public interface HomeVoteQueryUseCase {
             Long voteId,
             String thumbnailUrl,
             VoteStatus status,
+            VoteType voteType,
             String title,
             String content,
             Instant endAt
