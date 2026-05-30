@@ -53,7 +53,6 @@ class ImmersiveVoteQueryServiceTest {
         @BeforeEach
         void setUp() {
             given(clock.instant()).willReturn(FIXED_CLOCK.instant());
-            given(clock.getZone()).willReturn(FIXED_CLOCK.getZone());
         }
 
         @Test
