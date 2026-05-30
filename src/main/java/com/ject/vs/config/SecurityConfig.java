@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SecurityPaths.PUBLIC_ENDPOINTS.toArray(String[]::new)).permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/reissue").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/nickname/suggest", "/api/users/imagecolor/suggest").permitAll()
                         .requestMatchers(SecurityPaths.OPTIONAL_AUTH_ENDPOINTS.toArray(String[]::new)).permitAll()
                         .anyRequest().authenticated()
                 )

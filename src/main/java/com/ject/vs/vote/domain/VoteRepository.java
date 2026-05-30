@@ -40,7 +40,7 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     List<Vote> findVotesByOrderByPopularity(@Param("userId") Long userId);
 
     @Query("select v from Vote v " +
-            "join VoteParticipation vp on vp.voteId = v.id " +
+            "join VoteParticipation vp on v.id = vp.voteId " +
             "where vp.userId = :userId and v.endAt < current_timestamp " +
             "order by v.createdAt desc")
     List<Vote> findVotesEndByLatest(@Param("userId") Long userId);
@@ -48,7 +48,7 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     @Query("select v from Vote v " +
             "join VoteParticipation vp on v.id = vp.voteId " +
             "where vp.userId = :userId and v.endAt < current_timestamp " +
-            "order by v.createdAt asc")
+            "order by v.endAt asc")
     List<Vote> findVotesEndByDeadLine(@Param("userId") Long userId);
     // 진행 중인 투표 조회 (핫토픽 등에서 사용)
     @Query("SELECT v FROM Vote v WHERE v.endAt > :now")
