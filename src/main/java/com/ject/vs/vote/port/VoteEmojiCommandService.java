@@ -1,11 +1,14 @@
 package com.ject.vs.vote.port;
 
 import com.ject.vs.vote.domain.*;
+import com.ject.vs.vote.exception.VoteEndedException;
+import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.port.in.VoteEmojiCommandUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -17,9 +20,13 @@ import java.util.stream.Collectors;
 public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
 
     private final VoteEmojiReactionRepository reactionRepository;
+    private final VoteRepository voteRepository;
+    private final Clock clock;
 
     @Override
     public EmojiResult reactAsMember(Long voteId, Long userId, VoteEmoji emoji) {
+        Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
+        if (vote.isEnded(clock)) throw new VoteEndedException();
         Optional<VoteEmojiReaction> existing = reactionRepository.findByVoteIdAndUserId(voteId, userId);
         VoteEmojiReaction resultEmoji = applyReaction(existing, emoji != null ? VoteEmojiReaction.ofMember(voteId, userId, emoji) : null);
         return buildResult(voteId, resultEmoji != null ? resultEmoji.getEmoji() : null);
@@ -27,6 +34,8 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
 
     @Override
     public EmojiResult reactAsGuest(Long voteId, String anonymousId, VoteEmoji emoji) {
+        Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
+        if (vote.isEnded(clock)) throw new VoteEndedException();
         Optional<VoteEmojiReaction> existing = reactionRepository.findByVoteIdAndAnonymousId(voteId, anonymousId);
         VoteEmojiReaction resultEmoji = applyReaction(
                 existing,

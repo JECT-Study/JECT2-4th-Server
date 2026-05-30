@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -226,22 +225,33 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
         return buildAgeDistributionsWithMajority(userIds);
     }
 
+    // 10대 → 20대, 50대+ → 40대로 병합 (UI 표시 그룹: 20s, 30s, 40s)
+    private static final List<AgeGroup> DISPLAY_AGE_GROUPS = List.of(
+            AgeGroup.TWENTIES, AgeGroup.THIRTIES, AgeGroup.FORTIES);
+
+    private AgeGroup normalizeAgeGroup(AgeGroup group) {
+        if (group == AgeGroup.TEENS) return AgeGroup.TWENTIES;
+        if (group == AgeGroup.FIFTIES_PLUS) return AgeGroup.FORTIES;
+        return group;
+    }
+
     private List<AgeDistribution> buildAgeDistributions(List<Long> userIds, AgeGroup myGroup) {
         List<User> users = userRepository.findAllById(userIds);
 
         Map<AgeGroup, Long> groupCounts = users.stream()
                 .filter(u -> u.getBirthYear() != null)
                 .collect(Collectors.groupingBy(
-                        u -> AgeGroup.fromBirthYear(u.getBirthYear(), clock),
+                        u -> normalizeAgeGroup(AgeGroup.fromBirthYear(u.getBirthYear(), clock)),
                         Collectors.counting()));
 
         long total = groupCounts.values().stream().mapToLong(Long::longValue).sum();
+        AgeGroup myDisplayGroup = myGroup != null ? normalizeAgeGroup(myGroup) : null;
 
-        return Arrays.stream(AgeGroup.values())
+        return DISPLAY_AGE_GROUPS.stream()
                 .map(group -> {
                     long count = groupCounts.getOrDefault(group, 0L);
                     int ratio = total == 0 ? 0 : (int) Math.round(count * 100.0 / total);
-                    return new AgeDistribution(group.getLabel(), ratio, group == myGroup);
+                    return new AgeDistribution(group.getLabel(), ratio, group == myDisplayGroup);
                 })
                 .toList();
     }
@@ -252,22 +262,17 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
         Map<AgeGroup, Long> groupCounts = users.stream()
                 .filter(u -> u.getBirthYear() != null)
                 .collect(Collectors.groupingBy(
-                        u -> AgeGroup.fromBirthYear(u.getBirthYear(), clock),
+                        u -> normalizeAgeGroup(AgeGroup.fromBirthYear(u.getBirthYear(), clock)),
                         Collectors.counting()));
 
         long total = groupCounts.values().stream().mapToLong(Long::longValue).sum();
 
-        // 다수 연령대 찾기
-        AgeGroup majorityGroup = groupCounts.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse(null);
-
-        return Arrays.stream(AgeGroup.values())
+        // 비참여자는 "내 그룹"이 없으므로 isHighlighted 항상 false
+        return DISPLAY_AGE_GROUPS.stream()
                 .map(group -> {
                     long count = groupCounts.getOrDefault(group, 0L);
                     int ratio = total == 0 ? 0 : (int) Math.round(count * 100.0 / total);
-                    return new AgeDistribution(group.getLabel(), ratio, group == majorityGroup);
+                    return new AgeDistribution(group.getLabel(), ratio, false);
                 })
                 .toList();
     }

@@ -1,6 +1,7 @@
 package com.ject.vs.vote.adapter.web.dto;
 
 import com.ject.vs.vote.domain.VoteEmoji;
+import com.ject.vs.vote.domain.VoteType;
 import com.ject.vs.vote.port.VoteDetailQueryService.VoteDetailResult;
 
 import java.time.Instant;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 public record VoteDetailResponse(
         Long voteId,
+        VoteType voteType,
         String title,
         OffsetDateTime createdAt,
         String content,
@@ -62,6 +64,7 @@ public record VoteDetailResponse(
 
         return new VoteDetailResponse(
                 result.voteId(),
+                result.type(),
                 result.title(),
                 toKst(result.createdAt()),
                 result.content(),

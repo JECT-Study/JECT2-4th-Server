@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface ImmersiveVoteQueryUseCase {
 
-    ImmersiveFeedResult getFeed(Long cursor, int size, Long userId, String anonymousId);
+    ImmersiveFeedResult getFeed(Long cursor, Long startVoteId, int size, Long userId, String anonymousId);
 
     ImmersiveLiveResult getLive(Long voteId);
 
