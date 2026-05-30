@@ -43,18 +43,18 @@ class ImmersiveVoteQueryServiceTest {
     @Mock private VoteEmojiReactionRepository emojiReactionRepository;
     @Mock private Clock clock;
 
-    @BeforeEach
-    void setUp() {
-        given(clock.instant()).willReturn(FIXED_CLOCK.instant());
-        given(clock.getZone()).willReturn(FIXED_CLOCK.getZone());
-    }
-
     private Vote makeVote(Duration duration) {
         return Vote.create(VoteType.IMMERSIVE, "몰입", null, "t", "img.png", duration, FIXED_CLOCK);
     }
 
     @Nested
     class getFeed {
+
+        @BeforeEach
+        void setUp() {
+            given(clock.instant()).willReturn(FIXED_CLOCK.instant());
+            given(clock.getZone()).willReturn(FIXED_CLOCK.getZone());
+        }
 
         @Test
         void cursor_없을때_타입_정렬_쿼리_사용() {
