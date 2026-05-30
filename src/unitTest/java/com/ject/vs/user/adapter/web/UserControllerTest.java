@@ -64,7 +64,7 @@ class UserControllerTest {
     @DisplayName("추가 정보 설정 API - 성공")
     void setupInfo_Success() throws Exception {
         UserExtraInfo extraInfo = new UserExtraInfo(Year.of(2001), Gender.MALE, "홍길동", ImageColor.GREEN);
-        UserProfileResponse response = new UserProfileResponse(extraInfo.birthDate(), extraInfo.gender(), extraInfo.nickName(), extraInfo.imageColor());
+        UserProfileResponse response = new UserProfileResponse("hi@naver.com",extraInfo.birthDate(), extraInfo.gender(), extraInfo.nickName(), extraInfo.imageColor());
 
         given(userService.setupAdditionalInfo(any(), any(Long.class))).willReturn(response);
 
