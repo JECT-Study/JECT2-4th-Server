@@ -44,6 +44,7 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                     return new RecommendationItem(
                             vote.getId(),
                             vote.getThumbnailUrl(),
+                            vote.getType(),
                             vote.getTitle(),
                             vote.getContent(),
                             vote.getEndAt()
@@ -112,6 +113,7 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                     i + 1,
                     vote.getId(),
                     vote.getThumbnailUrl(),
+                    vote.getType(),
                     vote.getTitle(),
                     vote.getContent(),
                     participantCounts.getOrDefault(vote.getId(), 0L),
@@ -162,6 +164,7 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                         vote.getId(),
                         vote.getThumbnailUrl(),
                         vote.getStatus(clock),
+                        vote.getType(),
                         vote.getTitle(),
                         vote.getContent(),
                         vote.getEndAt()
@@ -224,9 +227,10 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
         return switch (sortType) {
             case LATEST -> String.valueOf(last.getId());
             case POPULAR -> {
-                // VoteStatistics를 조회해서 viewCount를 가져와야 정확함.
-                // 현재 구조에서는 간단히 ID로 fallback (추후 개선)
-                yield String.valueOf(last.getId());
+                Long viewCount = voteStatisticsRepository.findByVoteId(last.getId())
+                        .map(VoteStatistics::getViewCount)
+                        .orElse(0L);
+                yield viewCount + ":" + last.getId();
             }
             case ENDING_SOON -> {
                 long endAtMillis = last.getEndAt().toEpochMilli();

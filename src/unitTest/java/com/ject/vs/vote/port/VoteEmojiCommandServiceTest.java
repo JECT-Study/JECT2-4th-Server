@@ -1,9 +1,12 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.vote.domain.Vote;
 import com.ject.vs.vote.domain.VoteEmoji;
 import com.ject.vs.vote.domain.VoteEmojiReaction;
 import com.ject.vs.vote.domain.VoteEmojiReactionRepository;
+import com.ject.vs.vote.domain.VoteRepository;
 import com.ject.vs.vote.port.in.VoteEmojiCommandUseCase.EmojiResult;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,12 +14,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,6 +32,19 @@ class VoteEmojiCommandServiceTest {
 
     @Mock
     private VoteEmojiReactionRepository reactionRepository;
+
+    @Mock
+    private VoteRepository voteRepository;
+
+    @Mock
+    private Clock clock;
+
+    @BeforeEach
+    void setUp() {
+        Vote mockVote = mock(Vote.class);
+        given(voteRepository.findById(any())).willReturn(Optional.of(mockVote));
+        given(mockVote.isEnded(any())).willReturn(false);
+    }
 
     private void stubEmptySummary(Long voteId) {
         given(reactionRepository.countByEmojiForVote(voteId)).willReturn(List.of());

@@ -3,6 +3,7 @@ package com.ject.vs.vote.port;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase.ImmersiveFeedResult;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase.ImmersiveLiveResult;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,16 +50,21 @@ class ImmersiveVoteQueryServiceTest {
     @Nested
     class getFeed {
 
+        @BeforeEach
+        void setUp() {
+            given(clock.instant()).willReturn(FIXED_CLOCK.instant());
+        }
+
         @Test
         void cursor_없을때_타입_정렬_쿼리_사용() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeOrderByEndAtDesc(eq(VoteType.IMMERSIVE), any()))
+            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
             given(voteParticipationRepository.countByVoteId(any())).willReturn(5L);
 
-            ImmersiveFeedResult result = service.getFeed(null, 10, null, null);
+            ImmersiveFeedResult result = service.getFeed(null, null, 10, null, null);
 
             assertThat(result.items()).hasSize(1);
             assertThat(result.hasNext()).isFalse();
@@ -68,14 +74,14 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void cursor_있을때_cursor_기반_쿼리_사용() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeAndIdLessThanOrderByEndAtDesc(
-                    eq(VoteType.IMMERSIVE), eq(100L), any()))
+            given(voteRepository.findByTypeAndIdLessThanAndEndAtAfterOrderByIdDesc(
+                    eq(VoteType.IMMERSIVE), eq(100L), any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
             given(voteParticipationRepository.countByVoteId(any())).willReturn(3L);
 
-            ImmersiveFeedResult result = service.getFeed(100L, 10, null, null);
+            ImmersiveFeedResult result = service.getFeed(100L, null, 10, null, null);
 
             assertThat(result.items()).hasSize(1);
             assertThat(result.hasNext()).isFalse();
@@ -85,13 +91,13 @@ class ImmersiveVoteQueryServiceTest {
         void hasNext_true이면_nextCursor_반환() {
             Vote v1 = makeVote(Duration.ofHours(24));
             Vote v2 = makeVote(Duration.ofHours(23));
-            given(voteRepository.findByTypeOrderByEndAtDesc(eq(VoteType.IMMERSIVE), any()))
+            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
                     .willReturn(new SliceImpl<>(List.of(v1, v2), PageRequest.of(0, 2), true));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
             given(voteParticipationRepository.countByVoteId(any())).willReturn(0L);
 
-            ImmersiveFeedResult result = service.getFeed(null, 2, null, null);
+            ImmersiveFeedResult result = service.getFeed(null, null, 2, null, null);
 
             assertThat(result.hasNext()).isTrue();
             assertThat(result.nextCursor()).isEqualTo(result.items().get(1).voteId());
@@ -100,7 +106,7 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void 회원_userId로_mySelectedOptionId_조회() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeOrderByEndAtDesc(eq(VoteType.IMMERSIVE), any()))
+            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
@@ -110,7 +116,7 @@ class ImmersiveVoteQueryServiceTest {
             given(voteParticipationRepository.findByVoteIdAndUserId(any(), eq(42L)))
                     .willReturn(Optional.of(participation));
 
-            ImmersiveFeedResult result = service.getFeed(null, 10, 42L, null);
+            ImmersiveFeedResult result = service.getFeed(null, null, 10, 42L, null);
 
             assertThat(result.items().get(0).mySelectedOptionId()).isEqualTo(99L);
         }
@@ -118,7 +124,7 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void 비회원_anonymousId로_mySelectedOptionId_조회() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeOrderByEndAtDesc(eq(VoteType.IMMERSIVE), any()))
+            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
@@ -128,7 +134,7 @@ class ImmersiveVoteQueryServiceTest {
             given(voteParticipationRepository.findByVoteIdAndAnonymousId(any(), eq("anon")))
                     .willReturn(Optional.of(participation));
 
-            ImmersiveFeedResult result = service.getFeed(null, 10, null, "anon");
+            ImmersiveFeedResult result = service.getFeed(null, null, 10, null, "anon");
 
             assertThat(result.items().get(0).mySelectedOptionId()).isEqualTo(77L);
         }
@@ -136,13 +142,13 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void 미참여시_mySelectedOptionId_null() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeOrderByEndAtDesc(eq(VoteType.IMMERSIVE), any()))
+            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
             given(voteParticipationRepository.countByVoteId(any())).willReturn(0L);
 
-            ImmersiveFeedResult result = service.getFeed(null, 10, null, null);
+            ImmersiveFeedResult result = service.getFeed(null, null, 10, null, null);
 
             assertThat(result.items().get(0).mySelectedOptionId()).isNull();
         }
