@@ -27,6 +27,7 @@ public interface HomeVoteQueryUseCase {
     record RecommendationItem(
             Long voteId,
             String thumbnailUrl,
+            VoteType voteType,
             String title,
             String content,
             Instant endAt
@@ -41,6 +42,7 @@ public interface HomeVoteQueryUseCase {
             int rank,
             Long voteId,
             String thumbnailUrl,
+            VoteType voteType,
             String title,
             String content,
             long participantCount,
