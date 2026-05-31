@@ -24,21 +24,18 @@ public class UserService {
     private final UserImageService userImageService;
 
     public User findOrCreate(String email) {
-        User user = userRepository.findByEmail(email).orElse(null);
+        Instant now = Instant.now();
 
-        if (user == null) {
-            return userRepository.save(User.createWithEmail(email));
+        // 탈퇴 후 30일 이내 동일 이메일 재가입 제한
+        boolean restricted = userRepository.findByEmailAndUserStatus(email, UserStatus.WITHDRAWN).stream()
+                .anyMatch(withdrawn -> withdrawn.isReregisterRestricted(now));
+        if (restricted) {
+            throw new BusinessException(UserErrorCode.REREGISTRATION_RESTRICTED);
         }
 
-        if (user.isWithdrawn()) {
-            if (user.isReregisterRestricted(Instant.now())) {
-                throw new BusinessException(UserErrorCode.REREGISTRATION_RESTRICTED);
-            }
-            // 제한 기간이 지난 탈퇴 계정은 미등록 상태로 되돌려 재온보딩을 진행한다.
-            user.reactivate();
-        }
-
-        return user;
+        // 활성 사용자(탈퇴 제외)만 조회한다. 재가입은 기존 정보를 복구하지 않고 새 row를 생성한다.
+        return userRepository.findByEmailAndUserStatusNot(email, UserStatus.WITHDRAWN)
+                .orElseGet(() -> userRepository.save(User.createWithEmail(email)));
     }
 
     public User findByEmail(String email) {

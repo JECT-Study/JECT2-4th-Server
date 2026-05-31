@@ -86,14 +86,6 @@ public class User {
         this.withdrawnAt = withdrawnAt;
     }
 
-    /**
-     * 재가입 제한 기간이 지난 탈퇴 계정을 미등록 상태로 되돌려 재온보딩을 가능하게 한다.
-     */
-    public void reactivate() {
-        this.userStatus = UserStatus.UNREGISTER;
-        this.withdrawnAt = null;
-    }
-
     public boolean isWithdrawn() {
         return this.userStatus == UserStatus.WITHDRAWN;
     }
