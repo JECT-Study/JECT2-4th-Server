@@ -154,15 +154,6 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         return new MessagePageResult(results, nextCursor, hasNext);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public long getTotalUnreadCount(Long userId) {
-        List<Long> voteIds = voteParticipationQueryUseCase.findAllVoteIdsByUserId(userId);
-        return voteIds.stream()
-                .mapToLong(voteId -> calculateUnreadCount(userId, voteId))
-                .sum();
-    }
-
     /**
      * 특정 투표 채팅방의 읽지 않은 메시지 수를 계산합니다.
      * - ChatRoomUnread 레코드가 없거나 lastReadMessageId가 null인 경우(한 번도 읽지 않은 경우)

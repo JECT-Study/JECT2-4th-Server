@@ -29,15 +29,6 @@ public class ChatController implements ChatDocs {
         );
     }
 
-    @GetMapping("/unread-count")
-    @Override
-    public ChatUnreadCountResponse getUnreadCount(@AuthenticationPrincipal Long userId) {
-        if (userId == null) {
-            return new ChatUnreadCountResponse(0L);
-        }
-        return new ChatUnreadCountResponse(chatQueryUseCase.getTotalUnreadCount(userId));
-    }
-
     @GetMapping("/{voteId}")
     @Override
     public ChatRoomResponse getChatRoom(@AuthenticationPrincipal Long userId,

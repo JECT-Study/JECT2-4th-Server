@@ -2,7 +2,6 @@ package com.ject.vs.chat.adapter.web;
 
 import com.ject.vs.chat.adapter.web.dto.ChatListResponse;
 import com.ject.vs.chat.adapter.web.dto.ChatRoomResponse;
-import com.ject.vs.chat.adapter.web.dto.ChatUnreadCountResponse;
 import com.ject.vs.chat.adapter.web.dto.GaugeResponse;
 import com.ject.vs.chat.adapter.web.dto.MarkAsReadRequest;
 import com.ject.vs.chat.adapter.web.dto.MessagePageResponse;
@@ -33,19 +32,6 @@ public interface ChatDocs {
             @Parameter(hidden = true) Long userId,
             @Parameter(description = "조회할 투표 상태", required = true, example = "ONGOING", schema = @Schema(allowableValues = {"ONGOING", "ENDED"}))
             VoteStatus status
-    );
-
-    @Operation(
-            summary = "채팅 읽지 않은 메시지 수 조회",
-            description = "로그인 사용자가 참여한 모든 채팅방의 읽지 않은 메시지 총 개수를 조회합니다. (하단 탭 배지용)"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "읽지 않은 메시지 수 조회 성공",
-                    content = @Content(schema = @Schema(implementation = ChatUnreadCountResponse.class))),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content)
-    })
-    ChatUnreadCountResponse getUnreadCount(
-            @Parameter(hidden = true) Long userId
     );
 
     @Operation(

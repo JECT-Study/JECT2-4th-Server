@@ -13,5 +13,4 @@ public interface ChatQueryUseCase {
     ChatRoomResult getChatRoom(Long voteId);
     GaugeResult getGauge(Long voteId);
     MessagePageResult getMessages(Long voteId, Long userId, Long cursor, int size);
-    long getTotalUnreadCount(Long userId);
 }
