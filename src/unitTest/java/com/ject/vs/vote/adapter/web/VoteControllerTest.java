@@ -294,7 +294,7 @@ class VoteControllerTest {
                     new OptionResult(11L, "짬뽕", 40L, 40)
             );
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "점심 뭐 먹을까?", Instant.parse("2025-01-01T00:00:00Z"),
+                    1L, "점심 뭐 먹을까?", Instant.parse("2025-01-01T00:00:00Z"),
                     "내용", "thumb.png", null, VoteStatus.ENDED, Instant.parse("2025-01-02T00:00:00Z"),
                     100, options, false, null, Map.of(), null, 0
             );
@@ -318,7 +318,7 @@ class VoteControllerTest {
                     new OptionResult(11L, "짬뽕", 40L, 40)
             );
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "점심 뭐 먹을까?", Instant.parse("2025-01-01T00:00:00Z"),
+                    1L, "점심 뭐 먹을까?", Instant.parse("2025-01-01T00:00:00Z"),
                     "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
                     100, options, false, null, Map.of(), null, 0
             );

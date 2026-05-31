@@ -47,7 +47,7 @@ class QaScenarioTest {
         void 진행중_투표_미투표시_득표수_비율_null() {
             // Given: 진행중 투표, 사용자 미투표
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "점심 뭐 먹을까?",
+                    1L, "점심 뭐 먹을까?",
                     Instant.parse("2025-01-01T00:00:00Z"), "내용",
                     "thumb.png", null,
                     VoteStatus.ONGOING,  // 진행중
@@ -81,7 +81,7 @@ class QaScenarioTest {
         void 진행중_투표_투표후_득표수_비율_노출() {
             // Given: 진행중 투표, 사용자 투표 완료
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "점심 뭐 먹을까?",
+                    1L, "점심 뭐 먹을까?",
                     Instant.parse("2025-01-01T00:00:00Z"), "내용",
                     "thumb.png", null,
                     VoteStatus.ONGOING,  // 진행중
@@ -116,7 +116,7 @@ class QaScenarioTest {
         void 종료된_투표_미투표시에도_득표수_비율_노출() {
             // Given: 종료된 투표, 사용자 미투표
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "점심 뭐 먹을까?",
+                    1L, "점심 뭐 먹을까?",
                     Instant.parse("2025-01-01T00:00:00Z"), "내용",
                     "thumb.png", null,
                     VoteStatus.ENDED,  // 종료됨
@@ -151,7 +151,7 @@ class QaScenarioTest {
         void 종료된_투표_투표자_결과_정상_노출() {
             // Given: 종료된 투표, 사용자 투표함
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "점심 뭐 먹을까?",
+                    1L, "점심 뭐 먹을까?",
                     Instant.parse("2025-01-01T00:00:00Z"), "내용",
                     "thumb.png", null,
                     VoteStatus.ENDED,
@@ -185,7 +185,7 @@ class QaScenarioTest {
         void 이모지_요약_정상_반환() {
             // Given
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "제목",
+                    1L, "제목",
                     Instant.parse("2025-01-01T00:00:00Z"), null,
                     "thumb.png", null,
                     VoteStatus.ONGOING,
@@ -220,7 +220,7 @@ class QaScenarioTest {
         void 참여자수_정확히_반환() {
             // Given
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "제목",
+                    1L, "제목",
                     Instant.parse("2025-01-01T00:00:00Z"), null,
                     "thumb.png", null,
                     VoteStatus.ONGOING,
@@ -568,7 +568,6 @@ class QaScenarioTest {
             // Given
             VoteDetailResult result = new VoteDetailResult(
                     123L,
-                    VoteType.GENERAL,
                     "오늘 점심 뭐 먹을까?",
                     Instant.parse("2025-06-01T09:00:00Z"),
                     "같이 투표해요!",
@@ -598,7 +597,6 @@ class QaScenarioTest {
 
             // Then: 모든 필드 검증
             assertThat(response.voteId()).isEqualTo(123L);
-            assertThat(response.voteType()).isEqualTo(VoteType.GENERAL);
             assertThat(response.title()).isEqualTo("오늘 점심 뭐 먹을까?");
             assertThat(response.content()).isEqualTo("같이 투표해요!");
             assertThat(response.thumbnailUrl()).isEqualTo("https://cdn.vs.app/thumb/123.jpg");
