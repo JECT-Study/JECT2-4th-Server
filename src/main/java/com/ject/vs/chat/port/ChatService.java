@@ -116,7 +116,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     @Transactional(readOnly = true)
     public GaugeResult getGauge(Long voteId) {
         VoteQueryUseCase.VoteRatio ratio = voteQueryUseCase.getRatio(voteId);
-        return new GaugeResult(ratio.optionARatio(), ratio.optionBRatio(), ratio.participantCount());
+        return new GaugeResult(voteId, ratio.optionARatio(), ratio.optionBRatio(), ratio.participantCount());
     }
 
     @Override
