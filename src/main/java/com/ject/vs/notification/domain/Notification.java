@@ -47,6 +47,24 @@ public class Notification extends BaseEntity {
         return n;
     }
 
+    /**
+     * QA/테스트용 알림 생성 (커스텀 title, body 지정 가능)
+     */
+    public static Notification ofCustom(
+            Long userId, Long voteId, String title, String body, String thumbnailUrl, Clock clock) {
+        Notification n = new Notification();
+        n.userId = userId;
+        n.type = NotificationType.VOTE_ENDED;
+        n.voteId = voteId;
+        n.title = title;
+        n.body = body;
+        n.thumbnailUrl = thumbnailUrl;
+        n.isRead = false;
+        n.createdAt = Instant.now(clock);
+        n.sent = false;
+        return n;
+    }
+
     public void markRead(Clock clock) {
         if (this.isRead) return;
         this.isRead = true;
