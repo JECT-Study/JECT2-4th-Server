@@ -6,6 +6,9 @@ import com.ject.vs.common.exception.BusinessException;
 import com.ject.vs.user.adapter.web.dto.*;
 import com.ject.vs.user.domain.*;
 import com.ject.vs.user.exception.UserErrorCode;
+import com.ject.vs.vote.domain.VoteEmojiReactionRepository;
+import com.ject.vs.vote.domain.VoteParticipation;
+import com.ject.vs.vote.domain.VoteParticipationRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,8 @@ public class UserService {
     private final TokenRepository tokenRepository;
     private final UserDeleteRepository userDeleteRepository;
     private final UserImageService userImageService;
+    private final VoteParticipationRepository voteParticipation;
+    private final VoteEmojiReactionRepository voteEmojiReactionRepository;
 
     public User findOrCreate(String email) {
         return userRepository.findByEmail(email)
@@ -83,19 +88,21 @@ public class UserService {
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
    }
 
-   public Void deleteAccount(Long userId, UserDeleteReq req) {
+   public void deleteAccount(Long userId, UserDeleteReq req) {
        User user = userRepository.findById(userId)
                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
        List<Token> list = tokenRepository.findByUserId(user);
 
-       UserDelete delAccount = UserDelete.from(user.getEmail(), req);
 
        tokenRepository.deleteAll(list);
-       userRepository.delete(user);
-       userDeleteRepository.save(delAccount);
 
-       return null;
+       voteParticipation.deleteByUserId(userId);
+       voteEmojiReactionRepository.deleteByUserId(userId);
+
+       UserDelete delAccount = UserDelete.from(user.getEmail(), req);
+       userDeleteRepository.save(delAccount);
+       userRepository.delete(user);
    }
 
    public UserImageResponse getRandomColor(Long userId) {

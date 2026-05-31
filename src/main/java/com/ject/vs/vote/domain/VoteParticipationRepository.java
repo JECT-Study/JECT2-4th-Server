@@ -1,6 +1,7 @@
 package com.ject.vs.vote.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -64,4 +65,8 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
 
     record VoteParticipantCount(Long voteId, Long count) {
     }
+
+    @Modifying
+    @Query("delete from VoteParticipation vp where vp.userId = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 }

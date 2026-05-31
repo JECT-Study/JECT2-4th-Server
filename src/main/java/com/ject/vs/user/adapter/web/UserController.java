@@ -62,8 +62,10 @@ public class UserController {
     }
 
     @DeleteMapping("/profile/delete")
-    public Void deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
-        return userService.deleteAccount(userId, req);
+    public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
+        userService.deleteAccount(userId, req);
+
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/imagecolor/suggest")
