@@ -1,12 +1,16 @@
 package com.ject.vs.user.adapter.web;
 
+import com.ject.vs.config.CookieProperties;
 import com.ject.vs.user.adapter.web.dto.*;
 import com.ject.vs.user.port.UserService;
+import com.ject.vs.util.CookieUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final CookieProperties cookieProperties;
 
     @Operation(summary = "추가 정보 설정", description = "사용자 추가 정보(닉네임, 성별, 생년월일)를 설정합니다.")
     @PostMapping("/me/profile")
@@ -61,9 +66,30 @@ public class UserController {
         return ResponseEntity.ok(userService.modifyInfo(userId, req));
     }
 
+    @Operation(summary = "회원 탈퇴", description = "회원을 탈퇴 처리하고 인증 쿠키를 만료시킵니다.")
     @DeleteMapping("/profile/delete")
-    public Void deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
-        return userService.deleteAccount(userId, req);
+    public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
+        userService.deleteAccount(userId, req);
+
+        // 탈퇴 시에도 로그아웃과 동일하게 access/refresh 쿠키를 만료시켜 브라우저 토큰을 제거한다.
+        ResponseCookie accessTokenCookie = expiredCookie(CookieUtil.CookieType.ACCESS_TOKEN);
+        ResponseCookie refreshTokenCookie = expiredCookie(CookieUtil.CookieType.REFRESH_TOKEN);
+
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .build();
+    }
+
+    private ResponseCookie expiredCookie(String name) {
+        return ResponseCookie.from(name, "")
+                .path("/")
+                .domain(".vs.io.kr")
+                .httpOnly(true)
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
+                .maxAge(0)
+                .build();
     }
 
     @GetMapping("/imagecolor/suggest")
