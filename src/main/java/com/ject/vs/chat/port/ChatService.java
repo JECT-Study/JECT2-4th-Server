@@ -88,10 +88,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                     ChatMessage lastMsg = chatMessageRepository.findFirstByVoteIdOrderByIdDesc(voteId).orElse(null);
                     String lastMessage = lastMsg != null ? lastMsg.getContent() : null;
 
-                    int unreadCount = chatRoomUnreadRepository
-                            .findByIdUserIdAndIdVoteId(userId, voteId)
-                            .map(unread -> (int) chatMessageRepository.countByVoteIdAndIdGreaterThan(voteId, unread.getLastReadMessageId()))
-                            .orElse(0);
+                    int unreadCount = calculateUnreadCount(userId, voteId);
 
                     return ChatListItemResult.of(
                             vote,
@@ -155,5 +152,24 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 .toList();
 
         return new MessagePageResult(results, nextCursor, hasNext);
+    }
+
+    /**
+     * 특정 투표 채팅방의 읽지 않은 메시지 수를 계산합니다.
+     * - ChatRoomUnread 레코드가 없거나 lastReadMessageId가 null인 경우(한 번도 읽지 않은 경우)
+     *   → 해당 방의 전체 메시지 수를 unread로 간주하여 반환
+     * - 레코드가 있고 lastReadMessageId가 있으면 그 이후 메시지 수만 반환
+     */
+    private int calculateUnreadCount(Long userId, Long voteId) {
+        return chatRoomUnreadRepository
+                .findByIdUserIdAndIdVoteId(userId, voteId)
+                .map(unread -> {
+                    Long lastRead = unread.getLastReadMessageId();
+                    if (lastRead == null) {
+                        return (int) chatMessageRepository.countByVoteId(voteId);
+                    }
+                    return (int) chatMessageRepository.countByVoteIdAndIdGreaterThan(voteId, lastRead);
+                })
+                .orElseGet(() -> (int) chatMessageRepository.countByVoteId(voteId));
     }
 }
