@@ -285,5 +285,53 @@ class VoteControllerTest {
                     .andExpect(jsonPath("$.myVote.selectedOptionId").value(10))
                     .andExpect(jsonPath("$.myEmoji").value("WOW"));
         }
+
+        @Test
+        @WithMockUser
+        void 종료된_투표_미투표시에도_voteCount_노출() throws Exception {
+            List<OptionResult> options = List.of(
+                    new OptionResult(10L, "짜장면", 60L, 60),
+                    new OptionResult(11L, "짬뽕", 40L, 40)
+            );
+            VoteDetailResult result = new VoteDetailResult(
+                    1L, VoteType.GENERAL, "점심 뭐 먹을까?", Instant.parse("2025-01-01T00:00:00Z"),
+                    "내용", "thumb.png", null, VoteStatus.ENDED, Instant.parse("2025-01-02T00:00:00Z"),
+                    100, options, false, null, Map.of(), null, 0
+            );
+            given(voteDetailQueryService.getDetail(eq(1L), any(), any())).willReturn(result);
+
+            mockMvc.perform(get("/api/votes/1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ENDED"))
+                    .andExpect(jsonPath("$.myVote.voted").value(false))
+                    .andExpect(jsonPath("$.options[0].voteCount").value(60))
+                    .andExpect(jsonPath("$.options[0].ratio").value(60))
+                    .andExpect(jsonPath("$.options[1].voteCount").value(40))
+                    .andExpect(jsonPath("$.options[1].ratio").value(40));
+        }
+
+        @Test
+        @WithMockUser
+        void 진행중_투표_미투표시_voteCount는_null() throws Exception {
+            List<OptionResult> options = List.of(
+                    new OptionResult(10L, "짜장면", 60L, 60),
+                    new OptionResult(11L, "짬뽕", 40L, 40)
+            );
+            VoteDetailResult result = new VoteDetailResult(
+                    1L, VoteType.GENERAL, "점심 뭐 먹을까?", Instant.parse("2025-01-01T00:00:00Z"),
+                    "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
+                    100, options, false, null, Map.of(), null, 0
+            );
+            given(voteDetailQueryService.getDetail(eq(1L), any(), any())).willReturn(result);
+
+            mockMvc.perform(get("/api/votes/1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ONGOING"))
+                    .andExpect(jsonPath("$.myVote.voted").value(false))
+                    .andExpect(jsonPath("$.options[0].voteCount").doesNotExist())
+                    .andExpect(jsonPath("$.options[0].ratio").doesNotExist())
+                    .andExpect(jsonPath("$.options[1].voteCount").doesNotExist())
+                    .andExpect(jsonPath("$.options[1].ratio").doesNotExist());
+        }
     }
 }
