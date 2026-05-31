@@ -1,6 +1,7 @@
 package com.ject.vs.vote.adapter.web.dto;
 
 import com.ject.vs.vote.domain.VoteEmoji;
+import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.vote.domain.VoteType;
 import com.ject.vs.vote.port.VoteDetailQueryService.VoteDetailResult;
 
@@ -48,8 +49,8 @@ public record VoteDetailResponse(
     }
 
     public static VoteDetailResponse from(VoteDetailResult result) {
-        // 투표 전이면 voteCount/ratio를 null로
-        boolean showResults = result.voted();
+        // 투표했거나 마감된 투표면 결과 표시
+        boolean showResults = result.voted() || result.status() == VoteStatus.ENDED;
         List<OptionItem> items = result.options().stream()
                 .map(o -> new OptionItem(
                         o.optionId(),
