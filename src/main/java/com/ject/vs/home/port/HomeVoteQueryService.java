@@ -147,13 +147,21 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                 );
             }
             case ENDING_SOON -> {
-                EndingSoonCursor endingCursor = parseEndingSoonCursor(cursor);
-                yield voteRepository.findForHomeByEndingSoonWithKeyset(
-                        endingCursor.lastEndAt(),
-                        endingCursor.lastId(),
-                        now,
-                        pageable
-                );
+                if (cursor == null || cursor.isBlank()) {
+                    yield voteRepository.findFirstPageForHomeByEndingSoon(now, pageable);
+                } else {
+                    EndingSoonCursor endingCursor = parseEndingSoonCursor(cursor);
+                    if (endingCursor.lastEndAt() == null || endingCursor.lastId() == null) {
+                        yield voteRepository.findFirstPageForHomeByEndingSoon(now, pageable);
+                    } else {
+                        yield voteRepository.findForHomeByEndingSoonWithKeyset(
+                                endingCursor.lastEndAt(),
+                                endingCursor.lastId(),
+                                now,
+                                pageable
+                        );
+                    }
+                }
             }
         };
 
