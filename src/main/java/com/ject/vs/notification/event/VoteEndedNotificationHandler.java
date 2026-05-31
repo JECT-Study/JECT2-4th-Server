@@ -1,6 +1,7 @@
 package com.ject.vs.notification.event;
 
 import com.ject.vs.notification.domain.Notification;
+import com.ject.vs.notification.domain.NotificationRepository;
 import com.ject.vs.notification.domain.NotificationType;
 import com.ject.vs.notification.port.in.NotificationCommandUseCase;
 import com.ject.vs.notification.port.in.NotificationCommandUseCase.NotificationCreateCommand;
@@ -16,7 +17,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class VoteEndedNotificationHandler {
     private final VoteQueryPort voteQueryPort;
     private final VoteParticipationRepository voteParticipationRepository;
     private final NotificationCommandUseCase notificationCommandUseCase;
+    private final NotificationRepository notificationRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @EventListener
@@ -40,8 +44,20 @@ public class VoteEndedNotificationHandler {
                 .findAllUserIdsByVoteId(event.voteId());
         if (participantUserIds.isEmpty()) return;
 
-        // 3. Notification batch insert
-        List<NotificationCreateCommand> commands = participantUserIds.stream()
+        // 3. 이미 알림을 받은 사용자 제외 (중복 알림 방지)
+        Set<Long> alreadyNotifiedUserIds = new HashSet<>(
+                notificationRepository.findUserIdsByVoteIdAndType(event.voteId(), NotificationType.VOTE_ENDED)
+        );
+        List<Long> targetUserIds = participantUserIds.stream()
+                .filter(uid -> !alreadyNotifiedUserIds.contains(uid))
+                .toList();
+        if (targetUserIds.isEmpty()) {
+            log.debug("All participants already notified for voteId={}", event.voteId());
+            return;
+        }
+
+        // 4. Notification batch insert
+        List<NotificationCreateCommand> commands = targetUserIds.stream()
                 .map(uid -> new NotificationCreateCommand(
                         uid, NotificationType.VOTE_ENDED,
                         vote.getId(), vote.getTitle(),
@@ -49,7 +65,7 @@ public class VoteEndedNotificationHandler {
                 .toList();
         List<Notification> created = notificationCommandUseCase.createBatch(commands);
 
-        // 4. 푸시 발송을 위한 이벤트 발행
+        // 5. 푸시 발송을 위한 이벤트 발행
         List<Long> notificationIds = created.stream()
                 .map(Notification::getId)
                 .toList();
