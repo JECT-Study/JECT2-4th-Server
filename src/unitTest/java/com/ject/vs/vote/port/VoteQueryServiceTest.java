@@ -90,7 +90,7 @@ class VoteQueryServiceTest {
         @Test
         void 진행중인_투표의_summary를_반환한다() {
             Clock nowClock = Clock.fixed(Instant.parse("2025-01-01T00:00:00Z"), ZoneOffset.UTC);
-            Vote vote = Vote.create(VoteType.GENERAL, "제목", null, "thumb", null,
+            Vote vote = Vote.create("제목", null, "thumb", null,
                     Duration.ofHours(24), nowClock);
             given(voteRepository.findById(1L)).willReturn(Optional.of(vote));
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T12:00:00Z"));
@@ -161,9 +161,9 @@ class VoteQueryServiceTest {
         @Test
         void ONGOING_필터_적용() {
             Clock nowClock = Clock.fixed(Instant.parse("2025-01-01T00:00:00Z"), ZoneOffset.UTC);
-            Vote ongoing = Vote.create(VoteType.GENERAL, "진행중", null, "t", null,
+            Vote ongoing = Vote.create("진행중", null, "t", null,
                     Duration.ofHours(24), nowClock);
-            Vote ended = Vote.create(VoteType.GENERAL, "종료됨", null, "t", null,
+            Vote ended = Vote.create("종료됨", null, "t", null,
                     Duration.ofHours(1), nowClock);
 
             given(voteRepository.findAllByIdIn(List.of(1L, 2L))).willReturn(List.of(ongoing, ended));

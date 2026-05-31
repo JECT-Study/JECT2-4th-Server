@@ -142,7 +142,7 @@ class ChatWebSocketIntegrationTest {
     void voteId가_다른_topic_구독자는_메시지를_수신하지_않는다() throws Exception {
         // given
         TestFixture fixture = createFixture();
-        Vote otherVote = voteRepository.saveAndFlush(Vote.create(VoteType.GENERAL, "other", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
+        Vote otherVote = voteRepository.saveAndFlush(Vote.create("other", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
         StompSession session = connectAnonymously();
         BlockingQueue<MessageResult> targetMessages = new LinkedBlockingQueue<>();
         BlockingQueue<MessageResult> otherMessages = new LinkedBlockingQueue<>();
@@ -161,7 +161,7 @@ class ChatWebSocketIntegrationTest {
     private TestFixture createFixture() {
         User sender = userRepository.saveAndFlush(User.createWithEmail("sender-" + System.nanoTime() + "@test.com"));
         User receiver = userRepository.saveAndFlush(User.createWithEmail("receiver-" + System.nanoTime() + "@test.com"));
-        Vote vote = voteRepository.saveAndFlush(Vote.create(VoteType.GENERAL, "chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
+        Vote vote = voteRepository.saveAndFlush(Vote.create("chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
         VoteOption option = voteOptionRepository.saveAndFlush(VoteOption.of(vote, "A", 1));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), sender.getId(), option.getId()));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), receiver.getId(), option.getId()));

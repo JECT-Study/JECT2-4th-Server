@@ -41,12 +41,12 @@ class ImmersiveVoteCommandServiceTest {
     @Mock private Clock clock;
 
     private Vote ongoingVote() {
-        return Vote.create(VoteType.IMMERSIVE, "몰입", null, "t", "img.png",
+        return Vote.create("몰입", null, "t", "img.png",
                 Duration.ofHours(24), FIXED_CLOCK);
     }
 
     private Vote endedVote() {
-        return Vote.create(VoteType.IMMERSIVE, "몰입", null, "t", "img.png",
+        return Vote.create("몰입", null, "t", "img.png",
                 Duration.ofHours(1), FIXED_CLOCK);
     }
 

@@ -27,7 +27,7 @@ public class VoteCommandService implements VoteCommandUseCase {
     @Override
     public VoteCreateResult create(VoteCreateCommand cmd) {
         Vote vote = Vote.create(
-                cmd.type(), cmd.title(), cmd.content(),
+                cmd.title(), cmd.content(),
                 cmd.thumbnailUrl(), cmd.imageUrl(),
                 cmd.duration().getValue(),
                 clock

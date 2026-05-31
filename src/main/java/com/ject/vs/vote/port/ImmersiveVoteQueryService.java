@@ -37,29 +37,29 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
 
         if (cursor != null) {
             PageRequest pageable = PageRequest.of(0, size);
-            Slice<Vote> slice = voteRepository.findByTypeAndIdLessThanAndEndAtAfterOrderByIdDesc(
-                    VoteType.IMMERSIVE, cursor, now, pageable);
+            Slice<Vote> slice = voteRepository.findByIdLessThanAndEndAtAfterOrderByIdDesc(
+                    cursor, now, pageable);
             items = slice.getContent().stream().map(v -> toFeedItem(v, userId, anonymousId)).toList();
             hasNext = slice.hasNext();
         } else if (startVoteId != null) {
             Vote startVote = voteRepository.findById(startVoteId).orElse(null);
-            if (startVote != null && !startVote.isEnded(clock) && startVote.getType() == VoteType.IMMERSIVE) {
-                Slice<Vote> rest = voteRepository.findByTypeAndIdLessThanAndEndAtAfterOrderByIdDesc(
-                        VoteType.IMMERSIVE, startVoteId, now, PageRequest.of(0, size - 1));
+            if (startVote != null && !startVote.isEnded(clock)) {
+                Slice<Vote> rest = voteRepository.findByIdLessThanAndEndAtAfterOrderByIdDesc(
+                        startVoteId, now, PageRequest.of(0, size - 1));
                 List<ImmersiveFeedItem> combined = new ArrayList<>();
                 combined.add(toFeedItem(startVote, userId, anonymousId));
                 rest.getContent().stream().map(v -> toFeedItem(v, userId, anonymousId)).forEach(combined::add);
                 items = combined;
                 hasNext = rest.hasNext();
             } else {
-                Slice<Vote> slice = voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(
-                        VoteType.IMMERSIVE, now, PageRequest.of(0, size));
+                Slice<Vote> slice = voteRepository.findByEndAtAfterOrderByIdDesc(
+                        now, PageRequest.of(0, size));
                 items = slice.getContent().stream().map(v -> toFeedItem(v, userId, anonymousId)).toList();
                 hasNext = slice.hasNext();
             }
         } else {
-            Slice<Vote> slice = voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(
-                    VoteType.IMMERSIVE, now, PageRequest.of(0, size));
+            Slice<Vote> slice = voteRepository.findByEndAtAfterOrderByIdDesc(
+                    now, PageRequest.of(0, size));
             items = slice.getContent().stream().map(v -> toFeedItem(v, userId, anonymousId)).toList();
             hasNext = slice.hasNext();
         }

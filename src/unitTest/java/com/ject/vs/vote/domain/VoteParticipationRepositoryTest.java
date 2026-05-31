@@ -45,7 +45,7 @@ class VoteParticipationRepositoryTest {
     @BeforeEach
     void setUp() {
         vote = voteRepository.save(
-                Vote.create(VoteType.GENERAL, "테스트 투표", null, "thumb", null,
+                Vote.create("테스트 투표", null, "thumb", null,
                         Duration.ofHours(24), FIXED_CLOCK)
         );
         optionA = voteOptionRepository.save(VoteOption.of(vote, "A", 0));

@@ -113,7 +113,7 @@ class ChatControllerTest {
         @WithMockUser
         void 정상_요청이면_200을_반환한다() throws Exception {
             // given
-            given(chatQueryUseCase.getGauge(1L)).willReturn(new GaugeResult(50, 50, 10));
+            given(chatQueryUseCase.getGauge(1L)).willReturn(new GaugeResult(1L, 50, 50, 10));
 
             // when & then
             mockMvc.perform(get("/api/chats/1/gauge"))

@@ -3,7 +3,7 @@ package com.ject.vs.chat.domain;
 import com.ject.vs.config.JpaAuditingConfig;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.vote.domain.Vote;
-import com.ject.vs.vote.domain.VoteType;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ class ChatRoomUnreadRepositoryTest {
     void setUp() {
         User user = entityManager.persistAndFlush(User.createWithSub("test-sub"));
         Vote vote = entityManager.persistAndFlush(
-                Vote.create(VoteType.GENERAL, "테스트", null, "thumb", null, Duration.ofHours(24), FIXED_CLOCK)
+                Vote.create("테스트", null, "thumb", null, Duration.ofHours(24), FIXED_CLOCK)
         );
         userId = user.getId();
         voteId = vote.getId();

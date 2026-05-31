@@ -1,7 +1,6 @@
 package com.ject.vs.home.adapter.web.dto;
 
 import com.ject.vs.home.port.in.HomeVoteQueryUseCase.HotTopicResult;
-import com.ject.vs.vote.domain.VoteType;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -14,7 +13,6 @@ public record HomeHotTopicResponse(List<HotTopicItem> hotTopics) {
             int rank,
             Long voteId,
             String thumbnailUrl,
-            VoteType voteType,
             String title,
             String content,
             long participantCount,
@@ -32,7 +30,6 @@ public record HomeHotTopicResponse(List<HotTopicItem> hotTopics) {
                         i.rank(),
                         i.voteId(),
                         i.thumbnailUrl(),
-                        i.voteType(),
                         i.title(),
                         i.content(),
                         i.participantCount(),

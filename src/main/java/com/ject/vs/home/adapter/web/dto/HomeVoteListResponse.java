@@ -2,7 +2,6 @@ package com.ject.vs.home.adapter.web.dto;
 
 import com.ject.vs.home.port.in.HomeVoteQueryUseCase.VoteListResult;
 import com.ject.vs.vote.domain.VoteStatus;
-import com.ject.vs.vote.domain.VoteType;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -19,7 +18,6 @@ public record HomeVoteListResponse(
             Long voteId,
             String thumbnailUrl,
             VoteStatus status,
-            VoteType voteType,
             String title,
             String content,
             OffsetDateTime endAt
@@ -36,7 +34,6 @@ public record HomeVoteListResponse(
                         i.voteId(),
                         i.thumbnailUrl(),
                         i.status(),
-                        i.voteType(),
                         i.title(),
                         i.content(),
                         toKst(i.endAt())
