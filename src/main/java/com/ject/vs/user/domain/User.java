@@ -4,12 +4,20 @@ import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
 import jakarta.persistence.*;
 import lombok.Getter;
 
+import java.time.Instant;
 import java.time.Year;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Getter
 @Table(name = "users")
 public class User {
+    /** 탈퇴 후 익명 처리된 사용자의 표시용 닉네임 */
+    public static final String WITHDRAWN_NICKNAME = "알 수 없음";
+
+    /** 탈퇴 후 동일 이메일 재가입 제한 기간(일) */
+    private static final long REREGISTER_RESTRICTION_DAYS = 30;
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -28,6 +36,8 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private UserStatus userStatus = UserStatus.UNREGISTER;
+
+    private Instant withdrawnAt;
 
     public static User createWithEmail(String email) {
         User user = new User();
@@ -60,5 +70,41 @@ public class User {
     public static void modifyAccount(User user, String nickname, ImageColor imageColor) {
         user.nickname = nickname;
         user.imageColor = imageColor;
+    }
+
+    /**
+     * 회원 탈퇴(soft delete). 사용자 행은 보존하되 식별 정보를 익명화한다.
+     * 닉네임은 "알 수 없음"으로 바꿔 투표/채팅 등 잔존 데이터에 익명으로 노출되도록 한다.
+     * 이메일은 30일 재가입 제한 판정을 위해 유지한다.
+     */
+    public void withdraw(Instant withdrawnAt) {
+        this.nickname = WITHDRAWN_NICKNAME;
+        this.birthYear = null;
+        this.gender = null;
+        this.imageColor = null;
+        this.userStatus = UserStatus.WITHDRAWN;
+        this.withdrawnAt = withdrawnAt;
+    }
+
+    /**
+     * 재가입 제한 기간이 지난 탈퇴 계정을 미등록 상태로 되돌려 재온보딩을 가능하게 한다.
+     */
+    public void reactivate() {
+        this.userStatus = UserStatus.UNREGISTER;
+        this.withdrawnAt = null;
+    }
+
+    public boolean isWithdrawn() {
+        return this.userStatus == UserStatus.WITHDRAWN;
+    }
+
+    /**
+     * 탈퇴 후 재가입 제한 기간(30일) 이내인지 여부.
+     */
+    public boolean isReregisterRestricted(Instant now) {
+        if (withdrawnAt == null) {
+            return false;
+        }
+        return now.isBefore(withdrawnAt.plus(REREGISTER_RESTRICTION_DAYS, ChronoUnit.DAYS));
     }
 }

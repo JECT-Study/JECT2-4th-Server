@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 
 @Transactional
@@ -23,8 +24,21 @@ public class UserService {
     private final UserImageService userImageService;
 
     public User findOrCreate(String email) {
-        return userRepository.findByEmail(email)
-                .orElseGet(() -> userRepository.save(User.createWithEmail(email)));
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            return userRepository.save(User.createWithEmail(email));
+        }
+
+        if (user.isWithdrawn()) {
+            if (user.isReregisterRestricted(Instant.now())) {
+                throw new BusinessException(UserErrorCode.REREGISTRATION_RESTRICTED);
+            }
+            // 제한 기간이 지난 탈퇴 계정은 미등록 상태로 되돌려 재온보딩을 진행한다.
+            user.reactivate();
+        }
+
+        return user;
     }
 
     public User findByEmail(String email) {
@@ -91,8 +105,10 @@ public class UserService {
 
        UserDelete delAccount = UserDelete.from(user.getEmail(), req);
 
+       // soft delete: 토큰만 제거(로그아웃)하고 사용자 행은 익명화하여 보존한다.
+       // 투표/채팅 등 user_id FK 참조 데이터를 유지하기 위함(물리 삭제 시 FK 제약 위반으로 실패).
        tokenRepository.deleteAll(list);
-       userRepository.delete(user);
+       user.withdraw(Instant.now());
        userDeleteRepository.save(delAccount);
 
        return null;
