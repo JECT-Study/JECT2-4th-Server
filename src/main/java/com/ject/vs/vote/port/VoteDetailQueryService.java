@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.port.in.VoteCommandUseCase.OptionResult;
@@ -23,6 +24,7 @@ public class VoteDetailQueryService {
     private final VoteOptionRepository voteOptionRepository;
     private final VoteParticipationRepository voteParticipationRepository;
     private final VoteEmojiReactionRepository emojiReactionRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final Clock clock;
 
     public VoteDetailResult getDetail(Long voteId, Long userId, String anonymousId) {
@@ -69,10 +71,12 @@ public class VoteDetailQueryService {
 
         boolean voted = mySelectedOptionId != null;
 
+        int commentCount = (int) chatMessageRepository.countByVoteId(voteId);
+
         return new VoteDetailResult(
                 vote.getId(), vote.getTitle(), vote.getCreatedAt(), vote.getContent(),
                 vote.getThumbnailUrl(), vote.getImageUrl(), status, vote.getEndAt(),
-                (int) total, optionResults, voted, mySelectedOptionId, emojiSummary, myEmoji, 0
+                (int) total, optionResults, voted, mySelectedOptionId, emojiSummary, myEmoji, commentCount
         );
     }
 
