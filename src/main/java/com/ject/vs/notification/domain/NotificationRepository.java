@@ -8,8 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+
+    @Query("SELECT n.userId FROM Notification n WHERE n.voteId = :voteId AND n.type = :type")
+    List<Long> findUserIdsByVoteIdAndType(@Param("voteId") Long voteId, @Param("type") NotificationType type);
 
     @Query("""
         SELECT n FROM Notification n
