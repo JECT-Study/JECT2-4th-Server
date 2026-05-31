@@ -8,7 +8,7 @@ import java.time.Instant;
 
 /**
  * Vote 도메인 관련 Integration Test에서 공통으로 사용하는 테스트 데이터 생성 지원 클래스.
- * BaseIntegrationTest를 상속받아 시간 제어 기능도 함께 제공한다.
+ * BaseIntegrationTest를 상속받아 실제 PostgreSQL(Testcontainers) + 시간 제어 기능을 제공한다.
  */
 public abstract class VoteIntegrationTestSupport extends BaseIntegrationTest {
 
