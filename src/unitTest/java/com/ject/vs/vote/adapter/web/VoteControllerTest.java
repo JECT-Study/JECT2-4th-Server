@@ -68,14 +68,14 @@ class VoteControllerTest {
 
     private VoteCreateRequest validCreateRequest() {
         return new VoteCreateRequest(
-                VoteType.GENERAL, "제목", null, "thumb.png", null,
+                "제목", null, "thumb.png", null,
                 VoteDuration.HOURS_24, "옵션A", "옵션B"
         );
     }
 
     private VoteDetailResult sampleDetail() {
         return new VoteDetailResult(
-                1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                1L, "제목", Instant.parse("2025-01-01T00:00:00Z"),
                 null, "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
                 5, List.of(), false, null, Map.of(), null, 0
         );
@@ -255,7 +255,7 @@ class VoteControllerTest {
         @WithMockUser
         void 비회원_조회_voteCount는_null() throws Exception {
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                    1L, "제목", Instant.parse("2025-01-01T00:00:00Z"),
                     "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
                     31, List.of(), false, null, Map.of(), null, 0
             );
@@ -272,7 +272,7 @@ class VoteControllerTest {
         @Test
         void 회원_투표후_조회_voteCount_노출() throws Exception {
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                    1L, "제목", Instant.parse("2025-01-01T00:00:00Z"),
                     "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
                     31, List.of(), true, 10L, Map.of(VoteEmoji.WOW, 36L), VoteEmoji.WOW, 0
             );

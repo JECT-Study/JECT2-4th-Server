@@ -58,10 +58,10 @@ class VoteCommandServiceTest {
         void 정상적으로_투표를_생성한다() {
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T00:00:00Z"));
             VoteCreateCommand cmd = new VoteCreateCommand(
-                    VoteType.GENERAL, "제목", null, "thumb", null,
+                    "제목", null, "thumb", null,
                     VoteDuration.HOURS_24, "A", "B");
 
-            Vote fakeVote = Vote.create(VoteType.GENERAL, "제목", null, "thumb", null,
+            Vote fakeVote = Vote.create("제목", null, "thumb", null,
                     Duration.ofHours(24), FIXED_CLOCK);
             given(voteRepository.save(any())).willReturn(fakeVote);
             VoteOption optA = VoteOption.of(fakeVote, "A", 0);
@@ -73,15 +73,6 @@ class VoteCommandServiceTest {
             assertThat(result.status()).isEqualTo(VoteStatus.ONGOING);
         }
 
-        @Test
-        void IMMERSIVE_타입에_imageUrl_없으면_ImageRequiredException() {
-            VoteCreateCommand cmd = new VoteCreateCommand(
-                    VoteType.IMMERSIVE, "제목", null, "thumb", null,
-                    VoteDuration.HOURS_24, "A", "B");
-
-            assertThatThrownBy(() -> service.create(cmd))
-                    .isInstanceOf(com.ject.vs.vote.exception.ImageRequiredException.class);
-        }
     }
 
     @Nested
@@ -89,7 +80,7 @@ class VoteCommandServiceTest {
 
         @Test
         void 신규_회원_참여_정상_저장() {
-            Vote ongoingVote = Vote.create(VoteType.GENERAL, "투표", null, "t", null,
+            Vote ongoingVote = Vote.create("투표", null, "t", null,
                     Duration.ofHours(24), FIXED_CLOCK);
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T00:00:00Z"));
             given(voteRepository.findById(1L)).willReturn(Optional.of(ongoingVote));
@@ -108,7 +99,7 @@ class VoteCommandServiceTest {
 
         @Test
         void 기존_참여자는_옵션을_변경한다() {
-            Vote ongoingVote = Vote.create(VoteType.GENERAL, "투표", null, "t", null,
+            Vote ongoingVote = Vote.create("투표", null, "t", null,
                     Duration.ofHours(24), FIXED_CLOCK);
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T00:00:00Z"));
             given(voteRepository.findById(1L)).willReturn(Optional.of(ongoingVote));
@@ -125,7 +116,7 @@ class VoteCommandServiceTest {
 
         @Test
         void 종료된_투표에_참여하면_VoteEndedException() {
-            Vote endedVote = Vote.create(VoteType.GENERAL, "투표", null, "t", null,
+            Vote endedVote = Vote.create("투표", null, "t", null,
                     Duration.ofHours(1), FIXED_CLOCK);
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T02:00:00Z"));
             given(voteRepository.findById(1L)).willReturn(Optional.of(endedVote));
@@ -144,7 +135,7 @@ class VoteCommandServiceTest {
 
         @Test
         void 유효하지_않은_optionId는_InvalidOptionException() {
-            Vote ongoingVote = Vote.create(VoteType.GENERAL, "투표", null, "t", null,
+            Vote ongoingVote = Vote.create("투표", null, "t", null,
                     Duration.ofHours(24), FIXED_CLOCK);
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T00:00:00Z"));
             given(voteRepository.findById(1L)).willReturn(Optional.of(ongoingVote));
@@ -160,7 +151,7 @@ class VoteCommandServiceTest {
 
         @Test
         void 신규_비회원은_차감_후_참여_저장() {
-            Vote ongoingVote = Vote.create(VoteType.GENERAL, "투표", null, "t", null,
+            Vote ongoingVote = Vote.create("투표", null, "t", null,
                     Duration.ofHours(24), FIXED_CLOCK);
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T00:00:00Z"));
             given(voteRepository.findById(1L)).willReturn(Optional.of(ongoingVote));
@@ -179,7 +170,7 @@ class VoteCommandServiceTest {
 
         @Test
         void 기존_비회원은_옵션만_변경하고_차감_없음() {
-            Vote ongoingVote = Vote.create(VoteType.GENERAL, "투표", null, "t", null,
+            Vote ongoingVote = Vote.create("투표", null, "t", null,
                     Duration.ofHours(24), FIXED_CLOCK);
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T00:00:00Z"));
             given(voteRepository.findById(1L)).willReturn(Optional.of(ongoingVote));
@@ -202,7 +193,7 @@ class VoteCommandServiceTest {
 
         @Test
         void 정상적으로_참여를_취소한다() {
-            Vote ongoingVote = Vote.create(VoteType.GENERAL, "투표", null, "t", null,
+            Vote ongoingVote = Vote.create("투표", null, "t", null,
                     Duration.ofHours(24), FIXED_CLOCK);
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T00:00:00Z"));
             given(voteRepository.findById(1L)).willReturn(Optional.of(ongoingVote));
@@ -214,7 +205,7 @@ class VoteCommandServiceTest {
 
         @Test
         void 종료된_투표_취소는_VoteEndedException() {
-            Vote endedVote = Vote.create(VoteType.GENERAL, "투표", null, "t", null,
+            Vote endedVote = Vote.create("투표", null, "t", null,
                     Duration.ofHours(1), FIXED_CLOCK);
             given(clock.instant()).willReturn(Instant.parse("2025-01-01T02:00:00Z"));
             given(voteRepository.findById(1L)).willReturn(Optional.of(endedVote));

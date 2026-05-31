@@ -123,7 +123,7 @@ class ChatWebSocketE2ETest {
     private TestFixture createFixture() {
         User sender = userRepository.saveAndFlush(User.createWithEmail("e2e-sender-" + System.nanoTime() + "@test.com"));
         User receiver = userRepository.saveAndFlush(User.createWithEmail("e2e-receiver-" + System.nanoTime() + "@test.com"));
-        Vote vote = voteRepository.saveAndFlush(Vote.create(VoteType.GENERAL, "e2e chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
+        Vote vote = voteRepository.saveAndFlush(Vote.create("e2e chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
         VoteOption option = voteOptionRepository.saveAndFlush(VoteOption.of(vote, "A", 1));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), sender.getId(), option.getId()));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), receiver.getId(), option.getId()));

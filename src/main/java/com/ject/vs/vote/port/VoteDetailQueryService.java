@@ -70,7 +70,7 @@ public class VoteDetailQueryService {
         boolean voted = mySelectedOptionId != null;
 
         return new VoteDetailResult(
-                vote.getId(), vote.getType(), vote.getTitle(), vote.getCreatedAt(), vote.getContent(),
+                vote.getId(), vote.getTitle(), vote.getCreatedAt(), vote.getContent(),
                 vote.getThumbnailUrl(), vote.getImageUrl(), status, vote.getEndAt(),
                 (int) total, optionResults, voted, mySelectedOptionId, emojiSummary, myEmoji, 0
         );
@@ -78,7 +78,6 @@ public class VoteDetailQueryService {
 
     public record VoteDetailResult(
             Long voteId,
-            VoteType type,
             String title,
             Instant createdAt,
             String content,

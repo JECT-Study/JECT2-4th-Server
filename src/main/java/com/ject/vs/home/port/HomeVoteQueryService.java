@@ -44,7 +44,6 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                     return new RecommendationItem(
                             vote.getId(),
                             vote.getThumbnailUrl(),
-                            vote.getType(),
                             vote.getTitle(),
                             vote.getContent(),
                             vote.getEndAt()
@@ -113,7 +112,6 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                     i + 1,
                     vote.getId(),
                     vote.getThumbnailUrl(),
-                    vote.getType(),
                     vote.getTitle(),
                     vote.getContent(),
                     participantCounts.getOrDefault(vote.getId(), 0L),
@@ -172,7 +170,6 @@ public class HomeVoteQueryService implements HomeVoteQueryUseCase {
                         vote.getId(),
                         vote.getThumbnailUrl(),
                         vote.getStatus(clock),
-                        vote.getType(),
                         vote.getTitle(),
                         vote.getContent(),
                         vote.getEndAt()

@@ -134,7 +134,6 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
         List<MyParticipatedVoteResponse.VoteElement> elementList = list.stream()
                 .map(v -> new MyParticipatedVoteResponse.VoteElement(
                         v.getId(),
-                        v.getType(),
                         v.getTitle(),
                         v.getContent(),
                         v.getThumbnailUrl(),
@@ -159,7 +158,6 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
         List<MyParticipatedVoteResponse.VoteElement> elementList = list.stream()
                 .map(v -> new MyParticipatedVoteResponse.VoteElement(
                         v.getId(),
-                        v.getType(),
                         v.getTitle(),
                         v.getContent(),
                         v.getThumbnailUrl(),

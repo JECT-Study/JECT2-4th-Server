@@ -3,7 +3,6 @@ package com.ject.vs.vote.port.in;
 import com.ject.vs.vote.domain.Vote;
 import com.ject.vs.vote.domain.VoteDuration;
 import com.ject.vs.vote.domain.VoteStatus;
-import com.ject.vs.vote.domain.VoteType;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -20,7 +19,6 @@ public interface VoteCommandUseCase {
     void cancel(Long voteId, Long userId);
 
     record VoteCreateCommand(
-            VoteType type,
             String title,
             String content,
             String thumbnailUrl,
