@@ -18,15 +18,11 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
 
     List<Vote> findAllByIdIn(List<Long> ids);
 
-    Slice<Vote> findByTypeOrderByEndAtDesc(VoteType type, Pageable pageable);
+    @Query("SELECT v FROM Vote v WHERE v.endAt > :now ORDER BY v.id DESC")
+    Slice<Vote> findByEndAtAfterOrderByIdDesc(@Param("now") Instant now, Pageable pageable);
 
-    Slice<Vote> findByTypeAndIdLessThanOrderByEndAtDesc(VoteType type, Long cursor, Pageable pageable);
-
-    @Query("SELECT v FROM Vote v WHERE v.type = :type AND v.endAt > :now ORDER BY v.id DESC")
-    Slice<Vote> findByTypeAndEndAtAfterOrderByIdDesc(@Param("type") VoteType type, @Param("now") Instant now, Pageable pageable);
-
-    @Query("SELECT v FROM Vote v WHERE v.type = :type AND v.id < :cursor AND v.endAt > :now ORDER BY v.id DESC")
-    Slice<Vote> findByTypeAndIdLessThanAndEndAtAfterOrderByIdDesc(@Param("type") VoteType type, @Param("cursor") Long cursor, @Param("now") Instant now, Pageable pageable);
+    @Query("SELECT v FROM Vote v WHERE v.id < :cursor AND v.endAt > :now ORDER BY v.id DESC")
+    Slice<Vote> findByIdLessThanAndEndAtAfterOrderByIdDesc(@Param("cursor") Long cursor, @Param("now") Instant now, Pageable pageable);
 
     @Query("select v from Vote v join VoteParticipation vp on vp.voteId = v.id " +
             "where vp.userId = :userId and v.endAt > current_timestamp " +

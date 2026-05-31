@@ -44,11 +44,11 @@ class VoteResultQueryServiceTest {
                 voteRepository, voteOptionRepository, voteParticipationRepository, userRepository, CLOCK);
 
         Clock pastClock = Clock.fixed(Instant.parse("2025-05-30T00:00:00Z"), ZoneOffset.UTC);
-        endedVote = Vote.create(VoteType.GENERAL, "제목", null, "thumb.png", null,
+        endedVote = Vote.create("제목", null, "thumb.png", null,
                 Duration.ofHours(24), pastClock);
 
         Clock recentClock = Clock.fixed(Instant.parse("2025-06-01T00:00:00Z"), ZoneOffset.UTC);
-        ongoingVote = Vote.create(VoteType.GENERAL, "진행중", null, "thumb.png", null,
+        ongoingVote = Vote.create("진행중", null, "thumb.png", null,
                 Duration.ofHours(24), recentClock);
     }
 

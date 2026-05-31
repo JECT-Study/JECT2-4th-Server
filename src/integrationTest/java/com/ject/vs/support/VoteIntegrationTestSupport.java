@@ -20,7 +20,6 @@ public abstract class VoteIntegrationTestSupport extends BaseIntegrationTest {
 
     protected Vote createOngoingVote(String title) {
         Vote vote = Vote.create(
-                VoteType.GENERAL,
                 title,
                 "content for " + title,
                 "https://example.com/thumb.jpg",

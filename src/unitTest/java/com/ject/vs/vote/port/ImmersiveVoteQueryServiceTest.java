@@ -44,7 +44,7 @@ class ImmersiveVoteQueryServiceTest {
     @Mock private Clock clock;
 
     private Vote makeVote(Duration duration) {
-        return Vote.create(VoteType.IMMERSIVE, "몰입", null, "t", "img.png", duration, FIXED_CLOCK);
+        return Vote.create("몰입", null, "t", "img.png", duration, FIXED_CLOCK);
     }
 
     @Nested
@@ -58,7 +58,7 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void cursor_없을때_타입_정렬_쿼리_사용() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
+            given(voteRepository.findByEndAtAfterOrderByIdDesc(any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
@@ -74,8 +74,8 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void cursor_있을때_cursor_기반_쿼리_사용() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeAndIdLessThanAndEndAtAfterOrderByIdDesc(
-                    eq(VoteType.IMMERSIVE), eq(100L), any(), any()))
+            given(voteRepository.findByIdLessThanAndEndAtAfterOrderByIdDesc(
+                    eq(100L), any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
@@ -91,7 +91,7 @@ class ImmersiveVoteQueryServiceTest {
         void hasNext_true이면_nextCursor_반환() {
             Vote v1 = makeVote(Duration.ofHours(24));
             Vote v2 = makeVote(Duration.ofHours(23));
-            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
+            given(voteRepository.findByEndAtAfterOrderByIdDesc(any(), any()))
                     .willReturn(new SliceImpl<>(List.of(v1, v2), PageRequest.of(0, 2), true));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
@@ -106,7 +106,7 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void 회원_userId로_mySelectedOptionId_조회() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
+            given(voteRepository.findByEndAtAfterOrderByIdDesc(any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
@@ -124,7 +124,7 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void 비회원_anonymousId로_mySelectedOptionId_조회() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
+            given(voteRepository.findByEndAtAfterOrderByIdDesc(any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
@@ -142,7 +142,7 @@ class ImmersiveVoteQueryServiceTest {
         @Test
         void 미참여시_mySelectedOptionId_null() {
             Vote vote = makeVote(Duration.ofHours(24));
-            given(voteRepository.findByTypeAndEndAtAfterOrderByIdDesc(eq(VoteType.IMMERSIVE), any(), any()))
+            given(voteRepository.findByEndAtAfterOrderByIdDesc(any(), any()))
                     .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
             given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
             given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());

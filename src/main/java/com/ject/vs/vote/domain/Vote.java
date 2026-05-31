@@ -1,7 +1,6 @@
 package com.ject.vs.vote.domain;
 
 import com.ject.vs.common.domain.BaseTimeEntity;
-import com.ject.vs.vote.exception.ImageRequiredException;
 import com.ject.vs.vote.exception.VoteOptionNotFoundException;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -23,10 +22,6 @@ import static lombok.AccessLevel.PROTECTED;
 @NoArgsConstructor(access = PROTECTED)
 public class Vote extends BaseTimeEntity {
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private VoteType type;
-
     @Column(nullable = false)
     private String title;
 
@@ -47,14 +42,10 @@ public class Vote extends BaseTimeEntity {
     private String aiInsightHeadline;
     private String aiInsightBody;
 
-    public static Vote create(VoteType type, String title, String content,
+    public static Vote create(String title, String content,
                               String thumbnailUrl, String imageUrl,
                               Duration validityPeriod, Clock clock) {
-        if (type == VoteType.IMMERSIVE && (imageUrl == null || imageUrl.isBlank())) {
-            throw new ImageRequiredException();
-        }
         Vote vote = new Vote();
-        vote.type = type;
         vote.title = title;
         vote.content = content;
         vote.thumbnailUrl = thumbnailUrl;
