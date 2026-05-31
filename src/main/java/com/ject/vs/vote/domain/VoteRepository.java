@@ -134,13 +134,26 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     );
 
     /**
-     * 종료임박순 Keyset Pagination 전용 (복합 커서)
+     * 종료임박순 - 첫 페이지 전용 (cursor 없음)
+     * null 커서 파라미터 + IS NULL 표현식을 제거하여 Postgres/Neon 환경에서 안정적으로 동작하게 함.
      */
     @Query("""
         SELECT v FROM Vote v
         WHERE v.endAt > :now
-          AND (:lastEndAt IS NULL 
-               OR v.endAt > :lastEndAt 
+        ORDER BY v.endAt ASC, v.id ASC
+        """)
+    Slice<Vote> findFirstPageForHomeByEndingSoon(
+            @Param("now") Instant now,
+            Pageable pageable
+    );
+
+    /**
+     * 종료임박순 Keyset Pagination 전용 (복합 커서, 두 번째 페이지 이후)
+     */
+    @Query("""
+        SELECT v FROM Vote v
+        WHERE v.endAt > :now
+          AND (v.endAt > :lastEndAt 
                OR (v.endAt = :lastEndAt AND v.id > :lastId))
         ORDER BY v.endAt ASC, v.id ASC
         """)
