@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
     private final UserService userService;
     private final CookieProperties cookieProperties;
@@ -69,16 +71,27 @@ public class UserController {
     @Operation(summary = "회원 탈퇴", description = "회원을 탈퇴 처리하고 인증 쿠키를 만료시킵니다.")
     @DeleteMapping("/profile/delete")
     public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
-        userService.deleteAccount(userId, req);
+        try {
+            log.info("=== 회원 탈퇴 요청 시작 === userId: {}, req: {}", userId, req);
 
-        // 탈퇴 시에도 로그아웃과 동일하게 access/refresh 쿠키를 만료시켜 브라우저 토큰을 제거한다.
-        ResponseCookie accessTokenCookie = expiredCookie(CookieUtil.CookieType.ACCESS_TOKEN);
-        ResponseCookie refreshTokenCookie = expiredCookie(CookieUtil.CookieType.REFRESH_TOKEN);
+            userService.deleteAccount(userId, req);
 
-        return ResponseEntity.noContent()
-                .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
-                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
-                .build();
+            ResponseCookie accessTokenCookie = expiredCookie(CookieUtil.CookieType.ACCESS_TOKEN);
+            ResponseCookie refreshTokenCookie = expiredCookie(CookieUtil.CookieType.REFRESH_TOKEN);
+
+            log.info("=== 회원 탈퇴 성공 ===");
+            return ResponseEntity.noContent()
+                    .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                    .build();
+
+        } catch (Exception e) {
+            // 👈 2. 여기가 핵심입니다. 에러가 나면 이 블록으로 들어와 로그를 남깁니다.
+            log.error("❌ [회원 탈퇴 에러 발생] 원인 메시지: {}", e.getMessage());
+            log.error("❌ 상세 에러 스택트레이스: ", e); // e 뒤에 아무것도 붙이지 않아야 전체 에러 줄번호가 찍힙니다.
+
+            throw e; // 로그만 찍고 에러는 원래대로 500으로 던져줍니다.
+        }
     }
 
     private ResponseCookie expiredCookie(String name) {
