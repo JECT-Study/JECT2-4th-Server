@@ -9,6 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -34,5 +36,22 @@ class UserServiceIntegrationTest {
         assertThat(found.getId()).isEqualTo(created.getId());
         assertThat(found.getEmail()).isEqualTo(email);
         assertThat(userRepository.findAll()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("findOrCreate는 탈퇴한 동일 이메일 사용자를 복구하지 않고 새 사용자를 생성한다")
+    void findOrCreate_createsNewUserWhenSameEmailUserIsWithdrawn() {
+        String email = "withdrawn-integration-test@example.com";
+        User withdrawn = userService.findOrCreate(email);
+        withdrawn.withdraw(Instant.parse("2026-01-01T00:00:00Z"));
+        userRepository.flush();
+
+        User rejoined = userService.findOrCreate(email);
+
+        assertThat(rejoined.getId()).isNotEqualTo(withdrawn.getId());
+        assertThat(rejoined.getEmail()).isEqualTo(email);
+        assertThat(rejoined.isWithdrawn()).isFalse();
+        assertThat(withdrawn.isWithdrawn()).isTrue();
+        assertThat(userRepository.findAll()).hasSize(2);
     }
 }
