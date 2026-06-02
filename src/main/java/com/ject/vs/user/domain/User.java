@@ -6,7 +6,6 @@ import lombok.Getter;
 
 import java.time.Instant;
 import java.time.Year;
-import java.time.temporal.ChronoUnit;
 
 @Entity
 @Getter
@@ -14,9 +13,6 @@ import java.time.temporal.ChronoUnit;
 public class User {
     /** 탈퇴 후 익명 처리된 사용자의 표시용 닉네임 */
     public static final String WITHDRAWN_NICKNAME = "알 수 없음";
-
-    /** 탈퇴 후 동일 이메일 재가입 제한 기간(일) */
-    private static final long REREGISTER_RESTRICTION_DAYS = 30;
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -75,7 +71,7 @@ public class User {
     /**
      * 회원 탈퇴(soft delete). 사용자 행은 보존하되 식별 정보를 익명화한다.
      * 닉네임은 "알 수 없음"으로 바꿔 투표/채팅 등 잔존 데이터에 익명으로 노출되도록 한다.
-     * 이메일은 30일 재가입 제한 판정을 위해 유지한다.
+     * 이메일은 재가입 시 기존 탈퇴 계정을 복구하지 않고 새 계정을 만들 수 있도록 유지한다.
      */
     public void withdraw(Instant withdrawnAt) {
         this.nickname = WITHDRAWN_NICKNAME;
@@ -90,13 +86,4 @@ public class User {
         return this.userStatus == UserStatus.WITHDRAWN;
     }
 
-    /**
-     * 탈퇴 후 재가입 제한 기간(30일) 이내인지 여부.
-     */
-    public boolean isReregisterRestricted(Instant now) {
-        if (withdrawnAt == null) {
-            return false;
-        }
-        return now.isBefore(withdrawnAt.plus(REREGISTER_RESTRICTION_DAYS, ChronoUnit.DAYS));
-    }
 }
