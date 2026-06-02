@@ -41,6 +41,13 @@ public class UserService {
         return new NicknameCheckResponse(userRepository.isNicknameAvailable(nickName));
     }
 
+    public NicknameCheckResponse checkNicknameSlang(String nickName, Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        return new NicknameCheckResponse(!wordService.containSlang(nickName));
+    }
+
     public UserProfileResponse setupAdditionalInfo(UserExtraInfo userInfo, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));

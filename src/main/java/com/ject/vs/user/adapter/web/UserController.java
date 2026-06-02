@@ -41,6 +41,11 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/nickname/slang")
+    public ResponseEntity<NicknameCheckResponse> checkNicknameSlang(@AuthenticationPrincipal Long userId, @RequestBody UserNicknameRec nickname) {
+        return ResponseEntity.ok(userService.checkNicknameSlang(nickname.nickname(), userId));
+    }
+
     @Operation(summary = "닉네임 추천", description = "사용 가능한 랜덤 닉네임을 추천합니다.")
     @GetMapping("/nickname/suggest")
     public ResponseEntity<UserNicknameRec> suggestNickname(@AuthenticationPrincipal Long userId) {
