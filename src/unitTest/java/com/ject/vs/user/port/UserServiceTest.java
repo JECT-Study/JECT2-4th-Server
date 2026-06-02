@@ -21,9 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.time.Year;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -120,28 +118,8 @@ class UserServiceTest {
         private static final String EMAIL = "user@example.com";
 
         @Test
-        @DisplayName("탈퇴 후 30일 이내 동일 이메일이면 재가입이 제한된다")
-        void restrictedWithinReregisterWindow() {
-            User withdrawn = User.createWithEmail(EMAIL);
-            withdrawn.withdraw(Instant.now()); // 방금 탈퇴 → 30일 이내
-            given(userRepository.findByEmailAndUserStatus(EMAIL, UserStatus.WITHDRAWN))
-                    .willReturn(List.of(withdrawn));
-
-            assertThatThrownBy(() -> userService.findOrCreate(EMAIL))
-                    .isInstanceOf(BusinessException.class)
-                    .extracting(e -> ((BusinessException) e).getErrorCode())
-                    .isEqualTo(UserErrorCode.REREGISTRATION_RESTRICTED);
-
-            verify(userRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("탈퇴 후 30일이 지났고 활성 계정이 없으면 기존 정보를 복구하지 않고 새 row를 생성한다")
-        void createsNewRowAfterRestrictionExpired() {
-            User expiredWithdrawn = User.createWithEmail(EMAIL);
-            expiredWithdrawn.withdraw(Instant.now().minus(31, ChronoUnit.DAYS)); // 31일 전 탈퇴
-            given(userRepository.findByEmailAndUserStatus(EMAIL, UserStatus.WITHDRAWN))
-                    .willReturn(List.of(expiredWithdrawn));
+        @DisplayName("탈퇴 이력이 있어도 활성 계정이 없으면 재가입을 위해 새 row를 생성한다")
+        void createsNewRowWhenOnlyWithdrawnUserExists() {
             given(userRepository.findByEmailAndUserStatusNot(EMAIL, UserStatus.WITHDRAWN))
                     .willReturn(Optional.empty());
             User newUser = User.createWithEmail(EMAIL);
@@ -150,8 +128,6 @@ class UserServiceTest {
             User result = userService.findOrCreate(EMAIL);
 
             assertThat(result).isSameAs(newUser);
-            // 기존 탈퇴 계정은 그대로 두고(복구하지 않고) 새 row를 만든다
-            assertThat(expiredWithdrawn.isWithdrawn()).isTrue();
             verify(userRepository, times(1)).save(any(User.class));
         }
 
@@ -159,8 +135,6 @@ class UserServiceTest {
         @DisplayName("탈퇴 이력이 없고 활성 계정이 있으면 신규 저장 없이 기존 계정을 반환한다")
         void returnsActiveUserWithoutSaving() {
             User active = User.createWithEmail(EMAIL);
-            given(userRepository.findByEmailAndUserStatus(EMAIL, UserStatus.WITHDRAWN))
-                    .willReturn(List.of());
             given(userRepository.findByEmailAndUserStatusNot(EMAIL, UserStatus.WITHDRAWN))
                     .willReturn(Optional.of(active));
 
@@ -173,8 +147,6 @@ class UserServiceTest {
         @Test
         @DisplayName("탈퇴 이력도 활성 계정도 없으면 신규 사용자를 생성한다")
         void createsNewUserWhenNoneExists() {
-            given(userRepository.findByEmailAndUserStatus(EMAIL, UserStatus.WITHDRAWN))
-                    .willReturn(List.of());
             given(userRepository.findByEmailAndUserStatusNot(EMAIL, UserStatus.WITHDRAWN))
                     .willReturn(Optional.empty());
             User newUser = User.createWithEmail(EMAIL);

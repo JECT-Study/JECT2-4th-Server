@@ -24,16 +24,7 @@ public class UserService {
     private final UserImageService userImageService;
 
     public User findOrCreate(String email) {
-        Instant now = Instant.now();
-
-        // 탈퇴 후 30일 이내 동일 이메일 재가입 제한
-        boolean restricted = userRepository.findByEmailAndUserStatus(email, UserStatus.WITHDRAWN).stream()
-                .anyMatch(withdrawn -> withdrawn.isReregisterRestricted(now));
-        if (restricted) {
-            throw new BusinessException(UserErrorCode.REREGISTRATION_RESTRICTED);
-        }
-
-        // 활성 사용자(탈퇴 제외)만 조회한다. 재가입은 기존 정보를 복구하지 않고 새 row를 생성한다.
+        // 활성 사용자(탈퇴 제외)만 조회한다. 재가입은 기존 탈퇴 계정을 복구하지 않고 새 row를 생성한다.
         return userRepository.findByEmailAndUserStatusNot(email, UserStatus.WITHDRAWN)
                 .orElseGet(() -> userRepository.save(User.createWithEmail(email)));
     }
