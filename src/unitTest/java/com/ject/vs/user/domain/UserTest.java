@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,7 +30,7 @@ class UserTest {
         }
 
         @Test
-        @DisplayName("탈퇴 후에도 이메일은 재가입 제한 판정을 위해 유지된다")
+        @DisplayName("탈퇴 후에도 이메일은 새 계정 재가입 처리를 위해 유지된다")
         void keepsEmailOnWithdraw() {
             User user = User.createWithEmail("user@example.com");
 
@@ -53,52 +52,4 @@ class UserTest {
         }
     }
 
-    @Nested
-    @DisplayName("isReregisterRestricted")
-    class IsReregisterRestricted {
-
-        @Test
-        @DisplayName("탈퇴 이력이 없으면(미탈퇴) 제한되지 않는다")
-        void notRestrictedWhenNotWithdrawn() {
-            User user = User.createWithEmail("user@example.com");
-
-            assertThat(user.isReregisterRestricted(Instant.now())).isFalse();
-        }
-
-        @Test
-        @DisplayName("탈퇴 후 30일 이내면 재가입이 제한된다")
-        void restrictedWithin30Days() {
-            User user = User.createWithEmail("user@example.com");
-            Instant withdrawnAt = Instant.parse("2026-01-01T00:00:00Z");
-            user.withdraw(withdrawnAt);
-
-            Instant day29 = withdrawnAt.plus(29, ChronoUnit.DAYS);
-
-            assertThat(user.isReregisterRestricted(day29)).isTrue();
-        }
-
-        @Test
-        @DisplayName("탈퇴 후 정확히 30일이 지나면 제한되지 않는다")
-        void notRestrictedAtExactly30Days() {
-            User user = User.createWithEmail("user@example.com");
-            Instant withdrawnAt = Instant.parse("2026-01-01T00:00:00Z");
-            user.withdraw(withdrawnAt);
-
-            Instant day30 = withdrawnAt.plus(30, ChronoUnit.DAYS);
-
-            assertThat(user.isReregisterRestricted(day30)).isFalse();
-        }
-
-        @Test
-        @DisplayName("탈퇴 후 30일이 지나면 재가입이 제한되지 않는다")
-        void notRestrictedAfter30Days() {
-            User user = User.createWithEmail("user@example.com");
-            Instant withdrawnAt = Instant.parse("2026-01-01T00:00:00Z");
-            user.withdraw(withdrawnAt);
-
-            Instant day31 = withdrawnAt.plus(31, ChronoUnit.DAYS);
-
-            assertThat(user.isReregisterRestricted(day31)).isFalse();
-        }
-    }
 }
