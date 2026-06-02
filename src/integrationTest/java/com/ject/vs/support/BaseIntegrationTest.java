@@ -1,9 +1,7 @@
 package com.ject.vs.support;
 
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Assumptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -28,7 +26,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class BaseIntegrationTest {
 
     protected static final Instant FIXED_NOW = Instant.parse("2025-06-01T12:00:00Z");
@@ -53,14 +51,4 @@ public abstract class BaseIntegrationTest {
         when(clock.getZone()).thenReturn(ZoneOffset.UTC);
     }
 
-    @BeforeAll
-    static void ensureContainerOrSkip() {
-        try {
-            if (!POSTGRES.isRunning()) {
-                POSTGRES.start();
-            }
-        } catch (Exception ex) {
-            Assumptions.abort("Docker를 사용할 수 없어 Testcontainers 기반 통합 테스트를 건너뜁니다: " + ex.getMessage());
-        }
-    }
 }
