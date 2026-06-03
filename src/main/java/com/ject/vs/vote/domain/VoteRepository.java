@@ -149,7 +149,7 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     @Query("""
         SELECT v FROM Vote v
         WHERE v.endAt > :now
-          AND (v.endAt > :lastEndAt 
+          AND (v.endAt > :lastEndAt
                OR (v.endAt = :lastEndAt AND v.id > :lastId))
         ORDER BY v.endAt ASC, v.id ASC
         """)
@@ -159,4 +159,40 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
             @Param("now") Instant now,
             Pageable pageable
     );
+
+    // ===== 몰입형 투표 랜덤 조회 =====
+
+    /**
+     * 진행 중인 투표 중 excludeIds를 제외하고 랜덤으로 조회
+     */
+    @Query("""
+        SELECT v FROM Vote v
+        WHERE v.endAt > :now
+          AND v.id NOT IN :excludeIds
+        ORDER BY FUNCTION('RANDOM')
+        """)
+    Slice<Vote> findRandomExcluding(
+            @Param("now") Instant now,
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
+
+    /**
+     * 진행 중인 투표 랜덤 조회 (excludeIds 없는 첫 조회용)
+     */
+    @Query("""
+        SELECT v FROM Vote v
+        WHERE v.endAt > :now
+        ORDER BY FUNCTION('RANDOM')
+        """)
+    Slice<Vote> findRandom(
+            @Param("now") Instant now,
+            Pageable pageable
+    );
+
+    /**
+     * 진행 중인 투표 총 개수 조회 (무한 순환 판단용)
+     */
+    @Query("SELECT COUNT(v) FROM Vote v WHERE v.endAt > :now")
+    long countOngoing(@Param("now") Instant now);
 }
