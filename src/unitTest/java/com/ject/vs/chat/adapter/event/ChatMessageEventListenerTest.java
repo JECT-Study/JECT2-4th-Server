@@ -10,7 +10,6 @@ import com.ject.vs.chat.port.in.dto.UnreadPayload;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.port.in.UserQueryUseCase;
-import com.ject.vs.vote.domain.VoteOption;
 import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
@@ -64,9 +63,8 @@ class ChatMessageEventListenerTest {
     void setUpDefaults() {
         lenient().when(userQueryUseCase.getUser(any())).thenReturn(mock(User.class));
 
-        VoteOption dummyOption = mock(VoteOption.class);
-        lenient().when(dummyOption.getCode()).thenReturn(VoteOptionCode.A);
-        lenient().when(voteQueryUseCase.getSelectedOption(anyLong(), anyLong())).thenReturn(dummyOption);
+        lenient().when(voteQueryUseCase.findSelectedOptionCode(anyLong(), anyLong()))
+                .thenReturn(Optional.of(VoteOptionCode.A));
     }
 
     @Nested
