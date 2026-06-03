@@ -12,6 +12,11 @@ public interface ImmersiveVoteQueryUseCase {
 
     ImmersiveLiveResult getLive(Long voteId);
 
+    /**
+     * 랜덤 다음 투표 조회 (excludeIds 제외, 무한 순환)
+     */
+    ImmersiveNextResult getNextRandom(List<Long> excludeIds, int size, Long userId, String anonymousId);
+
     record ImmersiveFeedResult(List<ImmersiveFeedItem> items, Long nextCursor, boolean hasNext) {
     }
 
@@ -43,5 +48,11 @@ public interface ImmersiveVoteQueryUseCase {
     }
 
     record LiveOptionItem(Long optionId, long voteCount, int ratio) {
+    }
+
+    /**
+     * 랜덤 다음 투표 조회 결과 (무한 순환용)
+     */
+    record ImmersiveNextResult(List<ImmersiveFeedItem> items) {
     }
 }
