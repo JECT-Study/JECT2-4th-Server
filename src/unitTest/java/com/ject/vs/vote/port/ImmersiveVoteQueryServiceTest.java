@@ -142,6 +142,34 @@ class ImmersiveVoteQueryServiceTest {
         }
 
         @Test
+        void imageUrl_있으면_그대로_노출() {
+            Vote vote = makeVote(Duration.ofHours(24));   // thumbnailUrl="t", imageUrl="img.png"
+            given(voteRepository.findByEndAtAfterOrderByIdDesc(any(), any()))
+                    .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
+            given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
+            given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
+            given(voteParticipationRepository.countByVoteId(any())).willReturn(0L);
+
+            ImmersiveFeedResult result = service.getFeed(null, null, 10, null, null);
+
+            assertThat(result.items().get(0).imageUrl()).isEqualTo("img.png");
+        }
+
+        @Test
+        void imageUrl_null이면_thumbnailUrl로_폴백() {
+            Vote vote = Vote.create("몰입", null, "thumb.png", null, Duration.ofHours(24), FIXED_CLOCK);
+            given(voteRepository.findByEndAtAfterOrderByIdDesc(any(), any()))
+                    .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
+            given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
+            given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
+            given(voteParticipationRepository.countByVoteId(any())).willReturn(0L);
+
+            ImmersiveFeedResult result = service.getFeed(null, null, 10, null, null);
+
+            assertThat(result.items().get(0).imageUrl()).isEqualTo("thumb.png");
+        }
+
+        @Test
         void 미참여시_mySelectedOptionId_null() {
             Vote vote = makeVote(Duration.ofHours(24));
             given(voteRepository.findByEndAtAfterOrderByIdDesc(any(), any()))
