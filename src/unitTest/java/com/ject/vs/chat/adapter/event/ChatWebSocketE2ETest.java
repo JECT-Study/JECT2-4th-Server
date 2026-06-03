@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.chat.adapter.web.dto.SendMessageRequest;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
-import com.ject.vs.notification.port.out.PushSenderPort;
+import com.ject.vs.image.port.ImageService;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.util.CookieUtil;
@@ -47,6 +47,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ChatWebSocketE2ETest {
 
+    @MockitoBean
+    private ImageService imageService;
 
     @LocalServerPort
     private int port;

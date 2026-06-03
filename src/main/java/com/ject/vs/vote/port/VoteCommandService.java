@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.image.port.ImageService;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.exception.InvalidOptionException;
 import com.ject.vs.vote.exception.VoteEndedException;
@@ -22,6 +23,7 @@ public class VoteCommandService implements VoteCommandUseCase {
     private final VoteOptionRepository voteOptionRepository;
     private final VoteParticipationRepository voteParticipationRepository;
     private final GuestFreeVoteService guestFreeVoteService;
+    private final Optional<ImageService> imageService;
     private final Clock clock;
 
     @Override
@@ -29,6 +31,27 @@ public class VoteCommandService implements VoteCommandUseCase {
         Vote vote = Vote.create(
                 cmd.title(), cmd.content(),
                 cmd.thumbnailUrl(), cmd.imageUrl(),
+                cmd.duration().getValue(),
+                clock
+        );
+        Vote saved = voteRepository.save(vote);
+        voteOptionRepository.save(VoteOption.of(saved, cmd.optionA(), 0));
+        voteOptionRepository.save(VoteOption.of(saved, cmd.optionB(), 1));
+        return VoteCreateResult.from(saved, clock);
+    }
+
+    @Override
+    public VoteCreateResult createWithImages(VoteCreateWithImagesCommand cmd) {
+        ImageService service = imageService.orElseThrow(() ->
+                new IllegalStateException("ImageService is not available. S3 configuration may be missing."));
+        String thumbnailUrl = service.upload(cmd.thumbnailFile());
+        String imageUrl = cmd.imageFile() != null && !cmd.imageFile().isEmpty()
+                ? service.upload(cmd.imageFile())
+                : null;
+
+        Vote vote = Vote.create(
+                cmd.title(), cmd.content(),
+                thumbnailUrl, imageUrl,
                 cmd.duration().getValue(),
                 clock
         );

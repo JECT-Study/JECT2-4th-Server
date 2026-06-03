@@ -7,7 +7,7 @@ import com.ject.vs.chat.domain.ChatRoomUnread;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
-import com.ject.vs.notification.port.out.PushSenderPort;
+import com.ject.vs.image.port.ImageService;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.util.CookieUtil;
@@ -17,7 +17,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
@@ -47,8 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ChatWebSocketIntegrationTest {
 
-    @MockBean
-    PushSenderPort pushSenderPort;
+    @MockitoBean
+    private ImageService imageService;
 
     @LocalServerPort
     private int port;
