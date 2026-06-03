@@ -3,6 +3,8 @@ package com.ject.vs.vote.adapter.web;
 import com.ject.vs.config.AnonymousId;
 import com.ject.vs.vote.adapter.web.dto.ImmersiveFeedResponse;
 import com.ject.vs.vote.adapter.web.dto.ImmersiveLiveResponse;
+import com.ject.vs.vote.adapter.web.dto.ImmersiveNextRequest;
+import com.ject.vs.vote.adapter.web.dto.ImmersiveNextResponse;
 import com.ject.vs.vote.adapter.web.dto.ImmersiveParticipateResponse;
 import com.ject.vs.vote.adapter.web.dto.ParticipateRequest;
 import com.ject.vs.vote.adapter.web.dto.ShareLinkResponse;
@@ -62,5 +64,16 @@ public class ImmersiveVoteController {
     @GetMapping("/{voteId}/share")
     public ShareLinkResponse getShareLink(@PathVariable Long voteId) {
         return ShareLinkResponse.from(voteResultQueryUseCase.getShareLink(voteId));
+    }
+
+    @Operation(summary = "랜덤 다음 투표 조회", description = "excludeIds를 제외한 진행 중인 투표를 랜덤으로 조회합니다. 모든 투표 소진 시 빈 배열 반환 → 클라이언트에서 excludeIds 초기화 후 재요청 (무한 순환)")
+    @PostMapping("/next")
+    public ImmersiveNextResponse getNextRandom(
+            @RequestBody @Valid ImmersiveNextRequest request,
+            @AuthenticationPrincipal Long userId,
+            @Parameter(hidden = true) @AnonymousId String anonymousId) {
+        return ImmersiveNextResponse.from(
+                immersiveVoteQueryUseCase.getNextRandom(request.excludeIds(), request.size(), userId, anonymousId)
+        );
     }
 }
