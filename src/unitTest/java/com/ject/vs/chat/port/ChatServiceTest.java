@@ -15,7 +15,6 @@ import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.port.in.UserQueryUseCase;
-import com.ject.vs.vote.domain.VoteOption;
 import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
@@ -61,9 +60,6 @@ class ChatServiceTest {
     @Mock
     private UserQueryUseCase userQueryUseCase;
 
-    @Mock
-    private VoteOption selectedOption;
-
     @Nested
     class sendMessage {
 
@@ -98,8 +94,7 @@ class ChatServiceTest {
             given(sender.getNickname()).willReturn("테스트유저");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
-            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
-            given(selectedOption.getCode()).willReturn(VoteOptionCode.A);
+            given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.A));
 
             // when
             MessageResult result = chatService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
@@ -206,14 +201,14 @@ class ChatServiceTest {
             given(sender.getNickname()).willReturn("");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
-            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
-            given(selectedOption.getCode()).willReturn(null);
+            given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.empty());
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, null, 30);
 
             // then
             assertThat(result.messages()).hasSize(1);
+            assertThat(result.messages().getFirst().senderVoteOption()).isNull();
             assertThat(result.hasNext()).isFalse();
             verify(chatMessageRepository).findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class));
         }
@@ -228,8 +223,7 @@ class ChatServiceTest {
             given(sender.getNickname()).willReturn("");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
-            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
-            given(selectedOption.getCode()).willReturn(null);
+            given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, 100L, 30);

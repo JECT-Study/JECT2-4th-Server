@@ -22,6 +22,9 @@ public interface VoteQueryUseCase {
 
     VoteOption getSelectedOption(Long voteId, Long userId);
 
+    /** 투표 취소 등 참여 이력이 없으면 empty — 채팅 senderVoteOption null 처리용 */
+    Optional<VoteOptionCode> findSelectedOptionCode(Long voteId, Long userId);
+
     int getParticipantCount(Long voteId);
 
     /** 채팅 도메인 getChatList() 호환용 — 실제 Vote.endAt 기준으로 필터링 */
