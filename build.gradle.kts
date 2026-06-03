@@ -87,6 +87,9 @@ dependencies {
 	// Google Gemini AI
 	implementation(Dependencies.Ai.GEMINI)
 
+	// Cache (Caffeine)
+	implementation(Dependencies.Cache.CAFFEINE)
+
 	compileOnly(Dependencies.Lombok.LOMBOK)
 	annotationProcessor(Dependencies.Lombok.LOMBOK)
 	testImplementation(Dependencies.SpringBoot.TEST)
