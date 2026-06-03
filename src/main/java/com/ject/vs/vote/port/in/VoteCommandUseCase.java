@@ -3,6 +3,7 @@ package com.ject.vs.vote.port.in;
 import com.ject.vs.vote.domain.Vote;
 import com.ject.vs.vote.domain.VoteDuration;
 import com.ject.vs.vote.domain.VoteStatus;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -11,6 +12,8 @@ import java.util.List;
 public interface VoteCommandUseCase {
 
     VoteCreateResult create(VoteCreateCommand command);
+
+    VoteCreateResult createWithImages(VoteCreateWithImagesCommand command);
 
     ParticipateResult participateAsMember(Long voteId, Long userId, Long optionId);
 
@@ -23,6 +26,17 @@ public interface VoteCommandUseCase {
             String content,
             String thumbnailUrl,
             String imageUrl,
+            VoteDuration duration,
+            String optionA,
+            String optionB
+    ) {
+    }
+
+    record VoteCreateWithImagesCommand(
+            String title,
+            String content,
+            MultipartFile thumbnailFile,
+            MultipartFile imageFile,
             VoteDuration duration,
             String optionA,
             String optionB
