@@ -89,6 +89,25 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
         return new ImmersiveLiveResult(liveOptions, 0, (int) total);
     }
 
+    @Override
+    public ImmersiveNextResult getNextRandom(List<Long> excludeIds, int size, Long userId, String anonymousId) {
+        Instant now = Instant.now(clock);
+        PageRequest pageable = PageRequest.of(0, size);
+
+        Slice<Vote> slice;
+        if (excludeIds == null || excludeIds.isEmpty()) {
+            slice = voteRepository.findRandom(now, pageable);
+        } else {
+            slice = voteRepository.findRandomExcluding(now, excludeIds, pageable);
+        }
+
+        List<ImmersiveFeedItem> items = slice.getContent().stream()
+                .map(v -> toFeedItem(v, userId, anonymousId))
+                .toList();
+
+        return new ImmersiveNextResult(items);
+    }
+
     private ImmersiveFeedItem toFeedItem(Vote vote, Long userId, String anonymousId) {
         Long voteId = vote.getId();
         long total = voteParticipationRepository.countByVoteId(voteId);
@@ -140,11 +159,14 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
 
         int commentCount = (int) chatMessageRepository.countByVoteId(voteId);
 
+        // imageFile 없이 생성된 투표는 imageUrl이 null이므로 thumbnailUrl로 폴백한다.
+        String imageUrl = vote.getImageUrl() != null ? vote.getImageUrl() : vote.getThumbnailUrl();
+
         return new ImmersiveFeedItem(
                 voteId,
                 vote.getTitle(),
                 vote.getContent(),
-                vote.getImageUrl(),
+                imageUrl,
                 vote.getEndAt(),
                 options,
                 voted,
