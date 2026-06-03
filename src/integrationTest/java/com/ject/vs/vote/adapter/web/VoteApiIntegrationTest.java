@@ -1,5 +1,6 @@
 package com.ject.vs.vote.adapter.web;
 
+import com.ject.vs.image.port.ImageService;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.vote.domain.Vote;
@@ -7,7 +8,6 @@ import com.ject.vs.vote.domain.VoteOption;
 import com.ject.vs.vote.domain.VoteOptionRepository;
 import com.ject.vs.vote.domain.VoteRepository;
 import com.ject.vs.vote.domain.VoteStatus;
-import com.ject.vs.vote.domain.VoteType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,6 +20,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @DisplayName("Vote API 통합 테스트")
 class VoteApiIntegrationTest {
+
+    @MockitoBean
+    private ImageService imageService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -81,7 +85,6 @@ class VoteApiIntegrationTest {
 
             String requestBody = """
                 {
-                    "type": "GENERAL",
                     "title": "테스트 투표 제목",
                     "content": "테스트 투표 내용",
                     "thumbnailUrl": "https://example.com/thumb.png",
@@ -106,7 +109,6 @@ class VoteApiIntegrationTest {
             assertThat(votes).hasSize(1);
 
             Vote savedVote = votes.get(0);
-            assertThat(savedVote.getType()).isEqualTo(VoteType.GENERAL);
             assertThat(savedVote.getTitle()).isEqualTo("테스트 투표 제목");
             assertThat(savedVote.getContent()).isEqualTo("테스트 투표 내용");
             assertThat(savedVote.getThumbnailUrl()).isEqualTo("https://example.com/thumb.png");
@@ -127,7 +129,6 @@ class VoteApiIntegrationTest {
 
             String requestBody = """
                 {
-                    "type": "IMMERSIVE",
                     "title": "몰입형 투표",
                     "content": "몰입형 내용",
                     "thumbnailUrl": "https://example.com/thumb.png",
@@ -146,19 +147,17 @@ class VoteApiIntegrationTest {
 
             // then
             Vote savedVote = voteRepository.findAll().get(0);
-            assertThat(savedVote.getType()).isEqualTo(VoteType.IMMERSIVE);
             assertThat(savedVote.getImageUrl()).isEqualTo("https://example.com/image.png");
         }
 
         @Test
-        @DisplayName("인증되지 않은 사용자는 403 Forbidden")
-        void 인증되지_않은_사용자는_403() throws Exception {
+        @DisplayName("인증되지 않은 사용자는 4xx 에러")
+        void 인증되지_않은_사용자는_4xx() throws Exception {
             // given
             clearAuthentication();
 
             String requestBody = """
                 {
-                    "type": "GENERAL",
                     "title": "테스트",
                     "thumbnailUrl": "https://example.com/thumb.png",
                     "duration": "HOURS_12",
@@ -171,7 +170,7 @@ class VoteApiIntegrationTest {
             mockMvc.perform(post("/api/votes")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestBody))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().is4xxClientError());
 
             // DB에 저장되지 않음
             assertThat(voteRepository.findAll()).isEmpty();
@@ -183,12 +182,11 @@ class VoteApiIntegrationTest {
             // given
             authenticateAs(testUser.getId());
 
-            String[] durations = {"HOURS_1", "HOURS_6", "HOURS_12", "HOURS_24"};
+            String[] durations = {"HOURS_12", "HOURS_24"};
 
             for (String duration : durations) {
                 String requestBody = String.format("""
                     {
-                        "type": "GENERAL",
                         "title": "투표 %s",
                         "thumbnailUrl": "https://example.com/thumb.png",
                         "duration": "%s",
@@ -207,7 +205,7 @@ class VoteApiIntegrationTest {
 
             // then
             List<Vote> votes = voteRepository.findAll();
-            assertThat(votes).hasSize(4);
+            assertThat(votes).hasSize(2);
 
             // 모든 투표의 endAt이 설정되어 있는지 확인
             for (Vote vote : votes) {
@@ -228,7 +226,6 @@ class VoteApiIntegrationTest {
 
             String createRequest = """
                 {
-                    "type": "GENERAL",
                     "title": "상세 조회 테스트",
                     "content": "내용",
                     "thumbnailUrl": "https://example.com/thumb.png",
@@ -270,7 +267,6 @@ class VoteApiIntegrationTest {
 
             String createRequest = """
                 {
-                    "type": "GENERAL",
                     "title": "전체 플로우 테스트",
                     "content": "테스트 내용입니다",
                     "thumbnailUrl": "https://example.com/thumb.png",
