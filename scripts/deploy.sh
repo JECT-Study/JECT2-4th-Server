@@ -151,6 +151,8 @@ if [ -n "${GEMINI_PROJECT_ID:-}" ]; then
   DOCKER_OPTS+=(
     -e GEMINI_PROJECT_ID
     -e GEMINI_ENABLED
+    -e GEMINI_MODEL
+    -e GEMINI_LOCATION
   )
   log "Gemini 설정 추가됨"
 fi

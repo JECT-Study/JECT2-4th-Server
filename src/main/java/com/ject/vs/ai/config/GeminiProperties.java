@@ -11,10 +11,13 @@ public record GeminiProperties(
 ) {
     public GeminiProperties {
         if (location == null || location.isBlank()) {
-            location = "asia-northeast3";
+            // asia-northeast3(서울)은 Gemini 모델 가용성이 없어 NOT_FOUND가 발생한다.
+            // Gemini 모델이 보장되는 리전을 기본값으로 사용한다. (필요 시 GEMINI_LOCATION으로 override)
+            location = "us-central1";
         }
         if (model == null || model.isBlank()) {
-            model = "gemini-1.5-flash";
+            // gemini-1.5 계열은 retired. 현행 모델을 기본값으로 사용한다. (필요 시 GEMINI_MODEL로 override)
+            model = "gemini-2.0-flash";
         }
     }
 }
