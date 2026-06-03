@@ -10,8 +10,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Clock;
@@ -50,7 +48,6 @@ class VoteRepositoryIntegrationTest {
         void 일반형_투표_저장_시_모든_필드가_DB에_저장된다() {
             // given
             Vote vote = Vote.create(
-                    VoteType.GENERAL,
                     "테스트 제목",
                     "테스트 내용",
                     "https://example.com/thumb.png",
@@ -68,7 +65,6 @@ class VoteRepositoryIntegrationTest {
             Vote foundVote = voteRepository.findById(savedVote.getId()).orElseThrow();
 
             assertThat(foundVote.getId()).isNotNull();
-            assertThat(foundVote.getType()).isEqualTo(VoteType.GENERAL);
             assertThat(foundVote.getTitle()).isEqualTo("테스트 제목");
             assertThat(foundVote.getContent()).isEqualTo("테스트 내용");
             assertThat(foundVote.getThumbnailUrl()).isEqualTo("https://example.com/thumb.png");
@@ -83,7 +79,6 @@ class VoteRepositoryIntegrationTest {
         void 몰입형_투표_저장_시_imageUrl이_함께_저장된다() {
             // given
             Vote vote = Vote.create(
-                    VoteType.IMMERSIVE,
                     "몰입형 제목",
                     "몰입형 내용",
                     "https://example.com/thumb.png",
@@ -100,7 +95,6 @@ class VoteRepositoryIntegrationTest {
             // then
             Vote foundVote = voteRepository.findById(savedVote.getId()).orElseThrow();
 
-            assertThat(foundVote.getType()).isEqualTo(VoteType.IMMERSIVE);
             assertThat(foundVote.getImageUrl()).isEqualTo("https://example.com/image.png");
             assertThat(foundVote.getEndAt()).isEqualTo(BASE_TIME.plus(Duration.ofHours(48)));
         }
@@ -109,11 +103,11 @@ class VoteRepositoryIntegrationTest {
         @DisplayName("다양한 duration으로 투표 저장 시 endAt이 정확히 계산되어 저장된다")
         void 다양한_duration으로_투표_저장_시_endAt이_정확히_계산된다() {
             // given
-            Vote vote1h = Vote.create(VoteType.GENERAL, "1시간", null, "thumb", null,
+            Vote vote1h = Vote.create("1시간", null, "thumb", null,
                     Duration.ofHours(1), FIXED_CLOCK);
-            Vote vote12h = Vote.create(VoteType.GENERAL, "12시간", null, "thumb", null,
+            Vote vote12h = Vote.create("12시간", null, "thumb", null,
                     Duration.ofHours(12), FIXED_CLOCK);
-            Vote vote24h = Vote.create(VoteType.GENERAL, "24시간", null, "thumb", null,
+            Vote vote24h = Vote.create("24시간", null, "thumb", null,
                     Duration.ofHours(24), FIXED_CLOCK);
 
             // when
@@ -142,7 +136,7 @@ class VoteRepositoryIntegrationTest {
         @DisplayName("투표와 옵션이 함께 저장되고 조회된다")
         void 투표와_옵션이_함께_저장되고_조회된다() {
             // given
-            Vote vote = Vote.create(VoteType.GENERAL, "선택 투표", "A vs B",
+            Vote vote = Vote.create("선택 투표", "A vs B",
                     "thumb", null, Duration.ofHours(24), FIXED_CLOCK);
             Vote savedVote = voteRepository.save(vote);
 
@@ -176,13 +170,13 @@ class VoteRepositoryIntegrationTest {
         void setUp() {
             // 진행 중인 투표: endAt = BASE_TIME + 24h
             ongoingVote = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "진행중 투표", null, "thumb", null,
+                    Vote.create("진행중 투표", null, "thumb", null,
                             Duration.ofHours(24), FIXED_CLOCK)
             );
 
             // 종료된 투표: endAt = BASE_TIME + 1h (조회 시점 BASE_TIME + 2h 기준으로 종료됨)
             expiredVote = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "종료된 투표", null, "thumb", null,
+                    Vote.create("종료된 투표", null, "thumb", null,
                             Duration.ofHours(1), FIXED_CLOCK)
             );
 
@@ -234,80 +228,6 @@ class VoteRepositoryIntegrationTest {
     }
 
     @Nested
-    @DisplayName("종료임박순 조회 테스트")
-    class EndingSoonQueryTest {
-
-        @Test
-        @DisplayName("findOngoingOrderByEndAtAsc는 종료 시각이 가까운 순으로 정렬한다")
-        void findOngoingOrderByEndAtAsc는_종료시각_오름차순_정렬() {
-            // given
-            Vote vote3h = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "3시간 후 종료", null, "thumb", null,
-                            Duration.ofHours(3), FIXED_CLOCK)
-            );
-            Vote vote1h = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "1시간 후 종료", null, "thumb", null,
-                            Duration.ofHours(1), FIXED_CLOCK)
-            );
-            Vote vote5h = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "5시간 후 종료", null, "thumb", null,
-                            Duration.ofHours(5), FIXED_CLOCK)
-            );
-
-            entityManager.flush();
-            entityManager.clear();
-
-            Instant now = BASE_TIME.plusSeconds(1); // 아직 모두 진행 중
-
-            // when
-            Slice<Vote> result = voteRepository.findOngoingOrderByEndAtAsc(now, PageRequest.of(0, 10));
-
-            // then
-            List<Vote> votes = result.getContent();
-            assertThat(votes).hasSize(3);
-            assertThat(votes.get(0).getTitle()).isEqualTo("1시간 후 종료");
-            assertThat(votes.get(1).getTitle()).isEqualTo("3시간 후 종료");
-            assertThat(votes.get(2).getTitle()).isEqualTo("5시간 후 종료");
-        }
-    }
-
-    @Nested
-    @DisplayName("최신순 조회 테스트")
-    class LatestQueryTest {
-
-        @Test
-        @DisplayName("findAllByOrderByIdDesc는 최신 투표부터 반환한다")
-        void findAllByOrderByIdDesc는_최신순_정렬() {
-            // given
-            Vote vote1 = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "첫번째", null, "thumb", null,
-                            Duration.ofHours(24), FIXED_CLOCK)
-            );
-            Vote vote2 = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "두번째", null, "thumb", null,
-                            Duration.ofHours(24), FIXED_CLOCK)
-            );
-            Vote vote3 = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "세번째", null, "thumb", null,
-                            Duration.ofHours(24), FIXED_CLOCK)
-            );
-
-            entityManager.flush();
-            entityManager.clear();
-
-            // when
-            Slice<Vote> result = voteRepository.findAllByOrderByIdDesc(PageRequest.of(0, 10));
-
-            // then
-            List<Vote> votes = result.getContent();
-            assertThat(votes).hasSize(3);
-            assertThat(votes.get(0).getTitle()).isEqualTo("세번째");
-            assertThat(votes.get(1).getTitle()).isEqualTo("두번째");
-            assertThat(votes.get(2).getTitle()).isEqualTo("첫번째");
-        }
-    }
-
-    @Nested
     @DisplayName("AI Insight 캐싱 테스트")
     class AiInsightCacheTest {
 
@@ -316,7 +236,7 @@ class VoteRepositoryIntegrationTest {
         void AI_Insight가_저장되고_조회된다() {
             // given
             Vote vote = voteRepository.save(
-                    Vote.create(VoteType.GENERAL, "AI 분석 투표", null, "thumb", null,
+                    Vote.create("AI 분석 투표", null, "thumb", null,
                             Duration.ofHours(24), FIXED_CLOCK)
             );
             vote.cacheAiInsight("AI 분석 헤드라인", "AI 분석 본문 내용");
