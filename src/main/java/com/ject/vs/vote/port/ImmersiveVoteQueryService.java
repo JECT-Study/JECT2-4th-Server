@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase;
@@ -26,6 +27,7 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
     private final VoteOptionRepository voteOptionRepository;
     private final VoteParticipationRepository voteParticipationRepository;
     private final VoteEmojiReactionRepository emojiReactionRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final Clock clock;
 
     @Override
@@ -136,6 +138,8 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
                     .orElse(null);
         }
 
+        int commentCount = (int) chatMessageRepository.countByVoteId(voteId);
+
         return new ImmersiveFeedItem(
                 voteId,
                 vote.getTitle(),
@@ -148,7 +152,7 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
                 emojiSummary,
                 emojiTotal,
                 myEmoji,
-                0, // TODO: commentCount
+                commentCount,
                 0  // TODO: Redis viewer count
         );
     }

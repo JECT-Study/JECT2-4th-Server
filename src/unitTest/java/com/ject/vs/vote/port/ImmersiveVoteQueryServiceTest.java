@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase.ImmersiveFeedResult;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase.ImmersiveLiveResult;
@@ -41,6 +42,7 @@ class ImmersiveVoteQueryServiceTest {
     @Mock private VoteOptionRepository voteOptionRepository;
     @Mock private VoteParticipationRepository voteParticipationRepository;
     @Mock private VoteEmojiReactionRepository emojiReactionRepository;
+    @Mock private ChatMessageRepository chatMessageRepository;
     @Mock private Clock clock;
 
     private Vote makeVote(Duration duration) {

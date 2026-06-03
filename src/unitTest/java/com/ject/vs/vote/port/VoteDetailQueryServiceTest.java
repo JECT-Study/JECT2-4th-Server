@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.port.VoteDetailQueryService.VoteDetailResult;
@@ -31,6 +32,7 @@ class VoteDetailQueryServiceTest {
     @Mock VoteOptionRepository voteOptionRepository;
     @Mock VoteParticipationRepository voteParticipationRepository;
     @Mock VoteEmojiReactionRepository emojiReactionRepository;
+    @Mock ChatMessageRepository chatMessageRepository;
 
     private VoteDetailQueryService service;
 
@@ -42,7 +44,7 @@ class VoteDetailQueryServiceTest {
     @BeforeEach
     void setUp() {
         service = new VoteDetailQueryService(
-                voteRepository, voteOptionRepository, voteParticipationRepository, emojiReactionRepository, CLOCK);
+                voteRepository, voteOptionRepository, voteParticipationRepository, emojiReactionRepository, chatMessageRepository, CLOCK);
 
         // 진행중 투표 (현재 시간 기준 24시간 후 종료)
         Clock recentClock = Clock.fixed(Instant.parse("2025-06-01T00:00:00Z"), ZoneOffset.UTC);
