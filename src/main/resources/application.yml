@@ -19,8 +19,8 @@ gemini:
   project-id: ${GEMINI_PROJECT_ID:}
   # 서울(asia-northeast3)은 Gemini 모델 미지원 → us-central1 사용. GEMINI_LOCATION으로 override 가능
   location: ${GEMINI_LOCATION:us-central1}
-  # gemini-1.5 계열 retired → 현행 모델 사용. GEMINI_MODEL로 override 가능
-  model: ${GEMINI_MODEL:gemini-2.0-flash}
+  # gemini-1.5 retired, 2.0-flash는 이 프로젝트 접근권 없음(404). 접근 확인된 2.5-flash 사용. GEMINI_MODEL로 override 가능
+  model: ${GEMINI_MODEL:gemini-2.5-flash}
   enabled: ${GEMINI_ENABLED:false}
 
 # 오늘의 추천 투표 설정 권한 (운영진 user id 목록)
