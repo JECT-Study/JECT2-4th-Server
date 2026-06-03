@@ -1,5 +1,7 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.ai.port.PersonalizedAiInsightService;
+import com.ject.vs.ai.port.in.AiInsightUseCase.AiInsightResult;
 import com.ject.vs.user.domain.Gender;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
@@ -27,6 +29,7 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
     private final VoteOptionRepository voteOptionRepository;
     private final VoteParticipationRepository voteParticipationRepository;
     private final UserRepository userRepository;
+    private final PersonalizedAiInsightService personalizedAiInsightService;
     private final Clock clock;
 
     @Override
@@ -62,9 +65,7 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
 
         if (myParticipation.isPresent()) {
             insight = buildMySelectionInsight(voteId, mySelectedOptionId, userId);
-            aiInsight = vote.hasAiInsight()
-                    ? AiInsightView.of(vote.getAiInsightHeadline(), vote.getAiInsightBody())
-                    : AiInsightView.unavailable();
+            aiInsight = generatePersonalizedAiInsight(voteId, userId, mySelectedOptionId);
         } else {
             insight = buildTotalInsight(voteId, total, userId);
             aiInsight = AiInsightView.unavailable();
@@ -84,6 +85,15 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
                 vote.getTitle(),
                 vote.getThumbnailUrl()
         );
+    }
+
+    private AiInsightView generatePersonalizedAiInsight(Long voteId, Long userId, Long selectedOptionId) {
+        Optional<AiInsightResult> result = personalizedAiInsightService
+                .getOrGenerate(voteId, userId, selectedOptionId);
+
+        return result
+                .map(r -> AiInsightView.of(r.headline(), r.body()))
+                .orElse(AiInsightView.unavailable());
     }
 
     private Insight buildMySelectionInsight(Long voteId, Long optionId, Long userId) {
