@@ -23,7 +23,7 @@ public class VoteCommandService implements VoteCommandUseCase {
     private final VoteOptionRepository voteOptionRepository;
     private final VoteParticipationRepository voteParticipationRepository;
     private final GuestFreeVoteService guestFreeVoteService;
-    private final ImageService imageService;
+    private final Optional<ImageService> imageService;
     private final Clock clock;
 
     @Override
@@ -42,9 +42,11 @@ public class VoteCommandService implements VoteCommandUseCase {
 
     @Override
     public VoteCreateResult createWithImages(VoteCreateWithImagesCommand cmd) {
-        String thumbnailUrl = imageService.upload(cmd.thumbnailFile());
+        ImageService service = imageService.orElseThrow(() ->
+                new IllegalStateException("ImageService is not available. S3 configuration may be missing."));
+        String thumbnailUrl = service.upload(cmd.thumbnailFile());
         String imageUrl = cmd.imageFile() != null && !cmd.imageFile().isEmpty()
-                ? imageService.upload(cmd.imageFile())
+                ? service.upload(cmd.imageFile())
                 : null;
 
         Vote vote = Vote.create(
