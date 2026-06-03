@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.ai.port.PersonalizedAiInsightService;
 import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.exception.VoteNotFoundException;
@@ -21,7 +22,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+
+import com.ject.vs.ai.port.in.AiInsightUseCase.AiInsightResult;
 
 @ExtendWith(MockitoExtension.class)
 class VoteResultQueryServiceTest {
@@ -30,6 +34,7 @@ class VoteResultQueryServiceTest {
     @Mock VoteOptionRepository voteOptionRepository;
     @Mock VoteParticipationRepository voteParticipationRepository;
     @Mock UserRepository userRepository;
+    @Mock PersonalizedAiInsightService personalizedAiInsightService;
 
     private VoteResultQueryService service;
 
@@ -41,7 +46,7 @@ class VoteResultQueryServiceTest {
     @BeforeEach
     void setUp() {
         service = new VoteResultQueryService(
-                voteRepository, voteOptionRepository, voteParticipationRepository, userRepository, CLOCK);
+                voteRepository, voteOptionRepository, voteParticipationRepository, userRepository, personalizedAiInsightService, CLOCK);
 
         Clock pastClock = Clock.fixed(Instant.parse("2025-05-30T00:00:00Z"), ZoneOffset.UTC);
         endedVote = Vote.create("제목", null, "thumb.png", null,
@@ -137,9 +142,8 @@ class VoteResultQueryServiceTest {
         }
 
         @Test
-        void ai_insight_있으면_available_true() {
+        void 참여자는_개인화_AI_인사이트를_받는다() {
             given(voteRepository.findById(1L)).willReturn(Optional.of(endedVote));
-            endedVote.cacheAiInsight("헤드라인", "바디");
             given(voteOptionRepository.findByVoteIdOrderByPosition(1L)).willReturn(List.of());
             given(voteParticipationRepository.countByVoteId(1L)).willReturn(5L);
 
@@ -152,11 +156,16 @@ class VoteResultQueryServiceTest {
             given(voteParticipationRepository.findUserIdsByVoteIdAndOptionId(1L, 10L)).willReturn(List.of());
             given(userRepository.findById(1L)).willReturn(Optional.empty());
 
+            // PersonalizedAiInsightService Mock
+            AiInsightResult mockInsight = new AiInsightResult("개인화 헤드라인", "개인화 바디");
+            given(personalizedAiInsightService.getOrGenerate(1L, 1L, 10L))
+                    .willReturn(Optional.of(mockInsight));
+
             VoteResultDetail result = service.getResult(1L, 1L);
 
             assertThat(result.aiInsight().available()).isTrue();
-            assertThat(result.aiInsight().headline()).isEqualTo("헤드라인");
-            assertThat(result.aiInsight().body()).isEqualTo("바디");
+            assertThat(result.aiInsight().headline()).isEqualTo("개인화 헤드라인");
+            assertThat(result.aiInsight().body()).isEqualTo("개인화 바디");
         }
     }
 
