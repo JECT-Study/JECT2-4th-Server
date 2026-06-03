@@ -1,5 +1,6 @@
 package com.ject.vs.user.port;
 
+import com.ject.vs.image.port.ImageService;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -17,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @Transactional
 class UserServiceIntegrationTest {
+
+    @MockitoBean
+    private ImageService imageService;
 
     @Autowired
     private UserService userService;
