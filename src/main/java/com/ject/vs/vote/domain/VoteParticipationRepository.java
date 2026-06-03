@@ -64,4 +64,55 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
 
     record VoteParticipantCount(Long voteId, Long count) {
     }
+
+    @Query("""
+            SELECT COUNT(p)
+            FROM VoteParticipation p, com.ject.vs.user.domain.User u
+            WHERE p.userId = u.id
+              AND p.voteId = :voteId
+              AND p.optionId = :optionId
+              AND u.gender = :gender
+              AND p.userId IS NOT NULL
+            """)
+    long countByVoteIdAndOptionIdAndGender(
+            @Param("voteId") Long voteId,
+            @Param("optionId") Long optionId,
+            @Param("gender") com.ject.vs.user.domain.Gender gender);
+
+    @Query("""
+            SELECT COUNT(p)
+            FROM VoteParticipation p, com.ject.vs.user.domain.User u
+            WHERE p.userId = u.id
+              AND p.voteId = :voteId
+              AND u.gender = :gender
+              AND p.userId IS NOT NULL
+            """)
+    long countByVoteIdAndGender(
+            @Param("voteId") Long voteId,
+            @Param("gender") com.ject.vs.user.domain.Gender gender);
+
+    @Query("""
+            SELECT p.optionId, COUNT(p) as cnt
+            FROM VoteParticipation p, com.ject.vs.user.domain.User u
+            WHERE p.userId = u.id
+              AND p.voteId = :voteId
+              AND u.gender = :gender
+              AND p.userId IS NOT NULL
+            GROUP BY p.optionId
+            ORDER BY cnt DESC
+            """)
+    List<Object[]> findOptionCountsByVoteIdAndGender(
+            @Param("voteId") Long voteId,
+            @Param("gender") com.ject.vs.user.domain.Gender gender);
+
+    @Query("""
+            SELECT p.optionId, COUNT(p) as cnt
+            FROM VoteParticipation p, com.ject.vs.user.domain.User u
+            WHERE p.userId = u.id
+              AND p.voteId = :voteId
+              AND u.birthYear IS NOT NULL
+              AND p.userId IS NOT NULL
+            GROUP BY p.optionId
+            """)
+    List<Object[]> findOptionCountsByVoteId(@Param("voteId") Long voteId);
 }
