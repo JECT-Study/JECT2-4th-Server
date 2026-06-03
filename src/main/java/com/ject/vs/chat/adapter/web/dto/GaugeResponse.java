@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "투표 게이지 응답")
 public record GaugeResponse(
+        @Schema(description = "투표 ID", example = "1")
+        Long voteId,
+
         @Schema(description = "A 선택지 투표 비율. 0부터 100까지의 정수입니다.", example = "55", minimum = "0", maximum = "100")
         int optionARatio,
 
@@ -16,6 +19,6 @@ public record GaugeResponse(
 ) {
 
     public static GaugeResponse from(GaugeResult result) {
-        return new GaugeResponse(result.optionARatio(), result.optionBRatio(), result.participantCount());
+        return new GaugeResponse(result.voteId(), result.optionARatio(), result.optionBRatio(), result.participantCount());
     }
 }

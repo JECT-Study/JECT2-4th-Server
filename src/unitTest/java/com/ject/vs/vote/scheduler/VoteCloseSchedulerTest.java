@@ -3,7 +3,7 @@ package com.ject.vs.vote.scheduler;
 import com.ject.vs.vote.domain.Vote;
 import com.ject.vs.vote.domain.VoteRepository;
 import com.ject.vs.vote.domain.VoteStatus;
-import com.ject.vs.vote.domain.VoteType;
+
 import com.ject.vs.vote.event.VoteEndedEvent;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ class VoteCloseSchedulerTest {
     private Vote makeExpiredVote() {
         // duration 1h, clock은 생성 시점이 FIXED_CLOCK → endAt = T+1h
         // 스케줄러가 T+2h에 실행되면 이미 만료
-        return Vote.create(VoteType.GENERAL, "test", null, "thumb.png", null,
+        return Vote.create("test", null, "thumb.png", null,
                 Duration.ofHours(1), FIXED_CLOCK);
     }
 

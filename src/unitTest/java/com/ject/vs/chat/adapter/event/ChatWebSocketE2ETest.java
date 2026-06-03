@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.chat.adapter.web.dto.SendMessageRequest;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
+import com.ject.vs.image.port.ImageService;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.util.CookieUtil;
@@ -22,6 +23,7 @@ import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
@@ -44,6 +46,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ChatWebSocketE2ETest {
+
+    @MockitoBean
+    private ImageService imageService;
 
     @LocalServerPort
     private int port;
@@ -120,7 +125,7 @@ class ChatWebSocketE2ETest {
     private TestFixture createFixture() {
         User sender = userRepository.saveAndFlush(User.createWithEmail("e2e-sender-" + System.nanoTime() + "@test.com"));
         User receiver = userRepository.saveAndFlush(User.createWithEmail("e2e-receiver-" + System.nanoTime() + "@test.com"));
-        Vote vote = voteRepository.saveAndFlush(Vote.create(VoteType.GENERAL, "e2e chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
+        Vote vote = voteRepository.saveAndFlush(Vote.create("e2e chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
         VoteOption option = voteOptionRepository.saveAndFlush(VoteOption.of(vote, "A", 1));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), sender.getId(), option.getId()));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), receiver.getId(), option.getId()));

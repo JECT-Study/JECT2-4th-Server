@@ -24,4 +24,9 @@ public class GlobalExceptionHandler {
                 .orElse("입력값이 올바르지 않습니다");
         return ResponseEntity.status(400).body(new ErrorResponse("INVALID_INPUT", message));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
+        return ResponseEntity.status(400).body(new ErrorResponse("INVALID_ARGUMENT", e.getMessage()));
+    }
 }

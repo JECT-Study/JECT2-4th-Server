@@ -8,6 +8,7 @@ import com.ject.vs.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final AuthService authService;
@@ -41,10 +43,17 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             String targetUrl = determineTargetUrl(loginResponse.getUserStatus());
 
+            log.info("=== OAuth2 Login Success ===");
+            log.info("email: {}", email);
+            log.info("userStatus: {}", loginResponse.getUserStatus());
+            log.info("targetUrl: {}", targetUrl);
+
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
-        } catch (BusinessException e) {
-            response.sendError(e.getErrorCode().getStatusCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("=== OAuth2 Login Error ===", e);
+            response.sendRedirect("/login?error");
+
         }
     }
 
@@ -56,6 +65,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .httpOnly(true)
                 .secure(cookieProperties.secure())
                 .path("/")
+                .domain(".vs.io.kr")
                 .maxAge(accessTokenExpiration)
                 .sameSite(cookieProperties.sameSite())
                 .build();
@@ -64,6 +74,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .httpOnly(true)
                 .secure(cookieProperties.secure())
                 .path("/")
+                .domain(".vs.io.kr")
                 .maxAge(refreshTokenExpiration)
                 .sameSite(cookieProperties.sameSite())
                 .build();

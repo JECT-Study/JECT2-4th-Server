@@ -2,17 +2,24 @@ package com.ject.vs.vote.adapter.web;
 
 import com.ject.vs.config.AnonymousId;
 import com.ject.vs.vote.adapter.web.dto.*;
+import com.ject.vs.vote.domain.Vote;
+import com.ject.vs.vote.domain.VoteParticipationRepository;
+import com.ject.vs.vote.domain.VoteSortType;
 import com.ject.vs.vote.exception.UnauthorizedException;
 import com.ject.vs.vote.port.VoteDetailQueryService;
 import com.ject.vs.vote.port.in.VoteCommandUseCase;
+import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "일반형 투표", description = "일반형 투표 관련 API")
 @RestController
@@ -22,6 +29,7 @@ public class VoteController {
 
     private final VoteCommandUseCase voteCommandUseCase;
     private final VoteDetailQueryService voteDetailQueryService;
+    private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
 
     @Operation(summary = "투표 생성", description = "새로운 투표를 생성합니다. 회원만 가능합니다.")
     @PostMapping
@@ -31,6 +39,28 @@ public class VoteController {
             @RequestBody @Valid VoteCreateRequest request) {
         if (userId == null) throw new UnauthorizedException();
         return VoteCreateResponse.from(voteCommandUseCase.create(request.toCommand()));
+    }
+
+    @Operation(summary = "투표 생성 (이미지 포함)", description = "이미지 파일과 함께 투표를 생성합니다. 서버에서 S3 업로드를 처리합니다.")
+    @PostMapping(value = "/with-images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public VoteCreateResponse createWithImages(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam("title") String title,
+            @RequestParam(value = "content", required = false) String content,
+            @RequestParam("thumbnailFile") MultipartFile thumbnailFile,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestParam("duration") String duration,
+            @RequestParam("optionA") String optionA,
+            @RequestParam("optionB") String optionB) {
+        if (userId == null) throw new UnauthorizedException();
+
+        var command = new VoteCommandUseCase.VoteCreateWithImagesCommand(
+                title, content, thumbnailFile, imageFile,
+                com.ject.vs.vote.domain.VoteDuration.valueOf(duration),
+                optionA, optionB
+        );
+        return VoteCreateResponse.from(voteCommandUseCase.createWithImages(command));
     }
 
     @Operation(summary = "투표 상세 조회", description = "투표 상세 정보를 조회합니다. 투표 전에는 결과(voteCount/ratio)가 null로 응답됩니다.")
@@ -63,5 +93,15 @@ public class VoteController {
             @AuthenticationPrincipal Long userId) {
         if (userId == null) throw new UnauthorizedException();
         voteCommandUseCase.cancel(voteId, userId);
+    }
+
+    @GetMapping("/me/participated")
+    public MyParticipatedVoteResponse getVoteListParticipated(@AuthenticationPrincipal Long userId, @RequestParam VoteSortType type) {
+        return voteParticipationQueryUseCase.findVotesByOrder(userId, type);
+    }
+
+    @GetMapping("/me/participated/end")
+    public MyParticipatedVoteResponse getVoteListEndParticipated(@AuthenticationPrincipal Long userId, @RequestParam VoteSortType type) {
+        return voteParticipationQueryUseCase.findVotesEndByOrder(userId, type);
     }
 }

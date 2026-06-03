@@ -4,6 +4,7 @@ import com.ject.vs.auth.port.AuthService;
 import com.ject.vs.auth.port.in.dto.TokenReissueResponse;
 import com.ject.vs.config.CookieProperties;
 import com.ject.vs.config.JwtProperties;
+import com.ject.vs.user.domain.User;
 import com.ject.vs.util.CookieUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,6 +44,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(cookieProperties.secure())
                 .path("/")
+                .domain(".vs.io.kr")
                 .sameSite(cookieProperties.sameSite())
                 .maxAge(accessTokenExpiration)
                 .build();
@@ -53,6 +56,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(cookieProperties.secure())
                 .path("/")
+                .domain(".vs.io.kr")
                 .sameSite(cookieProperties.sameSite())
                 .maxAge(refreshTokenExpiration)
                 .build();
@@ -61,5 +65,39 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/api/users/logout")
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal Long userId) {
+        authService.logout(userId);
+
+        ResponseCookie accessTokenCookie = ResponseCookie.from(
+                CookieUtil.CookieType.ACCESS_TOKEN,
+                ""
+        )
+                .path("/")
+                .domain(".vs.io.kr")
+                .httpOnly(true)
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
+                .maxAge(0)
+                .build();
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(
+                CookieUtil.CookieType.REFRESH_TOKEN,
+                ""
+        )
+                .path("/")
+                .domain(".vs.io.kr")
+                .httpOnly(true)
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
+                .maxAge(0)
+                .build();
+
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .build();
     }
 }

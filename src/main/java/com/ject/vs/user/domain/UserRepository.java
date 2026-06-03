@@ -13,4 +13,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean isNicknameAvailable(@Param("nickName") String nickName);
 
     Optional<User> findByEmail(String email);
+
+    // 활성 사용자(탈퇴 제외) 조회. 동일 이메일에 탈퇴 row가 공존할 수 있으므로 상태로 필터링한다.
+    Optional<User> findByEmailAndUserStatusNot(String email, UserStatus userStatus);
 }

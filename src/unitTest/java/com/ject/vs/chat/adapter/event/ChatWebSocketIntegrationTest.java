@@ -7,6 +7,7 @@ import com.ject.vs.chat.domain.ChatRoomUnread;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
+import com.ject.vs.image.port.ImageService;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
 import com.ject.vs.util.CookieUtil;
@@ -23,6 +24,7 @@ import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
@@ -43,6 +45,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ChatWebSocketIntegrationTest {
+
+    @MockitoBean
+    private ImageService imageService;
 
     @LocalServerPort
     private int port;
@@ -136,7 +141,7 @@ class ChatWebSocketIntegrationTest {
     void voteId가_다른_topic_구독자는_메시지를_수신하지_않는다() throws Exception {
         // given
         TestFixture fixture = createFixture();
-        Vote otherVote = voteRepository.saveAndFlush(Vote.create(VoteType.GENERAL, "other", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
+        Vote otherVote = voteRepository.saveAndFlush(Vote.create("other", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
         StompSession session = connectAnonymously();
         BlockingQueue<MessageResult> targetMessages = new LinkedBlockingQueue<>();
         BlockingQueue<MessageResult> otherMessages = new LinkedBlockingQueue<>();
@@ -155,7 +160,7 @@ class ChatWebSocketIntegrationTest {
     private TestFixture createFixture() {
         User sender = userRepository.saveAndFlush(User.createWithEmail("sender-" + System.nanoTime() + "@test.com"));
         User receiver = userRepository.saveAndFlush(User.createWithEmail("receiver-" + System.nanoTime() + "@test.com"));
-        Vote vote = voteRepository.saveAndFlush(Vote.create(VoteType.GENERAL, "chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
+        Vote vote = voteRepository.saveAndFlush(Vote.create("chat vote", null, "thumb", null, Duration.ofHours(1), Clock.systemUTC()));
         VoteOption option = voteOptionRepository.saveAndFlush(VoteOption.of(vote, "A", 1));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), sender.getId(), option.getId()));
         voteParticipationRepository.saveAndFlush(VoteParticipation.ofMember(vote.getId(), receiver.getId(), option.getId()));

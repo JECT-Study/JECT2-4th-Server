@@ -10,19 +10,25 @@ import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.event.VoteEndedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * @deprecated 이 핸들러는 기존 투표 종료 시 1회 생성 방식에서 실시간 개인화 인사이트 생성으로 변경되어 비활성화되었습니다.
+ * 새로운 구현은 {@link com.ject.vs.ai.port.PersonalizedAiInsightService}를 참조하세요.
+ */
+@Deprecated
 @Component
+@ConditionalOnProperty(name = "app.ai.legacy-insight-handler.enabled", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 @Slf4j
 public class VoteAiInsightHandler {

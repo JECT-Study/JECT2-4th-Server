@@ -10,17 +10,24 @@ import com.ject.vs.auth.port.in.dto.TokenInfo;
 import com.ject.vs.auth.port.in.dto.TokenReissueResponse;
 import com.ject.vs.common.exception.BusinessException;
 import com.ject.vs.user.domain.User;
+import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.exception.UserErrorCode;
 import com.ject.vs.user.port.UserService;
 import com.ject.vs.util.JwtProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AuthService {
     private final UserService userService;
+    private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
     private final JwtProvider jwtProvider;
 
@@ -93,5 +100,14 @@ public class AuthService {
         tokenRepository.save(newRefreshTokenInfo);
 
         return TokenReissueResponse.from(newRefreshTokenInfo, newAccessToken.tokenValue());
+    }
+
+    public void logout(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        List<Token> tokenList = tokenRepository.findByUserId(user);
+
+        tokenRepository.deleteAll(tokenList);
     }
 }

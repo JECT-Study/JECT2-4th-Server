@@ -71,7 +71,7 @@ class ImmersiveVoteControllerTest {
         @Test
         @WithMockUser
         void 피드_목록_200_반환() throws Exception {
-            given(immersiveVoteQueryUseCase.getFeed(any(), anyInt(), any(), any()))
+            given(immersiveVoteQueryUseCase.getFeed(any(), any(), anyInt(), any(), any()))
                     .willReturn(new ImmersiveFeedResult(List.of(), null, false));
 
             mockMvc.perform(get("/api/immersive-votes"))
@@ -239,7 +239,7 @@ class ImmersiveVoteControllerTest {
                     Instant.parse("2025-04-27T14:59:00Z"), options, true, 10L,
                     emojiSummary, 20L, VoteEmoji.LIKE, 5, 13
             );
-            given(immersiveVoteQueryUseCase.getFeed(eq(100L), eq(10), any(), any()))
+            given(immersiveVoteQueryUseCase.getFeed(eq(100L), isNull(), eq(10), any(), any()))
                     .willReturn(new ImmersiveFeedResult(List.of(item), 80L, true));
 
             mockMvc.perform(get("/api/immersive-votes")
@@ -258,7 +258,7 @@ class ImmersiveVoteControllerTest {
         @Test
         @WithMockUser
         void 마지막_페이지_hasNext_false() throws Exception {
-            given(immersiveVoteQueryUseCase.getFeed(isNull(), eq(10), any(), any()))
+            given(immersiveVoteQueryUseCase.getFeed(isNull(), isNull(), eq(10), any(), any()))
                     .willReturn(new ImmersiveFeedResult(List.of(), null, false));
 
             mockMvc.perform(get("/api/immersive-votes"))

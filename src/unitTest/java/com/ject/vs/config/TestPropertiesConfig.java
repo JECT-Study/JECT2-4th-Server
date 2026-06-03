@@ -1,9 +1,11 @@
 package com.ject.vs.config;
 
-import org.springframework.boot.test.context.TestConfiguration;
+import com.ject.vs.image.port.ImageService;
+import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-@TestConfiguration
+@Configuration
 public class TestPropertiesConfig {
 
     @Bean
@@ -24,5 +26,10 @@ public class TestPropertiesConfig {
                 "http://localhost:3000/oauth2/redirect",
                 "http://localhost:3000/extra-info"
         );
+    }
+
+    @Bean
+    public ImageService imageService() {
+        return Mockito.mock(ImageService.class);
     }
 }

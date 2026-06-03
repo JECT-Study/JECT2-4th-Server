@@ -19,4 +19,10 @@ gemini:
   project-id: ${GEMINI_PROJECT_ID:}
   location: ${GEMINI_LOCATION:asia-northeast3}
   model: ${GEMINI_MODEL:gemini-1.5-flash}
-  enabled: ${GEMINI_ENABLED:true}
+  enabled: ${GEMINI_ENABLED:false}
+
+# 오늘의 추천 투표 설정 권한 (운영진 user id 목록)
+admin:
+  user-ids:
+    - 7
+    - 260

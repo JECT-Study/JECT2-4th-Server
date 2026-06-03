@@ -1,30 +1,29 @@
 package com.ject.vs.user.adapter.web;
 
-import com.ject.vs.user.adapter.web.dto.NicknameCheckResponse;
-import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
-import com.ject.vs.user.adapter.web.dto.UserNicknameRec;
-import com.ject.vs.user.adapter.web.dto.UserProfileDefaultResponse;
-import com.ject.vs.user.adapter.web.dto.UserProfileRequest;
-import com.ject.vs.user.adapter.web.dto.UserProfileResponse;
+import com.ject.vs.config.CookieProperties;
+import com.ject.vs.user.adapter.web.dto.*;
 import com.ject.vs.user.port.UserService;
+import com.ject.vs.util.CookieUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "사용자", description = "사용자 프로필 관련 API")
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
     private final UserService userService;
+    private final CookieProperties cookieProperties;
 
     @Operation(summary = "추가 정보 설정", description = "사용자 추가 정보(닉네임, 성별, 생년월일)를 설정합니다.")
     @PostMapping("/me/profile")
@@ -62,5 +61,52 @@ public class UserController {
     @PostMapping("/info")
     public ResponseEntity<UserProfileDefaultResponse> initializeDefaultProfile(@AuthenticationPrincipal Long userId, @RequestBody UserProfileRequest userInfo) {
         return ResponseEntity.ok(userService.initializeDefaultProfile(userId, userInfo));
+    }
+
+    @PatchMapping("/change/info")
+    public ResponseEntity<?> modifyNickname(@AuthenticationPrincipal Long userId, @RequestBody UserModifyInfoRequest req) {
+        return ResponseEntity.ok(userService.modifyInfo(userId, req));
+    }
+
+    @Operation(summary = "회원 탈퇴", description = "회원을 탈퇴 처리하고 인증 쿠키를 만료시킵니다.")
+    @DeleteMapping("/profile/delete")
+    public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal Long userId, @RequestBody UserDeleteReq req) {
+        try {
+            log.info("=== 회원 탈퇴 요청 시작 === userId: {}, req: {}", userId, req);
+
+            userService.deleteAccount(userId, req);
+
+            ResponseCookie accessTokenCookie = expiredCookie(CookieUtil.CookieType.ACCESS_TOKEN);
+            ResponseCookie refreshTokenCookie = expiredCookie(CookieUtil.CookieType.REFRESH_TOKEN);
+
+            log.info("=== 회원 탈퇴 성공 ===");
+            return ResponseEntity.noContent()
+                    .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                    .build();
+
+        } catch (Exception e) {
+            // 👈 2. 여기가 핵심입니다. 에러가 나면 이 블록으로 들어와 로그를 남깁니다.
+            log.error("❌ [회원 탈퇴 에러 발생] 원인 메시지: {}", e.getMessage());
+            log.error("❌ 상세 에러 스택트레이스: ", e); // e 뒤에 아무것도 붙이지 않아야 전체 에러 줄번호가 찍힙니다.
+
+            throw e; // 로그만 찍고 에러는 원래대로 500으로 던져줍니다.
+        }
+    }
+
+    private ResponseCookie expiredCookie(String name) {
+        return ResponseCookie.from(name, "")
+                .path("/")
+                .domain(".vs.io.kr")
+                .httpOnly(true)
+                .secure(cookieProperties.secure())
+                .sameSite(cookieProperties.sameSite())
+                .maxAge(0)
+                .build();
+    }
+
+    @GetMapping("/imagecolor/suggest")
+    public UserImageResponse getImageColor(@AuthenticationPrincipal Long userId) {
+        return userService.getRandomColor(userId);
     }
 }

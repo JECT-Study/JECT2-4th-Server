@@ -1,5 +1,6 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -24,25 +27,47 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
     private final VoteOptionRepository voteOptionRepository;
     private final VoteParticipationRepository voteParticipationRepository;
     private final VoteEmojiReactionRepository emojiReactionRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final Clock clock;
 
     @Override
-    public ImmersiveFeedResult getFeed(Long cursor, int size, Long userId, String anonymousId) {
-        PageRequest pageable = PageRequest.of(0, size);
+    public ImmersiveFeedResult getFeed(Long cursor, Long startVoteId, int size, Long userId, String anonymousId) {
+        Instant now = Instant.now(clock);
 
-        Slice<Vote> slice = cursor == null
-                ? voteRepository.findByTypeOrderByEndAtDesc(VoteType.IMMERSIVE, pageable)
-                : voteRepository.findByTypeAndIdLessThanOrderByEndAtDesc(VoteType.IMMERSIVE, cursor, pageable);
+        List<ImmersiveFeedItem> items;
+        boolean hasNext;
 
-        List<ImmersiveFeedItem> items = slice.getContent().stream()
-                .map(vote -> toFeedItem(vote, userId, anonymousId))
-                .toList();
+        if (cursor != null) {
+            PageRequest pageable = PageRequest.of(0, size);
+            Slice<Vote> slice = voteRepository.findByIdLessThanAndEndAtAfterOrderByIdDesc(
+                    cursor, now, pageable);
+            items = slice.getContent().stream().map(v -> toFeedItem(v, userId, anonymousId)).toList();
+            hasNext = slice.hasNext();
+        } else if (startVoteId != null) {
+            Vote startVote = voteRepository.findById(startVoteId).orElse(null);
+            if (startVote != null && !startVote.isEnded(clock)) {
+                Slice<Vote> rest = voteRepository.findByIdLessThanAndEndAtAfterOrderByIdDesc(
+                        startVoteId, now, PageRequest.of(0, size - 1));
+                List<ImmersiveFeedItem> combined = new ArrayList<>();
+                combined.add(toFeedItem(startVote, userId, anonymousId));
+                rest.getContent().stream().map(v -> toFeedItem(v, userId, anonymousId)).forEach(combined::add);
+                items = combined;
+                hasNext = rest.hasNext();
+            } else {
+                Slice<Vote> slice = voteRepository.findByEndAtAfterOrderByIdDesc(
+                        now, PageRequest.of(0, size));
+                items = slice.getContent().stream().map(v -> toFeedItem(v, userId, anonymousId)).toList();
+                hasNext = slice.hasNext();
+            }
+        } else {
+            Slice<Vote> slice = voteRepository.findByEndAtAfterOrderByIdDesc(
+                    now, PageRequest.of(0, size));
+            items = slice.getContent().stream().map(v -> toFeedItem(v, userId, anonymousId)).toList();
+            hasNext = slice.hasNext();
+        }
 
-        Long nextCursor = slice.hasNext()
-                ? items.get(items.size() - 1).voteId()
-                : null;
-
-        return new ImmersiveFeedResult(items, nextCursor, slice.hasNext());
+        Long nextCursor = hasNext && !items.isEmpty() ? items.get(items.size() - 1).voteId() : null;
+        return new ImmersiveFeedResult(items, nextCursor, hasNext);
     }
 
     @Override
@@ -113,6 +138,8 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
                     .orElse(null);
         }
 
+        int commentCount = (int) chatMessageRepository.countByVoteId(voteId);
+
         return new ImmersiveFeedItem(
                 voteId,
                 vote.getTitle(),
@@ -125,7 +152,7 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
                 emojiSummary,
                 emojiTotal,
                 myEmoji,
-                0, // TODO: commentCount
+                commentCount,
                 0  // TODO: Redis viewer count
         );
     }

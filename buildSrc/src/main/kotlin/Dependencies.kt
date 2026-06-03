@@ -51,4 +51,8 @@ object Dependencies {
     object Ai {
         const val GEMINI = "com.google.cloud:google-cloud-vertexai:1.14.0"
     }
+
+    object Cache {
+        const val CAFFEINE = "com.github.ben-manes.caffeine:caffeine:3.1.8"
+    }
 }

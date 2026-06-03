@@ -59,8 +59,14 @@ public class ChatMessageEventListener {
         for (Long participantUserId : voteParticipationQueryUseCase.findAllUserIdsByVoteId(message.getVoteId())) {
             long unreadCount = chatRoomUnreadRepository
                     .findByIdUserIdAndIdVoteId(participantUserId, message.getVoteId())
-                    .map(unread -> chatMessageRepository.countByVoteIdAndIdGreaterThan(
-                            message.getVoteId(), unread.getLastReadMessageId()))
+                    .map(unread -> {
+                        Long lastRead = unread.getLastReadMessageId();
+                        if (lastRead == null) {
+                            return totalCount;
+                        }
+                        return chatMessageRepository.countByVoteIdAndIdGreaterThan(
+                                message.getVoteId(), lastRead);
+                    })
                     .orElse(totalCount);
 
             messagingTemplate.convertAndSendToUser(

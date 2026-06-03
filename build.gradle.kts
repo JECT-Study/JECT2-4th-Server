@@ -87,11 +87,22 @@ dependencies {
 	// Google Gemini AI
 	implementation(Dependencies.Ai.GEMINI)
 
+	// Cache (Caffeine)
+	implementation(Dependencies.Cache.CAFFEINE)
+
 	compileOnly(Dependencies.Lombok.LOMBOK)
 	annotationProcessor(Dependencies.Lombok.LOMBOK)
 	testImplementation(Dependencies.SpringBoot.TEST)
 	testImplementation(Dependencies.SpringSecurity.TEST)
 	testRuntimeOnly(Dependencies.Test.JUNIT_LAUNCHER)
+
+	// Testcontainers (for Postgres-specific integration tests)
+	"integrationTestImplementation"("org.testcontainers:testcontainers:1.21.3")
+	"integrationTestImplementation"("org.testcontainers:junit-jupiter:1.21.3")
+	"integrationTestImplementation"("org.testcontainers:postgresql:1.21.3")
+
+	// Spring Boot official Testcontainers support
+	"integrationTestImplementation"("org.springframework.boot:spring-boot-testcontainers:3.5.11")
 }
 
 tasks.withType<Test> {
@@ -113,10 +124,15 @@ val unitTest by tasks.registering(Test::class) {
 
 val integrationTest by tasks.registering(Test::class) {
 	group = LifecycleBasePlugin.VERIFICATION_GROUP
-	description = "Runs integration tests."
+	description = "Runs integration tests. (Testcontainers 기반 실제 PostgreSQL 사용)"
 	testClassesDirs = sourceSets["integrationTest"].output.classesDirs
 	classpath = sourceSets["integrationTest"].runtimeClasspath
 	shouldRunAfter(unitTest)
+
+	// Docker가 없는 환경에서 통합 테스트를 건너뛰기 위한 옵션
+	onlyIf {
+		!project.hasProperty("skipIntegrationTests")
+	}
 }
 
 tasks.check {

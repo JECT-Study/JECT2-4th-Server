@@ -1,5 +1,7 @@
 package com.ject.vs.vote.port;
 
+import com.ject.vs.ai.port.PersonalizedAiInsightService;
+import com.ject.vs.ai.port.in.AiInsightUseCase.AiInsightResult;
 import com.ject.vs.user.domain.Gender;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +29,7 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
     private final VoteOptionRepository voteOptionRepository;
     private final VoteParticipationRepository voteParticipationRepository;
     private final UserRepository userRepository;
+    private final PersonalizedAiInsightService personalizedAiInsightService;
     private final Clock clock;
 
     @Override
@@ -63,9 +65,7 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
 
         if (myParticipation.isPresent()) {
             insight = buildMySelectionInsight(voteId, mySelectedOptionId, userId);
-            aiInsight = vote.hasAiInsight()
-                    ? AiInsightView.of(vote.getAiInsightHeadline(), vote.getAiInsightBody())
-                    : AiInsightView.unavailable();
+            aiInsight = generatePersonalizedAiInsight(voteId, userId, mySelectedOptionId);
         } else {
             insight = buildTotalInsight(voteId, total, userId);
             aiInsight = AiInsightView.unavailable();
@@ -85,6 +85,15 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
                 vote.getTitle(),
                 vote.getThumbnailUrl()
         );
+    }
+
+    private AiInsightView generatePersonalizedAiInsight(Long voteId, Long userId, Long selectedOptionId) {
+        Optional<AiInsightResult> result = personalizedAiInsightService
+                .getOrGenerate(voteId, userId, selectedOptionId);
+
+        return result
+                .map(r -> AiInsightView.of(r.headline(), r.body()))
+                .orElse(AiInsightView.unavailable());
     }
 
     private Insight buildMySelectionInsight(Long voteId, Long optionId, Long userId) {
@@ -226,22 +235,33 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
         return buildAgeDistributionsWithMajority(userIds);
     }
 
+    // 10대 → 20대, 50대+ → 40대로 병합 (UI 표시 그룹: 20s, 30s, 40s)
+    private static final List<AgeGroup> DISPLAY_AGE_GROUPS = List.of(
+            AgeGroup.TWENTIES, AgeGroup.THIRTIES, AgeGroup.FORTIES);
+
+    private AgeGroup normalizeAgeGroup(AgeGroup group) {
+        if (group == AgeGroup.TEENS) return AgeGroup.TWENTIES;
+        if (group == AgeGroup.FIFTIES_PLUS) return AgeGroup.FORTIES;
+        return group;
+    }
+
     private List<AgeDistribution> buildAgeDistributions(List<Long> userIds, AgeGroup myGroup) {
         List<User> users = userRepository.findAllById(userIds);
 
         Map<AgeGroup, Long> groupCounts = users.stream()
                 .filter(u -> u.getBirthYear() != null)
                 .collect(Collectors.groupingBy(
-                        u -> AgeGroup.fromBirthYear(u.getBirthYear(), clock),
+                        u -> normalizeAgeGroup(AgeGroup.fromBirthYear(u.getBirthYear(), clock)),
                         Collectors.counting()));
 
         long total = groupCounts.values().stream().mapToLong(Long::longValue).sum();
+        AgeGroup myDisplayGroup = myGroup != null ? normalizeAgeGroup(myGroup) : null;
 
-        return Arrays.stream(AgeGroup.values())
+        return DISPLAY_AGE_GROUPS.stream()
                 .map(group -> {
                     long count = groupCounts.getOrDefault(group, 0L);
                     int ratio = total == 0 ? 0 : (int) Math.round(count * 100.0 / total);
-                    return new AgeDistribution(group.getLabel(), ratio, group == myGroup);
+                    return new AgeDistribution(group.getLabel(), ratio, group == myDisplayGroup);
                 })
                 .toList();
     }
@@ -252,22 +272,17 @@ public class VoteResultQueryService implements VoteResultQueryUseCase {
         Map<AgeGroup, Long> groupCounts = users.stream()
                 .filter(u -> u.getBirthYear() != null)
                 .collect(Collectors.groupingBy(
-                        u -> AgeGroup.fromBirthYear(u.getBirthYear(), clock),
+                        u -> normalizeAgeGroup(AgeGroup.fromBirthYear(u.getBirthYear(), clock)),
                         Collectors.counting()));
 
         long total = groupCounts.values().stream().mapToLong(Long::longValue).sum();
 
-        // 다수 연령대 찾기
-        AgeGroup majorityGroup = groupCounts.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse(null);
-
-        return Arrays.stream(AgeGroup.values())
+        // 비참여자는 "내 그룹"이 없으므로 isHighlighted 항상 false
+        return DISPLAY_AGE_GROUPS.stream()
                 .map(group -> {
                     long count = groupCounts.getOrDefault(group, 0L);
                     int ratio = total == 0 ? 0 : (int) Math.round(count * 100.0 / total);
-                    return new AgeDistribution(group.getLabel(), ratio, group == majorityGroup);
+                    return new AgeDistribution(group.getLabel(), ratio, false);
                 })
                 .toList();
     }

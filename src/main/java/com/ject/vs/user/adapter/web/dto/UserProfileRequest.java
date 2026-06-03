@@ -5,9 +5,5 @@ import lombok.Data;
 
 import java.time.Year;
 
-@Data
-public class UserProfileRequest {
-    private String email;
-    private Year birthYear;
-    private Gender gender;
+public record UserProfileRequest(String email, Year birthYear, Gender gender) {
 }

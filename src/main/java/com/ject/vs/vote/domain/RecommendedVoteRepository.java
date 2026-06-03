@@ -21,4 +21,6 @@ public interface RecommendedVoteRepository extends JpaRepository<RecommendedVote
             @Param("date") LocalDate date,
             @Param("now") Instant now
     );
+
+    void deleteAllByRecommendedDate(LocalDate recommendedDate);
 }

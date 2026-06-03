@@ -61,10 +61,10 @@ public interface VoteResultQueryUseCase {
     }
 
     /**
-     * 연령대 분포 정보
-     * @param ageGroup 연령대 레이블 (10s, 20s, 30s, 40s, 50s_PLUS)
+     * 연령대 분포 정보 (20s, 30s, 40s 3그룹으로 표시; 10대는 20s, 50대+는 40s에 합산)
+     * @param ageGroup 연령대 레이블 (20s, 30s, 40s)
      * @param ratio 해당 연령대 비율 (%)
-     * @param isHighlighted 강조 여부 (참여자: 내 그룹 여부, 미참여자: 다수 그룹 여부)
+     * @param isHighlighted 참여자: 내 연령대이면 true, 미참여자: 항상 false
      */
     record AgeDistribution(String ageGroup, int ratio, boolean isHighlighted) {
     }

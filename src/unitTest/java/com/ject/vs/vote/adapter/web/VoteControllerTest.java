@@ -3,6 +3,8 @@ package com.ject.vs.vote.adapter.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.config.TestPropertiesConfig;
+import com.ject.vs.notification.port.out.PushSenderPort;
+import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import org.springframework.context.annotation.Import;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.util.CookieUtil;
@@ -28,6 +30,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -57,20 +60,22 @@ class VoteControllerTest {
     @MockBean CookieUtil cookieUtil;
     @MockBean OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     @MockBean CustomOAuth2UserService customOAuth2UserService;
+    @MockBean PushSenderPort pushSenderPort;
+    @MockBean VoteParticipationQueryUseCase voteParticipationQueryUseCase;
 
     private static final UsernamePasswordAuthenticationToken AUTH =
             new UsernamePasswordAuthenticationToken(1L, null, Collections.emptyList());
 
     private VoteCreateRequest validCreateRequest() {
         return new VoteCreateRequest(
-                VoteType.GENERAL, "제목", null, "thumb.png", null,
+                "제목", null, "thumb.png", null,
                 VoteDuration.HOURS_24, "옵션A", "옵션B"
         );
     }
 
     private VoteDetailResult sampleDetail() {
         return new VoteDetailResult(
-                1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                1L, "제목", Instant.parse("2025-01-01T00:00:00Z"),
                 null, "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
                 5, List.of(), false, null, Map.of(), null, 0
         );
@@ -250,7 +255,7 @@ class VoteControllerTest {
         @WithMockUser
         void 비회원_조회_voteCount는_null() throws Exception {
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                    1L, "제목", Instant.parse("2025-01-01T00:00:00Z"),
                     "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
                     31, List.of(), false, null, Map.of(), null, 0
             );
@@ -267,7 +272,7 @@ class VoteControllerTest {
         @Test
         void 회원_투표후_조회_voteCount_노출() throws Exception {
             VoteDetailResult result = new VoteDetailResult(
-                    1L, VoteType.GENERAL, "제목", Instant.parse("2025-01-01T00:00:00Z"),
+                    1L, "제목", Instant.parse("2025-01-01T00:00:00Z"),
                     "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
                     31, List.of(), true, 10L, Map.of(VoteEmoji.WOW, 36L), VoteEmoji.WOW, 0
             );
@@ -279,6 +284,54 @@ class VoteControllerTest {
                     .andExpect(jsonPath("$.myVote.voted").value(true))
                     .andExpect(jsonPath("$.myVote.selectedOptionId").value(10))
                     .andExpect(jsonPath("$.myEmoji").value("WOW"));
+        }
+
+        @Test
+        @WithMockUser
+        void 종료된_투표_미투표시에도_voteCount_노출() throws Exception {
+            List<OptionResult> options = List.of(
+                    new OptionResult(10L, "짜장면", 60L, 60),
+                    new OptionResult(11L, "짬뽕", 40L, 40)
+            );
+            VoteDetailResult result = new VoteDetailResult(
+                    1L, "점심 뭐 먹을까?", Instant.parse("2025-01-01T00:00:00Z"),
+                    "내용", "thumb.png", null, VoteStatus.ENDED, Instant.parse("2025-01-02T00:00:00Z"),
+                    100, options, false, null, Map.of(), null, 0
+            );
+            given(voteDetailQueryService.getDetail(eq(1L), any(), any())).willReturn(result);
+
+            mockMvc.perform(get("/api/votes/1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ENDED"))
+                    .andExpect(jsonPath("$.myVote.voted").value(false))
+                    .andExpect(jsonPath("$.options[0].voteCount").value(60))
+                    .andExpect(jsonPath("$.options[0].ratio").value(60))
+                    .andExpect(jsonPath("$.options[1].voteCount").value(40))
+                    .andExpect(jsonPath("$.options[1].ratio").value(40));
+        }
+
+        @Test
+        @WithMockUser
+        void 진행중_투표_미투표시_voteCount는_null() throws Exception {
+            List<OptionResult> options = List.of(
+                    new OptionResult(10L, "짜장면", 60L, 60),
+                    new OptionResult(11L, "짬뽕", 40L, 40)
+            );
+            VoteDetailResult result = new VoteDetailResult(
+                    1L, "점심 뭐 먹을까?", Instant.parse("2025-01-01T00:00:00Z"),
+                    "내용", "thumb.png", null, VoteStatus.ONGOING, Instant.parse("2025-01-02T00:00:00Z"),
+                    100, options, false, null, Map.of(), null, 0
+            );
+            given(voteDetailQueryService.getDetail(eq(1L), any(), any())).willReturn(result);
+
+            mockMvc.perform(get("/api/votes/1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ONGOING"))
+                    .andExpect(jsonPath("$.myVote.voted").value(false))
+                    .andExpect(jsonPath("$.options[0].voteCount").doesNotExist())
+                    .andExpect(jsonPath("$.options[0].ratio").doesNotExist())
+                    .andExpect(jsonPath("$.options[1].voteCount").doesNotExist())
+                    .andExpect(jsonPath("$.options[1].ratio").doesNotExist());
         }
     }
 }
