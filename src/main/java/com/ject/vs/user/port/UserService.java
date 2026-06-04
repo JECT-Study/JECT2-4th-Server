@@ -87,6 +87,15 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
+        if(req.nickname().equals(user.getNickname())) {
+            User.modifyImageColor(user, req.imageColor());
+
+            return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
+        }
+        else if(!userRepository.isNicknameAvailable(req.nickname())) {
+            throw new BusinessException(UserErrorCode.USER_NICKNAME_DUPLICATE);
+        }
+
         User.modifyAccount(user, req.nickname(), req.imageColor());
 
         return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
