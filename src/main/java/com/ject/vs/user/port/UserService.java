@@ -29,11 +29,6 @@ public class UserService {
                 .orElseGet(() -> userRepository.save(User.createWithEmail(email)));
     }
 
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
-    }
-
     public NicknameCheckResponse checkNickname(String nickName, Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
