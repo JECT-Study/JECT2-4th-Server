@@ -63,6 +63,10 @@ public class User {
         this.nickname = nickname;
     }
 
+    public static void modifyImageColor(User user, ImageColor imageColor) {
+        user.imageColor = imageColor;
+    }
+
     public static void modifyAccount(User user, String nickname, ImageColor imageColor) {
         user.nickname = nickname;
         user.imageColor = imageColor;

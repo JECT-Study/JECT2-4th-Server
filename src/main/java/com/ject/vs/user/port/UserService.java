@@ -29,16 +29,18 @@ public class UserService {
                 .orElseGet(() -> userRepository.save(User.createWithEmail(email)));
     }
 
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
-    }
-
     public NicknameCheckResponse checkNickname(String nickName, Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         return new NicknameCheckResponse(userRepository.isNicknameAvailable(nickName));
+    }
+
+    public NicknameCheckResponse checkNicknameSlang(String nickName, Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        return new NicknameCheckResponse(!wordService.containSlang(nickName));
     }
 
     public UserProfileResponse setupAdditionalInfo(UserExtraInfo userInfo, Long userId) {
@@ -79,6 +81,15 @@ public class UserService {
    public UserMyPageResponse modifyInfo(Long userId, UserModifyInfoRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        if(req.nickname().equals(user.getNickname())) {
+            User.modifyImageColor(user, req.imageColor());
+
+            return new UserMyPageResponse(user.getEmail(), user.getNickname(), user.getImageColor());
+        }
+        else if(!userRepository.isNicknameAvailable(req.nickname())) {
+            throw new BusinessException(UserErrorCode.USER_NICKNAME_DUPLICATE);
+        }
 
         User.modifyAccount(user, req.nickname(), req.imageColor());
 

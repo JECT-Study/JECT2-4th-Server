@@ -58,3 +58,6 @@ package-lock.json
 .omx/
 ### local convention docs ###
 CLAUDE.md
+
+### claude 작업 산출물 (투표 일괄 적재 스크립트/데이터/이미지) ###
+.claude/

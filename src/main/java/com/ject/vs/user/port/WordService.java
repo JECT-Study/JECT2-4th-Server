@@ -1,6 +1,7 @@
 package com.ject.vs.user.port;
 
 import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.util.SlangFilter;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +29,14 @@ public class WordService {
 
     private List<String> words2 = new ArrayList<>();
     private List<String> words3 = new ArrayList<>();
+    private List<String> slang = new ArrayList<>();
 
     @PostConstruct
     public void init() {
         try {
             words2 = loadWords("classpath:data/ko_words_2.txt");
             words3 = loadWords("classpath:data/ko_words_3.txt");
+            slang = loadWords("classpath:data/slang.txt");
         } catch (IOException e) {
             log.error("단어 로딩 실패", e);
         }
@@ -76,5 +79,9 @@ public class WordService {
         } while(!userRepository.isNicknameAvailable(ret));
 
         return ret;
+    }
+
+    public boolean containSlang(String input) {
+        return SlangFilter.containsSlang(input, slang);
     }
 }
