@@ -75,6 +75,11 @@ public class VoteQueryService implements VoteQueryUseCase, VoteParticipationQuer
     }
 
     @Override
+    public Optional<VoteOptionCode> findSelectedOptionCode(Long voteId, Long userId) {
+        return getSelectedOptionId(voteId, userId).map(optionId -> getSelectedOption(voteId, userId).getCode());
+    }
+
+    @Override
     public int getParticipantCount(Long voteId) {
         return (int) voteParticipationRepository.countByVoteId(voteId);
     }

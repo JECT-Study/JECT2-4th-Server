@@ -6,14 +6,15 @@ import com.ject.vs.chat.domain.ChatRoomUnread;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.exception.ChatForbiddenException;
 import com.ject.vs.chat.exception.InvalidMessageException;
+import com.ject.vs.chat.port.in.dto.ChatListItemResult;
 import com.ject.vs.chat.port.in.dto.MarkAsReadCommand;
 import com.ject.vs.chat.port.in.dto.MessagePageResult;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.SendMessageCommand;
+import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.port.in.UserQueryUseCase;
-import com.ject.vs.vote.domain.VoteOption;
 import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
@@ -27,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,9 +59,6 @@ class ChatServiceTest {
 
     @Mock
     private UserQueryUseCase userQueryUseCase;
-
-    @Mock
-    private VoteOption selectedOption;
 
     @Nested
     class sendMessage {
@@ -95,8 +94,7 @@ class ChatServiceTest {
             given(sender.getNickname()).willReturn("테스트유저");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
-            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
-            given(selectedOption.getCode()).willReturn(VoteOptionCode.A);
+            given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.A));
 
             // when
             MessageResult result = chatService.sendMessage(new SendMessageCommand(1L, 2L, "hello"));
@@ -140,6 +138,57 @@ class ChatServiceTest {
     }
 
     @Nested
+    class getChatList {
+
+        @Test
+        void 최근_메시지_시간_기준_내림차순으로_정렬한다() {
+            // given
+            Long userId = 1L;
+            given(voteParticipationQueryUseCase.findAllVoteIdsByUserId(userId)).willReturn(List.of(10L, 20L, 30L));
+            given(voteQueryUseCase.findAllVoteIdsByStatus(List.of(10L, 20L, 30L), VoteStatus.ONGOING))
+                    .willReturn(List.of(10L, 20L, 30L));
+
+            Instant endAt = Instant.parse("2026-12-31T00:00:00Z");
+            given(voteQueryUseCase.getVoteChatSummary(10L))
+                    .willReturn(new VoteQueryUseCase.VoteChatSummary(10L, "t10", null, VoteStatus.ONGOING, endAt, "A", "B"));
+            given(voteQueryUseCase.getVoteChatSummary(20L))
+                    .willReturn(new VoteQueryUseCase.VoteChatSummary(20L, "t20", null, VoteStatus.ONGOING, endAt, "A", "B"));
+            given(voteQueryUseCase.getVoteChatSummary(30L))
+                    .willReturn(new VoteQueryUseCase.VoteChatSummary(30L, "t30", null, VoteStatus.ONGOING, endAt, "A", "B"));
+
+            given(voteParticipationQueryUseCase.countParticipantsByVoteId(any())).willReturn(1L);
+            given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(eq(userId), any())).willReturn(Optional.empty());
+            given(chatMessageRepository.countByVoteId(any())).willReturn(0L);
+
+            ChatMessage oldMsg = mock(ChatMessage.class);
+            ChatMessage midMsg = mock(ChatMessage.class);
+            ChatMessage newMsg = mock(ChatMessage.class);
+
+            given(oldMsg.getContent()).willReturn("old");
+            given(midMsg.getContent()).willReturn("mid");
+            given(newMsg.getContent()).willReturn("new");
+            given(oldMsg.getCreatedAt()).willReturn(Instant.parse("2026-01-01T00:00:00Z"));
+            given(midMsg.getCreatedAt()).willReturn(Instant.parse("2026-01-02T00:00:00Z"));
+            given(newMsg.getCreatedAt()).willReturn(Instant.parse("2026-01-03T00:00:00Z"));
+
+            given(chatMessageRepository.findFirstByVoteIdOrderByIdDesc(10L)).willReturn(Optional.of(oldMsg));
+            given(chatMessageRepository.findFirstByVoteIdOrderByIdDesc(20L)).willReturn(Optional.of(midMsg));
+            given(chatMessageRepository.findFirstByVoteIdOrderByIdDesc(30L)).willReturn(Optional.of(newMsg));
+
+            // when
+            List<ChatListItemResult> result = chatService.getChatList(userId, VoteStatus.ONGOING);
+
+            // then
+            assertThat(result).extracting(ChatListItemResult::voteId).containsExactly(30L, 20L, 10L);
+            assertThat(result).extracting(ChatListItemResult::lastMessageAt)
+                    .containsExactly(
+                            Instant.parse("2026-01-03T00:00:00Z"),
+                            Instant.parse("2026-01-02T00:00:00Z"),
+                            Instant.parse("2026-01-01T00:00:00Z"));
+        }
+    }
+
+    @Nested
     class getMessages {
 
         @Test
@@ -152,14 +201,14 @@ class ChatServiceTest {
             given(sender.getNickname()).willReturn("");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
-            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
-            given(selectedOption.getCode()).willReturn(null);
+            given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.empty());
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, null, 30);
 
             // then
             assertThat(result.messages()).hasSize(1);
+            assertThat(result.messages().getFirst().senderVoteOption()).isNull();
             assertThat(result.hasNext()).isFalse();
             verify(chatMessageRepository).findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class));
         }
@@ -174,8 +223,7 @@ class ChatServiceTest {
             given(sender.getNickname()).willReturn("");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
-            given(voteQueryUseCase.getSelectedOption(1L, 2L)).willReturn(selectedOption);
-            given(selectedOption.getCode()).willReturn(null);
+            given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, 100L, 30);

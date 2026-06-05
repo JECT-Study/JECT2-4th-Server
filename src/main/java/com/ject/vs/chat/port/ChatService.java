@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -49,7 +50,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         ChatMessage saved = chatMessageRepository.save(message);
         User sender = userQueryUseCase.getUser(command.senderId());
         VoteOptionCode voteOptionCode =
-                voteQueryUseCase.getSelectedOption(command.voteId(), command.senderId()).getCode();
+                voteQueryUseCase.findSelectedOptionCode(command.voteId(), command.senderId()).orElse(null);
 
         return new MessageResult(
                 saved.getId(),
@@ -98,6 +99,9 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                             unreadCount
                     );
                 })
+                .sorted(Comparator.comparing(
+                        ChatListItemResult::lastMessageAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
@@ -137,7 +141,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 .map(msg -> {
                     User sender = userQueryUseCase.getUser(msg.getSenderId());
                     VoteOptionCode voteOptionCode =
-                            voteQueryUseCase.getSelectedOption(voteId, msg.getSenderId()).getCode();
+                            voteQueryUseCase.findSelectedOptionCode(voteId, msg.getSenderId()).orElse(null);
 
                     return new MessageResult(
                             msg.getId(),

@@ -36,7 +36,7 @@ public class ChatMessageEventListener {
 
         User sender = userQueryUseCase.getUser(message.getSenderId());
         VoteOptionCode voteOptionCode =
-                voteQueryUseCase.getSelectedOption(message.getVoteId(), message.getSenderId()).getCode();
+                voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), message.getSenderId()).orElse(null);
 
         MessageResult messageResult = new MessageResult(
                 message.getId(),
