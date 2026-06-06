@@ -51,14 +51,16 @@ class VoteCloseSchedulerTest {
     class closeExpiredVotes {
 
         @Test
-        void 만료된_투표가_있으면_markEnded_호출하고_이벤트_발행() {
+        void 미처리_만료_투표가_있으면_처리_마킹하고_이벤트_발행() {
             Vote expired = makeExpiredVote();
-            given(clock.instant()).willReturn(Instant.parse("2025-01-01T02:00:00Z"));
-            given(voteRepository.findExpiredOngoing(any())).willReturn(List.of(expired));
+            Instant now = Instant.parse("2025-01-01T02:00:00Z");
+            given(clock.instant()).willReturn(now);
+            given(voteRepository.findUnprocessedExpired(now)).willReturn(List.of(expired));
 
             scheduler.closeExpiredVotes();
 
             assertThat(expired.getStatus()).isEqualTo(VoteStatus.ENDED);
+            assertThat(expired.isEndedProcessed()).isTrue();
 
             ArgumentCaptor<VoteEndedEvent> captor = ArgumentCaptor.forClass(VoteEndedEvent.class);
             verify(eventPublisher).publishEvent(captor.capture());
@@ -66,9 +68,10 @@ class VoteCloseSchedulerTest {
         }
 
         @Test
-        void 만료된_투표_없으면_이벤트_미발행() {
-            given(clock.instant()).willReturn(Instant.parse("2025-01-01T02:00:00Z"));
-            given(voteRepository.findExpiredOngoing(any())).willReturn(List.of());
+        void 미처리_만료_투표_없으면_이벤트_미발행() {
+            Instant now = Instant.parse("2025-01-01T02:00:00Z");
+            given(clock.instant()).willReturn(now);
+            given(voteRepository.findUnprocessedExpired(now)).willReturn(List.of());
 
             scheduler.closeExpiredVotes();
 
@@ -76,28 +79,31 @@ class VoteCloseSchedulerTest {
         }
 
         @Test
-        void 만료된_투표_여러개이면_각각_이벤트_발행() {
+        void 미처리_만료_투표_여러개이면_각각_처리_마킹하고_이벤트_발행() {
             Vote v1 = makeExpiredVote();
             Vote v2 = makeExpiredVote();
-            given(clock.instant()).willReturn(Instant.parse("2025-01-01T02:00:00Z"));
-            given(voteRepository.findExpiredOngoing(any())).willReturn(List.of(v1, v2));
+            Instant now = Instant.parse("2025-01-01T02:00:00Z");
+            given(clock.instant()).willReturn(now);
+            given(voteRepository.findUnprocessedExpired(now)).willReturn(List.of(v1, v2));
 
             scheduler.closeExpiredVotes();
 
             assertThat(v1.getStatus()).isEqualTo(VoteStatus.ENDED);
             assertThat(v2.getStatus()).isEqualTo(VoteStatus.ENDED);
+            assertThat(v1.isEndedProcessed()).isTrue();
+            assertThat(v2.isEndedProcessed()).isTrue();
             verify(eventPublisher, times(2)).publishEvent(any(VoteEndedEvent.class));
         }
 
         @Test
-        void findExpiredOngoing에_현재_시각_전달() {
+        void findUnprocessedExpired에_현재_시각_전달() {
             Instant now = Instant.parse("2025-06-01T12:00:00Z");
             given(clock.instant()).willReturn(now);
-            given(voteRepository.findExpiredOngoing(now)).willReturn(List.of());
+            given(voteRepository.findUnprocessedExpired(now)).willReturn(List.of());
 
             scheduler.closeExpiredVotes();
 
-            verify(voteRepository).findExpiredOngoing(now);
+            verify(voteRepository).findUnprocessedExpired(now);
         }
     }
 }

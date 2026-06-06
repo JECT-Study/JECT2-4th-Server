@@ -35,6 +35,8 @@ public class Vote extends BaseTimeEntity {
     @Column(nullable = false)
     private Instant endAt;
 
+    private Instant endedProcessedAt;
+
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_id", insertable = false, updatable = false)
     private List<VoteOption> options = new ArrayList<>();
@@ -117,5 +119,14 @@ public class Vote extends BaseTimeEntity {
 
     public boolean hasAiInsight() {
         return aiInsightHeadline != null && aiInsightBody != null;
+    }
+
+    public boolean isEndedProcessed() {
+        return endedProcessedAt != null;
+    }
+
+    public void markEndedProcessed(Clock clock) {
+        if (endedProcessedAt != null) return;
+        this.endedProcessedAt = Instant.now(clock);
     }
 }

@@ -13,8 +13,12 @@ import java.util.List;
 
 public interface VoteRepository extends JpaRepository<Vote, Long> {
 
-    @Query("SELECT v FROM Vote v WHERE v.endAt < :now")
-    List<Vote> findExpiredOngoing(@Param("now") Instant now);
+    @Query("""
+        SELECT v FROM Vote v
+         WHERE v.endAt < :now
+           AND v.endedProcessedAt IS NULL
+        """)
+    List<Vote> findUnprocessedExpired(@Param("now") Instant now);
 
     List<Vote> findAllByIdIn(List<Long> ids);
 
