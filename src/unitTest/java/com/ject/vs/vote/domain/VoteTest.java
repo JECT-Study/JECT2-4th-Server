@@ -91,6 +91,33 @@ class VoteTest {
     }
 
     @Nested
+    class markEndedProcessed {
+
+        @Test
+        void 최초_호출_시_처리_시각이_기록된다() {
+            Vote vote = Vote.create("제목", null, "thumb", null,
+                    Duration.ofHours(24), FIXED_CLOCK);
+
+            vote.markEndedProcessed(FIXED_CLOCK);
+
+            assertThat(vote.isEndedProcessed()).isTrue();
+            assertThat(vote.getEndedProcessedAt()).isEqualTo(Instant.parse("2025-01-01T00:00:00Z"));
+        }
+
+        @Test
+        void 이미_처리된_투표는_재호출해도_시각이_변경되지_않는다() {
+            Vote vote = Vote.create("제목", null, "thumb", null,
+                    Duration.ofHours(24), FIXED_CLOCK);
+            vote.markEndedProcessed(FIXED_CLOCK);
+
+            Clock later = Clock.fixed(Instant.parse("2025-01-02T00:00:00Z"), ZoneOffset.UTC);
+            vote.markEndedProcessed(later);
+
+            assertThat(vote.getEndedProcessedAt()).isEqualTo(Instant.parse("2025-01-01T00:00:00Z"));
+        }
+    }
+
+    @Nested
     class cacheAiInsight {
 
         @Test

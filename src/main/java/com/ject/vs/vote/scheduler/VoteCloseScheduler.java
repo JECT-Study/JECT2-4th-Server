@@ -26,12 +26,14 @@ public class VoteCloseScheduler {
     @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void closeExpiredVotes() {
-        List<Vote> expired = voteRepository.findExpiredOngoing(Instant.now(clock));
+        Instant now = Instant.now(clock);
+        List<Vote> expired = voteRepository.findUnprocessedExpired(now);
         for (Vote vote : expired) {
+            vote.markEndedProcessed(clock);
             eventPublisher.publishEvent(new VoteEndedEvent(vote.getId()));
         }
         if (!expired.isEmpty()) {
-            log.info("Closed {} expired votes", expired.size());
+            log.info("Processed {} newly expired votes", expired.size());
         }
     }
 }

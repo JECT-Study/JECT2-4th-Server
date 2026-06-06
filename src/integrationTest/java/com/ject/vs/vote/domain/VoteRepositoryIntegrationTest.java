@@ -199,17 +199,35 @@ class VoteRepositoryIntegrationTest {
         }
 
         @Test
-        @DisplayName("findExpiredOngoing은 현재 시각 기준 종료된 투표를 반환한다")
-        void findExpiredOngoing은_종료된_투표를_반환한다() {
+        @DisplayName("findUnprocessedExpired는 미처리·종료된 투표만 반환한다")
+        void findUnprocessedExpired는_미처리_종료_투표만_반환한다() {
             // given
             Instant queryTime = BASE_TIME.plus(Duration.ofHours(2));
 
             // when
-            List<Vote> expiredVotes = voteRepository.findExpiredOngoing(queryTime);
+            List<Vote> expiredVotes = voteRepository.findUnprocessedExpired(queryTime);
 
             // then
             assertThat(expiredVotes).hasSize(1);
             assertThat(expiredVotes.get(0).getTitle()).isEqualTo("종료된 투표");
+        }
+
+        @Test
+        @DisplayName("findUnprocessedExpired는 endedProcessedAt이 있는 투표를 제외한다")
+        void findUnprocessedExpired는_이미_처리된_투표를_제외한다() {
+            // given
+            Instant queryTime = BASE_TIME.plus(Duration.ofHours(2));
+            Vote foundExpired = voteRepository.findById(expiredVote.getId()).orElseThrow();
+            foundExpired.markEndedProcessed(FIXED_CLOCK);
+            voteRepository.save(foundExpired);
+            entityManager.flush();
+            entityManager.clear();
+
+            // when
+            List<Vote> expiredVotes = voteRepository.findUnprocessedExpired(queryTime);
+
+            // then
+            assertThat(expiredVotes).isEmpty();
         }
 
         @Test
