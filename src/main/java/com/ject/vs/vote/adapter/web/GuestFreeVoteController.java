@@ -1,5 +1,7 @@
 package com.ject.vs.vote.adapter.web;
 
+import com.ject.vs.analytics.AnalyticsEvent;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.config.AnonymousId;
 import com.ject.vs.vote.adapter.web.dto.FreeVotesResponse;
 import com.ject.vs.vote.domain.GuestFreeVote;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GuestFreeVoteController {
 
     private final GuestFreeVoteService guestFreeVoteService;
+    private final AnalyticsEventLogger analytics;
 
     @Operation(summary = "잔여 무료 투표권 조회", description = "비회원의 잔여 무료 투표권 수를 조회합니다. 회원은 remainingFreeVotes가 null로 응답됩니다.")
     @GetMapping("/free-votes")
@@ -27,12 +30,17 @@ public class GuestFreeVoteController {
             @AuthenticationPrincipal Long userId,
             @Parameter(hidden = true) @AnonymousId String anonymousId) {
         // 회원은 무료 투표권 제한이 없으므로 null로 응답
-        if (userId != null) {
-            return new FreeVotesResponse(null, null);
-        }
-        return new FreeVotesResponse(
-                guestFreeVoteService.remaining(anonymousId),
-                GuestFreeVote.totalFreeVotes()
-        );
+        FreeVotesResponse response = (userId != null)
+                ? new FreeVotesResponse(null, null)
+                : new FreeVotesResponse(
+                        guestFreeVoteService.remaining(anonymousId),
+                        GuestFreeVote.totalFreeVotes());
+
+        analytics.log(AnalyticsEvent.of("free_votes_checked")
+                .anonymousId(anonymousId)
+                .put("remaining_free_votes", response.remainingFreeVotes())
+                .put("total_free_votes", response.totalFreeVotes()));
+
+        return response;
     }
 }
