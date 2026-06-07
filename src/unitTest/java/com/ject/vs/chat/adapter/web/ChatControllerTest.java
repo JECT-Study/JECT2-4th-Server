@@ -1,6 +1,7 @@
 package com.ject.vs.chat.adapter.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.chat.adapter.web.dto.MarkAsReadRequest;
 import com.ject.vs.chat.adapter.web.dto.SendMessageRequest;
 import com.ject.vs.chat.exception.ChatForbiddenException;
@@ -60,6 +61,9 @@ class ChatControllerTest {
 
     @MockBean
     private CustomOAuth2UserService customOAuth2UserService;
+
+    @MockBean
+    private AnalyticsEventLogger analytics;
 
     @Nested
     class getChatList {
@@ -145,7 +149,7 @@ class ChatControllerTest {
         @WithMockUser
         void 정상이면_201을_반환한다() throws Exception {
             // given
-            MessageResult result = new MessageResult(1L, "hello", Instant.now(), "nick", null, VoteOptionCode.A, true);
+            MessageResult result = new MessageResult(1L, "hello", Instant.now(), "nick", null, VoteOptionCode.A, true, false);
             given(chatCommandUseCase.sendMessage(any(SendMessageCommand.class))).willReturn(result);
 
             // when & then

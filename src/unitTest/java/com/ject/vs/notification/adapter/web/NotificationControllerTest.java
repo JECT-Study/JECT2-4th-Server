@@ -1,5 +1,6 @@
 package com.ject.vs.notification.adapter.web;
 
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.common.exception.GlobalExceptionHandler;
@@ -63,6 +64,9 @@ class NotificationControllerTest {
 
     @MockBean
     private PushSenderPort pushSenderPort;
+
+    @MockBean
+    private AnalyticsEventLogger analytics;
 
     private static final UsernamePasswordAuthenticationToken AUTH =
             new UsernamePasswordAuthenticationToken(1L, null, Collections.emptyList());
@@ -138,6 +142,9 @@ class NotificationControllerTest {
         @Test
         @DisplayName("알림을 읽음 처리한다")
         void marks_notification_as_read() throws Exception {
+            given(commandUseCase.markAsRead(1L, 1L)).willReturn(
+                    new NotificationCommandUseCase.MarkAsReadResult(NotificationType.VOTE_ENDED, 100L, false));
+
             mockMvc.perform(post("/api/notifications/1/read")
                             .with(authentication(AUTH))
                             .with(csrf()))
