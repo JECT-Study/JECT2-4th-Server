@@ -1,5 +1,7 @@
 package com.ject.vs.notification.adapter.web;
 
+import com.ject.vs.analytics.AnalyticsEvent;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.notification.adapter.web.dto.RegisterPushTokenRequest;
 import com.ject.vs.notification.port.in.PushTokenUseCase;
 import com.ject.vs.vote.exception.UnauthorizedException;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class DeviceController {
 
     private final PushTokenUseCase useCase;
+    private final AnalyticsEventLogger analytics;
 
     @Operation(summary = "푸시 토큰 등록", description = "FCM/APNs 디바이스 토큰을 등록합니다. 투표 종료 시 푸시 알림 발송에 사용됩니다.")
     @PostMapping("/push-token")
@@ -27,6 +30,9 @@ public class DeviceController {
             @RequestBody @Valid RegisterPushTokenRequest request) {
         if (userId == null) throw new UnauthorizedException();
         useCase.register(userId, request.token(), request.platform());
+
+        analytics.log(AnalyticsEvent.of("push_token_registered")
+                .put("platform", request.platform()));
     }
 
     @Operation(summary = "푸시 토큰 해제", description = "등록된 모든 푸시 토큰을 해제합니다.")
