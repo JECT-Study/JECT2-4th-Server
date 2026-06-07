@@ -50,7 +50,7 @@ app:
     # 예: https://vs.io.kr,https://admin.vs.io.kr
     # 로컬 프론트 개발 편의를 위해 기본값에 localhost:3000을 임시 포함합니다.
     # 백엔드 서버간 직접 호출에는 브라우저 CORS 검사가 적용되지 않습니다.
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://vs.io.kr,http://localhost:3000,http://127.0.0.1:3000}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:https://vs.io.kr,http://localhost:3000,http://127.0.0.1:3000,https://vs-4th-client-k5rd.vercel.app}
     allowed-methods: ${APP_CORS_ALLOWED_METHODS:GET,POST,PUT,PATCH,DELETE,OPTIONS}
     allowed-headers: ${APP_CORS_ALLOWED_HEADERS:Authorization,Content-Type,X-Requested-With,Accept,Origin}
     allow-credentials: ${APP_CORS_ALLOW_CREDENTIALS:true}
