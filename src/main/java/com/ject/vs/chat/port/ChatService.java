@@ -47,6 +47,9 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
             throw new InvalidMessageException();
         }
 
+        // 행동 로그(is_first_message)용: 저장 전 기존 메시지 존재 여부로 첫 메시지인지 판단
+        boolean isFirstMessage = chatMessageRepository.countByVoteId(command.voteId()) == 0;
+
         ChatMessage saved = chatMessageRepository.save(message);
         User sender = userQueryUseCase.getUser(command.senderId());
         VoteOptionCode voteOptionCode =
@@ -59,7 +62,8 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 sender.getNickname(),
                 sender.getImageColor(),
                 voteOptionCode,
-                true
+                true,
+                isFirstMessage
         );
     }
 
@@ -150,7 +154,8 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                             sender.getNickname(),
                             sender.getImageColor(),
                             voteOptionCode,
-                            msg.getSenderId().equals(userId)
+                            msg.getSenderId().equals(userId),
+                            false
                     );
                 })
                 .toList();

@@ -12,5 +12,8 @@ public record MessageResult(
         String senderNickname,
         ImageColor senderProfileIcon,
         VoteOptionCode senderVoteOption,
-        boolean isMine
+        boolean isMine,
+        // 행동 로그(chat_message_sent)의 is_first_message 변수: 해당 채팅방의 첫 메시지인지 여부.
+        // 메시지 전송 시점에만 의미를 가지며, 목록 조회/실시간 브로드캐스트에서는 false로 채운다.
+        boolean isFirstMessage
 ) {}
