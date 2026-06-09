@@ -6,6 +6,7 @@ import com.ject.vs.auth.port.AuthService;
 import com.ject.vs.auth.port.in.dto.LoginTokenResponse;
 import com.ject.vs.common.exception.BusinessException;
 import com.ject.vs.user.domain.UserStatus;
+import com.ject.vs.user.domain.UtmAttribution;
 import com.ject.vs.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,6 +32,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final JwtProperties jwtProperties;
     private final CookieProperties cookieProperties;
     private final AnalyticsEventLogger analytics;
+    private final UtmCookie utmCookie;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -41,15 +43,27 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String email = oAuth2User.getAttribute("email");
 
         try {
-            LoginTokenResponse loginResponse = authService.socialLogin(email);
+            UtmAttribution utm = utmCookie.read(request);
+
+            LoginTokenResponse loginResponse = authService.socialLogin(email, utm);
 
             addTokenCookies(response, loginResponse);
 
             String targetUrl = determineTargetUrl(loginResponse.getUserStatus());
 
-            analytics.log(AnalyticsEvent.of("signup_completed")
+            AnalyticsEvent event = AnalyticsEvent.of("signup_completed")
                     .userId(loginResponse.getUserId())
-                    .put("method", resolveMethod(authentication)));
+                    .put("method", resolveMethod(authentication));
+            if (!utm.isEmpty()) {
+                event.put("utm_source", utm.source())
+                        .put("utm_medium", utm.medium())
+                        .put("utm_campaign", utm.campaign())
+                        .put("utm_content", utm.content());
+            }
+            analytics.log(event);
+
+            // 출처를 소비했으므로 쿠키를 만료시켜 다음 가입에 새 유입이 잡히도록 한다.
+            utmCookie.clear(response);
 
             log.info("=== OAuth2 Login Success ===");
             log.info("email: {}", email);
