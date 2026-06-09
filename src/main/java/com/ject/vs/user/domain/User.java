@@ -35,6 +35,12 @@ public class User {
 
     private Instant withdrawnAt;
 
+    /** 가입 유입 출처(UTM). 가입(=row 최초 생성) 시점에 first-touch 값으로만 기록된다. */
+    private String signupSource;
+    private String signupMedium;
+    private String signupCampaign;
+    private String signupContent;
+
     public static User createWithEmail(String email) {
         User user = new User();
         user.email = email;
@@ -88,6 +94,20 @@ public class User {
 
     public boolean isWithdrawn() {
         return this.userStatus == UserStatus.WITHDRAWN;
+    }
+
+    /**
+     * 가입 유입 출처(UTM)를 기록한다. first-touch 이므로 신규 가입(row 최초 생성) 시 1회만 호출된다.
+     * 빈 출처면 아무것도 하지 않아 컬럼을 null로 유지한다.
+     */
+    public void assignSignupSource(UtmAttribution utm) {
+        if (utm == null || utm.isEmpty()) {
+            return;
+        }
+        this.signupSource = utm.source();
+        this.signupMedium = utm.medium();
+        this.signupCampaign = utm.campaign();
+        this.signupContent = utm.content();
     }
 
 }
