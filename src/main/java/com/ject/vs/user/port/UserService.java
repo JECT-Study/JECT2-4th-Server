@@ -24,9 +24,18 @@ public class UserService {
     private final UserImageService userImageService;
 
     public User findOrCreate(String email) {
+        return findOrCreate(email, UtmAttribution.empty());
+    }
+
+    public User findOrCreate(String email, UtmAttribution utm) {
         // 활성 사용자(탈퇴 제외)만 조회한다. 재가입은 기존 탈퇴 계정을 복구하지 않고 새 row를 생성한다.
+        // UTM 출처는 새 row를 만드는 경우(=신규 가입)에만 기록한다. 기존 사용자 재로그인 시엔 덮어쓰지 않는다(first-touch 고정).
         return userRepository.findByEmailAndUserStatusNot(email, UserStatus.WITHDRAWN)
-                .orElseGet(() -> userRepository.save(User.createWithEmail(email)));
+                .orElseGet(() -> {
+                    User user = User.createWithEmail(email);
+                    user.assignSignupSource(utm);
+                    return userRepository.save(user);
+                });
     }
 
     public NicknameCheckResponse checkNickname(String nickName, Long userId) {

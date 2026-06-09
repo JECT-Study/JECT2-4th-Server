@@ -11,6 +11,7 @@ import com.ject.vs.auth.port.in.dto.TokenReissueResponse;
 import com.ject.vs.common.exception.BusinessException;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.domain.UserRepository;
+import com.ject.vs.user.domain.UtmAttribution;
 import com.ject.vs.user.exception.UserErrorCode;
 import com.ject.vs.user.port.UserService;
 import com.ject.vs.util.JwtProvider;
@@ -32,7 +33,11 @@ public class AuthService {
     private final JwtProvider jwtProvider;
 
     public LoginTokenResponse socialLogin(String email) {
-        User user = userService.findOrCreate(email);
+        return socialLogin(email, UtmAttribution.empty());
+    }
+
+    public LoginTokenResponse socialLogin(String email, UtmAttribution utm) {
+        User user = userService.findOrCreate(email, utm);
 
         TokenInfo accessTokenInfo = jwtProvider.createAccessToken(user.getId());
         TokenInfo refreshTokenInfo = jwtProvider.createRefreshToken(user.getId());
