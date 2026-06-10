@@ -1,6 +1,7 @@
 package com.ject.vs.vote.adapter.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.config.TestPropertiesConfig;
 import org.springframework.context.annotation.Import;
@@ -8,6 +9,7 @@ import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
 import com.ject.vs.vote.adapter.web.dto.EmojiRequest;
+import com.ject.vs.vote.domain.EmojiAction;
 import com.ject.vs.vote.domain.VoteEmoji;
 import com.ject.vs.vote.exception.VoteNotFoundException;
 import com.ject.vs.vote.port.in.VoteEmojiCommandUseCase;
@@ -44,13 +46,14 @@ class VoteEmojiControllerTest {
     @MockBean CookieUtil cookieUtil;
     @MockBean OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     @MockBean CustomOAuth2UserService customOAuth2UserService;
+    @MockBean AnalyticsEventLogger analytics;
 
     private static final UsernamePasswordAuthenticationToken AUTH =
             new UsernamePasswordAuthenticationToken(1L, null, Collections.emptyList());
 
     private EmojiResult sampleResult(VoteEmoji myEmoji) {
         return new EmojiResult(Map.of(VoteEmoji.LIKE, 5L, VoteEmoji.SAD, 0L,
-                VoteEmoji.ANGRY, 0L, VoteEmoji.WOW, 0L), 5L, myEmoji);
+                VoteEmoji.ANGRY, 0L, VoteEmoji.WOW, 0L), 5L, myEmoji, EmojiAction.CREATED);
     }
 
     @Nested
@@ -135,7 +138,7 @@ class VoteEmojiControllerTest {
         void 다른_이모지_선택시_기존_반응_자동_교체() throws Exception {
             EmojiResult result = new EmojiResult(
                     Map.of(VoteEmoji.LIKE, 4L, VoteEmoji.SAD, 0L, VoteEmoji.ANGRY, 0L, VoteEmoji.WOW, 1L),
-                    5L, VoteEmoji.WOW
+                    5L, VoteEmoji.WOW, EmojiAction.CHANGED
             );
             given(voteEmojiCommandUseCase.reactAsMember(eq(1L), eq(1L), eq(VoteEmoji.WOW)))
                     .willReturn(result);
@@ -155,7 +158,7 @@ class VoteEmojiControllerTest {
         void 같은_이모지_재클릭시_취소() throws Exception {
             EmojiResult result = new EmojiResult(
                     Map.of(VoteEmoji.LIKE, 4L, VoteEmoji.SAD, 0L, VoteEmoji.ANGRY, 0L, VoteEmoji.WOW, 0L),
-                    4L, null
+                    4L, null, EmojiAction.CANCELED
             );
             given(voteEmojiCommandUseCase.reactAsMember(eq(1L), eq(1L), eq(VoteEmoji.WOW)))
                     .willReturn(result);

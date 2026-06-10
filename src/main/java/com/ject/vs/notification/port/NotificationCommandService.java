@@ -22,11 +22,13 @@ public class NotificationCommandService implements NotificationCommandUseCase {
     private final Clock clock;
 
     @Override
-    public void markAsRead(Long notificationId, Long userId) {
+    public MarkAsReadResult markAsRead(Long notificationId, Long userId) {
         Notification n = notificationRepository.findById(notificationId)
                 .orElseThrow(NotificationNotFoundException::new);
         if (!n.isOwnedBy(userId)) throw new NotificationNotFoundException();
+        boolean wasRead = n.isRead();
         n.markRead(clock);
+        return new MarkAsReadResult(n.getType(), n.getVoteId(), wasRead);
     }
 
     @Override

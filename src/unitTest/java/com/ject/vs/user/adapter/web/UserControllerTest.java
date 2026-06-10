@@ -1,6 +1,7 @@
 package com.ject.vs.user.adapter.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.config.TestPropertiesConfig;
@@ -53,6 +54,9 @@ class UserControllerTest {
 
     @MockitoBean
     private CustomOAuth2UserService customOAuth2UserService;
+
+    @MockitoBean
+    private AnalyticsEventLogger analytics;
 
     @Autowired
     private ObjectMapper objectMapper;

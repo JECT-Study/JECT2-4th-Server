@@ -1,6 +1,7 @@
 package com.ject.vs.notification.adapter.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.common.exception.GlobalExceptionHandler;
@@ -59,6 +60,9 @@ class AdminPushControllerTest {
 
     @MockBean
     private PushSenderPort pushSenderPort;
+
+    @MockBean
+    private AnalyticsEventLogger analytics;
 
     private static final UsernamePasswordAuthenticationToken ADMIN_AUTH =
             new UsernamePasswordAuthenticationToken(1L, null, Collections.emptyList());

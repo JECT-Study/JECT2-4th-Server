@@ -1,5 +1,6 @@
 package com.ject.vs.vote.adapter.web;
 
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.config.TestPropertiesConfig;
 import org.springframework.context.annotation.Import;
@@ -30,6 +31,7 @@ class GuestFreeVoteControllerTest {
     @MockBean CookieUtil cookieUtil;
     @MockBean OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     @MockBean CustomOAuth2UserService customOAuth2UserService;
+    @MockBean AnalyticsEventLogger analytics;
 
     @Test
     @WithMockUser

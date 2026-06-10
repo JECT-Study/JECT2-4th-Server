@@ -1,5 +1,7 @@
 package com.ject.vs.notification.adapter.web;
 
+import com.ject.vs.analytics.AnalyticsEvent;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.notification.adapter.web.dto.NotificationListResponse;
 import com.ject.vs.notification.adapter.web.dto.ReadAllResponse;
 import com.ject.vs.notification.adapter.web.dto.UnreadCountResponse;
@@ -21,6 +23,7 @@ public class NotificationController {
 
     private final NotificationQueryUseCase queryUseCase;
     private final NotificationCommandUseCase commandUseCase;
+    private final AnalyticsEventLogger analytics;
 
     @Operation(summary = "알림 목록 조회", description = "알림 목록을 조회합니다. 커서 기반 페이지네이션을 지원합니다.")
     @GetMapping
@@ -29,7 +32,19 @@ public class NotificationController {
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "20") int size) {
         if (userId == null) throw new UnauthorizedException();
-        return NotificationListResponse.from(queryUseCase.getList(userId, cursor, size));
+        NotificationListResponse response = NotificationListResponse.from(queryUseCase.getList(userId, cursor, size));
+
+        long unreadCount = response.notifications().stream()
+                .filter(n -> !n.isRead())
+                .count();
+
+        analytics.log(AnalyticsEvent.of("notification_list_viewed")
+                .put("notification_count", response.notifications().size())
+                .put("has_next", response.hasNext())
+                .put("next_cursor", response.nextCursor())
+                .put("unread_count", unreadCount));
+
+        return response;
     }
 
     @Operation(summary = "읽지 않은 알림 수 조회", description = "읽지 않은 알림의 개수를 조회합니다.")
@@ -46,7 +61,13 @@ public class NotificationController {
             @PathVariable Long notificationId,
             @AuthenticationPrincipal Long userId) {
         if (userId == null) throw new UnauthorizedException();
-        commandUseCase.markAsRead(notificationId, userId);
+        NotificationCommandUseCase.MarkAsReadResult result = commandUseCase.markAsRead(notificationId, userId);
+
+        analytics.log(AnalyticsEvent.of("notification_opened")
+                .put("notification_id", notificationId)
+                .put("notification_type", result.type())
+                .put("vote_id", result.voteId())
+                .put("is_read", result.wasRead()));
     }
 
     @Operation(summary = "모든 알림 읽음 처리", description = "모든 알림을 읽음 처리합니다.")

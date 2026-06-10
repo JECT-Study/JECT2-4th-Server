@@ -1,6 +1,7 @@
 package com.ject.vs.vote.adapter.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
 import com.ject.vs.config.TestPropertiesConfig;
 import com.ject.vs.notification.port.out.PushSenderPort;
@@ -62,6 +63,7 @@ class VoteControllerTest {
     @MockBean CustomOAuth2UserService customOAuth2UserService;
     @MockBean PushSenderPort pushSenderPort;
     @MockBean VoteParticipationQueryUseCase voteParticipationQueryUseCase;
+    @MockBean AnalyticsEventLogger analytics;
 
     private static final UsernamePasswordAuthenticationToken AUTH =
             new UsernamePasswordAuthenticationToken(1L, null, Collections.emptyList());
@@ -168,7 +170,7 @@ class VoteControllerTest {
 
         @Test
         void 회원_취소_204_반환() throws Exception {
-            willDoNothing().given(voteCommandUseCase).cancel(eq(1L), eq(1L));
+            given(voteCommandUseCase.cancel(eq(1L), eq(1L))).willReturn(10L);
 
             mockMvc.perform(delete("/api/votes/1/participate")
                             .with(authentication(AUTH)).with(csrf()))

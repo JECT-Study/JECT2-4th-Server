@@ -1,5 +1,7 @@
 package com.ject.vs.vote.adapter.web;
 
+import com.ject.vs.analytics.AnalyticsEvent;
+import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.config.AnonymousId;
 import com.ject.vs.vote.adapter.web.dto.*;
 import com.ject.vs.vote.domain.Vote;
@@ -27,9 +29,12 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class VoteController {
 
+    private static final String VOTE_TYPE_GENERAL = "GENERAL";
+
     private final VoteCommandUseCase voteCommandUseCase;
     private final VoteDetailQueryService voteDetailQueryService;
     private final VoteParticipationQueryUseCase voteParticipationQueryUseCase;
+    private final AnalyticsEventLogger analytics;
 
     @Operation(summary = "투표 생성", description = "새로운 투표를 생성합니다. 회원만 가능합니다.")
     @PostMapping
@@ -69,7 +74,18 @@ public class VoteController {
             @PathVariable Long voteId,
             @AuthenticationPrincipal Long userId,
             @Parameter(hidden = true) @AnonymousId String anonymousId) {
-        return VoteDetailResponse.from(voteDetailQueryService.getDetail(voteId, userId, anonymousId));
+        VoteDetailResponse response = VoteDetailResponse.from(voteDetailQueryService.getDetail(voteId, userId, anonymousId));
+
+        analytics.log(AnalyticsEvent.of("vote_detail_viewed")
+                .anonymousId(anonymousId)
+                .put("vote_id", response.voteId())
+                .put("vote_status", response.status())
+                .put("participant_count", response.participantCount())
+                .put("my_vote_voted", response.myVote().voted())
+                .put("selected_option_id", response.myVote().selectedOptionId())
+                .put("vote_type", VOTE_TYPE_GENERAL));
+
+        return response;
     }
 
     @Operation(summary = "투표 참여", description = "투표에 참여합니다. 비회원은 5회까지 무료 투표 가능합니다.")
@@ -82,6 +98,16 @@ public class VoteController {
         VoteCommandUseCase.ParticipateResult result = userId != null
                 ? voteCommandUseCase.participateAsMember(voteId, userId, request.optionId())
                 : voteCommandUseCase.participateAsGuest(voteId, anonymousId, request.optionId());
+
+        analytics.log(AnalyticsEvent.of("vote_participated")
+                .anonymousId(anonymousId)
+                .put("vote_id", result.voteId())
+                .put("option_id", request.optionId())
+                .put("selected_option_id", result.selectedOptionId())
+                .put("participant_count", result.participantCount())
+                .put("remaining_free_votes", result.remainingFreeVotes())
+                .put("vote_type", VOTE_TYPE_GENERAL));
+
         return ParticipateResponse.from(result);
     }
 
@@ -92,7 +118,12 @@ public class VoteController {
             @PathVariable Long voteId,
             @AuthenticationPrincipal Long userId) {
         if (userId == null) throw new UnauthorizedException();
-        voteCommandUseCase.cancel(voteId, userId);
+        Long previousOptionId = voteCommandUseCase.cancel(voteId, userId);
+
+        analytics.log(AnalyticsEvent.of("vote_canceled")
+                .put("vote_id", voteId)
+                .put("previous_option_id", previousOptionId)
+                .put("vote_type", VOTE_TYPE_GENERAL));
     }
 
     @GetMapping("/me/participated")

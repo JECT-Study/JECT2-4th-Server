@@ -45,6 +45,7 @@ public class ChatMessageEventListener {
                 sender.getNickname(),
                 sender.getImageColor(),
                 voteOptionCode,
+                false,
                 false
         );
 
