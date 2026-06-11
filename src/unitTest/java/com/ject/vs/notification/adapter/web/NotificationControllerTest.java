@@ -80,7 +80,7 @@ class NotificationControllerTest {
         void returns_notification_list() throws Exception {
             NotificationView view = new NotificationView(
                     1L, NotificationType.VOTE_ENDED, 100L,
-                    "투표 결과가 공개됐어요", "[테스트 투표] 결과 보러가기",
+                    "투표 결과가 공개됐어요", "테스트 투표",
                     "https://example.com/thumb.jpg", false, Instant.now());
             NotificationPageResult result = new NotificationPageResult(List.of(view), null, false);
 
