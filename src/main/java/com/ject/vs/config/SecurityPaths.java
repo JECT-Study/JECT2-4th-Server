@@ -16,7 +16,8 @@ public class SecurityPaths {
             "/ws/**",
             "/oauth2/authorization/**",
             "/login/oauth2/code/**",
-            "/api/home/**"
+            "/api/home/**",
+            "/api/track/**"
     );
 
     /**

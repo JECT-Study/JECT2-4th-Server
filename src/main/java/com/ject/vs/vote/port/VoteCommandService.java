@@ -95,9 +95,13 @@ public class VoteCommandService implements VoteCommandUseCase {
     }
 
     @Override
-    public void cancel(Long voteId, Long userId) {
+    public Long cancel(Long voteId, Long userId) {
         loadOngoingVote(voteId);
+        Long previousOptionId = voteParticipationRepository.findByVoteIdAndUserId(voteId, userId)
+                .map(VoteParticipation::getOptionId)
+                .orElse(null);
         voteParticipationRepository.deleteByVoteIdAndUserId(voteId, userId);
+        return previousOptionId;
     }
 
     private Vote loadOngoingVote(Long voteId) {

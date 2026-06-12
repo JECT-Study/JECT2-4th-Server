@@ -28,8 +28,9 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
         Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
         if (vote.isEnded(clock)) throw new VoteEndedException();
         Optional<VoteEmojiReaction> existing = reactionRepository.findByVoteIdAndUserId(voteId, userId);
+        EmojiAction action = resolveAction(existing, emoji);
         VoteEmojiReaction resultEmoji = applyReaction(existing, emoji != null ? VoteEmojiReaction.ofMember(voteId, userId, emoji) : null);
-        return buildResult(voteId, resultEmoji != null ? resultEmoji.getEmoji() : null);
+        return buildResult(voteId, resultEmoji != null ? resultEmoji.getEmoji() : null, action);
     }
 
     @Override
@@ -37,11 +38,29 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
         Vote vote = voteRepository.findById(voteId).orElseThrow(VoteNotFoundException::new);
         if (vote.isEnded(clock)) throw new VoteEndedException();
         Optional<VoteEmojiReaction> existing = reactionRepository.findByVoteIdAndAnonymousId(voteId, anonymousId);
+        EmojiAction action = resolveAction(existing, emoji);
         VoteEmojiReaction resultEmoji = applyReaction(
                 existing,
                 emoji != null ? VoteEmojiReaction.ofGuest(voteId, anonymousId, emoji) : null
         );
-        return buildResult(voteId, resultEmoji != null ? resultEmoji.getEmoji() : null);
+        return buildResult(voteId, resultEmoji != null ? resultEmoji.getEmoji() : null, action);
+    }
+
+    /**
+     * 행동 로그(emoji_reacted)의 action 변수를 위해, 저장 전 이전 반응 상태와 비교하여 동작을 분류한다.
+     * - 기존 없음 + emoji 있음 → CREATED
+     * - 기존 있음 + (emoji 없음 or 같은 emoji 재클릭) → CANCELED
+     * - 기존 있음 + 다른 emoji → CHANGED
+     * - 기존 없음 + emoji 없음 → CANCELED (멱등 no-op)
+     */
+    private EmojiAction resolveAction(Optional<VoteEmojiReaction> existing, VoteEmoji emoji) {
+        if (existing.isEmpty()) {
+            return emoji != null ? EmojiAction.CREATED : EmojiAction.CANCELED;
+        }
+        if (emoji == null || existing.get().getEmoji() == emoji) {
+            return EmojiAction.CANCELED;
+        }
+        return EmojiAction.CHANGED;
     }
 
     /**
@@ -73,13 +92,13 @@ public class VoteEmojiCommandService implements VoteEmojiCommandUseCase {
         return existingReaction;
     }
 
-    private EmojiResult buildResult(Long voteId, VoteEmoji myEmoji) {
+    private EmojiResult buildResult(Long voteId, VoteEmoji myEmoji, EmojiAction action) {
         Map<VoteEmoji, Long> summary = VoteEmoji.getMap();
 
         reactionRepository.countByEmojiForVote(voteId)
                 .forEach(row -> summary.put(row.emoij(), row.count()));
 
         long total = summary.values().stream().mapToLong(Long::longValue).sum();
-        return new EmojiResult(summary, total, myEmoji);
+        return new EmojiResult(summary, total, myEmoji, action);
     }
 }

@@ -19,7 +19,12 @@ public interface VoteCommandUseCase {
 
     ParticipateResult participateAsGuest(Long voteId, String anonymousId, Long optionId);
 
-    void cancel(Long voteId, Long userId);
+    /**
+     * 투표 참여를 취소한다.
+     *
+     * @return 취소 직전 선택했던 옵션 ID(행동 로그 vote_canceled의 previous_option_id). 참여 내역이 없으면 null.
+     */
+    Long cancel(Long voteId, Long userId);
 
     record VoteCreateCommand(
             String title,

@@ -39,7 +39,7 @@ public class Notification extends BaseEntity {
         n.type = NotificationType.VOTE_ENDED;
         n.voteId = voteId;
         n.title = "투표 결과가 공개됐어요";
-        n.body = "[" + voteTitle + "] 결과 보러가기";
+        n.body = voteTitle;
         n.thumbnailUrl = thumbnailUrl;
         n.isRead = false;
         n.createdAt = Instant.now(clock);
