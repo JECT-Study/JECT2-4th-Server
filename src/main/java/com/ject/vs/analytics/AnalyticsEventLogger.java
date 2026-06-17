@@ -15,14 +15,13 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
- * 행동 로그(analytics event)를 구조화된 JSON 한 줄로 남기는 컴포넌트.
+ * 행동 로그(analytics event)를 RDB(analytics_events 테이블)에 한 건씩 적재하는 컴포넌트.
  *
  * <p>공통 로그 변수(user_id / anonymous_id / is_member / platform / occurred_at)는
- * 현재 HTTP 요청 컨텍스트에서 자동으로 채워진다. 이벤트별 변수는 {@link AnalyticsEvent}로 전달한다.
+ * 현재 HTTP 요청 컨텍스트에서 자동으로 채워지고, 이벤트별 가변 변수는 JSON 문자열로
+ * 직렬화해 properties 컬럼에 담는다. 이벤트별 변수는 {@link AnalyticsEvent}로 전달한다.
  *
  * <pre>{@code
  * analytics.log(AnalyticsEvent.of("vote_detail_viewed")
@@ -31,19 +30,20 @@ import java.util.Map;
  * }</pre>
  *
  * <p>유일한 진입점이 void {@code log(AnalyticsEvent)}이므로 테스트에서 목(mock)으로 주입해도
- * 부수효과 없이 동작한다. 로그 적재 실패가 비즈니스 로직에 영향을 주지 않도록 모든 예외를 삼킨다.
+ * 부수효과 없이 동작한다. 적재 실패가 비즈니스 로직에 영향을 주지 않도록 모든 예외를 삼킨다.
  */
 @Component
 @RequiredArgsConstructor
 public class AnalyticsEventLogger {
 
-    /** 별도 로거 이름으로 분리하여 수집/필터링이 쉽도록 한다. */
+    /** 적재 실패 경고 등 내부 진단용 로거. */
     private static final Logger log = LoggerFactory.getLogger("analytics");
 
     private static final String ANONYMOUS_COOKIE = "anonymous_id";
 
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final AnalyticsEventRepository analyticsEventRepository;
 
     public void log(AnalyticsEvent event) {
         try {
@@ -54,16 +54,19 @@ public class AnalyticsEventLogger {
                     ? event.anonymousId()
                     : resolveAnonymousId(request);
 
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("event", event.name());
-            payload.put("user_id", userId);
-            payload.put("anonymous_id", anonymousId);
-            payload.put("is_member", userId != null);
-            payload.put("platform", resolvePlatform(request));
-            payload.put("occurred_at", Instant.now(clock).toString());
-            payload.putAll(event.properties());
+            // 이벤트별 가변 속성은 JSON 문자열로 직렬화해 properties 컬럼에 담는다.
+            String properties = event.properties().isEmpty()
+                    ? null
+                    : objectMapper.writeValueAsString(event.properties());
 
-            AnalyticsEventLogger.log.info(objectMapper.writeValueAsString(payload));
+            analyticsEventRepository.save(new AnalyticsEventRecord(
+                    event.name(),
+                    userId,
+                    anonymousId,
+                    userId != null,
+                    resolvePlatform(request),
+                    Instant.now(clock),
+                    properties));
         } catch (Exception e) {
             // 로깅 실패가 요청 처리에 영향을 주지 않도록 흡수
             AnalyticsEventLogger.log.warn("analytics event logging failed for '{}': {}", event.name(), e.getMessage());
