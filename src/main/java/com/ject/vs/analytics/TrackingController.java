@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TrackingController {
 
     private final UtmCookie utmCookie;
+    private final AnalyticsEventLogger analytics;
 
     @GetMapping("/visit")
     public ResponseEntity<Void> visit(
@@ -34,7 +35,16 @@ public class TrackingController {
             HttpServletRequest request,
             HttpServletResponse response) {
 
-        utmCookie.writeFirstTouch(request, response, UtmAttribution.of(source, medium, campaign, content));
+        UtmAttribution utm = UtmAttribution.of(source, medium, campaign, content);
+        utmCookie.writeFirstTouch(request, response, utm);
+
+        // 클릭(유입) 자체를 1건의 로그로 적재한다. signup_completed(가입)와 짝지어 전환율을 계산한다.
+        analytics.log(AnalyticsEvent.of("landing_visited")
+                .put("utm_source", utm.source())
+                .put("utm_medium", utm.medium())
+                .put("utm_campaign", utm.campaign())
+                .put("utm_content", utm.content()));
+
         return ResponseEntity.noContent().build();
     }
 }
