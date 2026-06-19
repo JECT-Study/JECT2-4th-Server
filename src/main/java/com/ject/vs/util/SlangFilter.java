@@ -1,6 +1,7 @@
 package com.ject.vs.util;
 
 import java.util.List;
+import java.util.Locale;
 
 public class SlangFilter {
     private static int[] buildFailure(char[] pattern) {
@@ -39,7 +40,7 @@ public class SlangFilter {
 
     public static boolean containsSlang(String input, List<String> slangList) {
         if(input == null || input.isBlank()) return false;
-        char[] text = input.toCharArray();
+        char[] text = input.toLowerCase(Locale.ROOT).toCharArray();
 
         for(String slang : slangList) {
             if(kmpContains(text, slang.toCharArray())) return true;
