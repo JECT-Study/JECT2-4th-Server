@@ -15,6 +15,16 @@ aws:
     access-key: ${AWS_S3_ACCESS_KEY:}
     secret-key: ${AWS_S3_SECRET_KEY:}
 
+# GA4 Measurement Protocol (행동 로그를 GA4 대시보드로도 전송 — PM/디자이너용)
+# enabled=true + Measurement ID(G-XXXX) + API secret이 모두 있어야 실제 전송. 없으면 no-op(RDB 적재는 그대로).
+# 자격증명은 GA4 콘솔에서 발급: Admin → Data Streams(웹 스트림 = Measurement ID) / Measurement Protocol API secrets(= API secret)
+google:
+  analytics:
+    enabled: ${GA_ENABLED:false}
+    measurement-id: ${GA_MEASUREMENT_ID:}
+    api-secret: ${GA_API_SECRET:}
+    endpoint: ${GA_ENDPOINT:https://www.google-analytics.com/mp/collect}
+
 gemini:
   project-id: ${GEMINI_PROJECT_ID:}
   # 서울(asia-northeast3)은 Gemini 모델 미지원 → us-central1 사용. GEMINI_LOCATION으로 override 가능

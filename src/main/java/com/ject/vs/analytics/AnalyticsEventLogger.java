@@ -44,6 +44,7 @@ public class AnalyticsEventLogger {
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final AnalyticsEventRepository analyticsEventRepository;
+    private final GoogleAnalyticsClient googleAnalytics;
 
     public void log(AnalyticsEvent event) {
         try {
@@ -53,6 +54,8 @@ public class AnalyticsEventLogger {
             String anonymousId = event.anonymousIdOverridden()
                     ? event.anonymousId()
                     : resolveAnonymousId(request);
+            String platform = resolvePlatform(request);
+            boolean member = userId != null;
 
             // 이벤트별 가변 속성은 JSON 문자열로 직렬화해 properties 컬럼에 담는다.
             String properties = event.properties().isEmpty()
@@ -63,10 +66,14 @@ public class AnalyticsEventLogger {
                     event.name(),
                     userId,
                     anonymousId,
-                    userId != null,
-                    resolvePlatform(request),
+                    member,
+                    platform,
                     Instant.now(clock),
                     properties));
+
+            // 같은 이벤트를 GA4로도 전송(PM·디자이너 대시보드용). 비동기 fire-and-forget이라
+            // 실패/지연이 위 RDB 적재나 요청 처리에 영향을 주지 않는다. 미설정이면 no-op.
+            googleAnalytics.send(event.name(), userId, anonymousId, member, platform, event.properties());
         } catch (Exception e) {
             // 로깅 실패가 요청 처리에 영향을 주지 않도록 흡수
             AnalyticsEventLogger.log.warn("analytics event logging failed for '{}': {}", event.name(), e.getMessage());
