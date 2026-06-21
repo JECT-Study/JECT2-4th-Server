@@ -110,7 +110,7 @@ public class InAppBrowserRedirectFilter extends OncePerRequestFilter {
                   </p>
                   <ol style="font-size:15px;line-height:1.9;color:#444;padding-left:20px;">
                     <li>화면 상단의 <b>…</b> 버튼을 눌러 <b>외부 브라우저 열기</b>를 선택해 주세요.</li>
-                    <li>외부 브라우저 열기가 되지 않으면, 아래 주소(URI)를 복사해 Safari 주소창에 붙여넣어 접속해 주세요.</li>
+                    <li>외부 브라우저 열기가 되지 않으면 아래 주소(URI)를 복사해 Safari 주소창에 붙여넣어 접속해 주세요.</li>
                   </ol>
                   <div style="margin-top:20px;padding:14px;background:#f5f5f7;border-radius:10px;font-size:13px;word-break:break-all;color:#555;">%s</div>
                   <button onclick="copyUrl()" style="display:block;width:100%%;margin-top:16px;padding:14px;background:#1a73e8;color:#fff;border:0;border-radius:10px;font-size:16px;">주소 복사하기</button>
