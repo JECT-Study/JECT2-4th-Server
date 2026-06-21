@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -50,7 +51,9 @@ public class SecurityConfig {
                             response.getWriter().write("{\"code\":\"AUTH_001\",\"message\":\"인증이 필요합니다.\"}");
                         })
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                // 인앱 브라우저(WebView) 로그인 진입은 구글로 리다이렉트되기 전에 외부 브라우저로 우회시킨다.
+                .addFilterBefore(new InAppBrowserRedirectFilter(), OAuth2AuthorizationRequestRedirectFilter.class);
 
         return http.build();
     }
