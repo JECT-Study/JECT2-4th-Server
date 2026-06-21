@@ -106,11 +106,11 @@ public class InAppBrowserRedirectFilter extends OncePerRequestFilter {
                   <h2 style="font-size:20px;">외부 브라우저에서 로그인해 주세요</h2>
                   <p style="font-size:15px;line-height:1.7;color:#444;">
                     보안 정책상 인앱 브라우저에서는 구글 로그인이 제한됩니다.<br>
-                    아래 순서로 <b>Safari</b>에서 열어 로그인해 주세요.
+                    아래 순서대로 진행해 주세요.
                   </p>
                   <ol style="font-size:15px;line-height:1.9;color:#444;padding-left:20px;">
-                    <li>화면 우측 상단 또는 하단의 <b>···</b> · 공유 버튼을 누르세요.</li>
-                    <li><b>Safari로 열기</b>(기본 브라우저로 열기)를 선택하세요.</li>
+                    <li>화면 상단의 <b>…</b> 버튼을 눌러 <b>외부 브라우저 열기</b>를 선택해 주세요.</li>
+                    <li>외부 브라우저 열기가 되지 않으면 아래 주소(URI)를 복사해 Safari 주소창에 붙여넣어 접속해 주세요.</li>
                   </ol>
                   <div style="margin-top:20px;padding:14px;background:#f5f5f7;border-radius:10px;font-size:13px;word-break:break-all;color:#555;">%s</div>
                   <button onclick="copyUrl()" style="display:block;width:100%%;margin-top:16px;padding:14px;background:#1a73e8;color:#fff;border:0;border-radius:10px;font-size:16px;">주소 복사하기</button>
