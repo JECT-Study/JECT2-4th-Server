@@ -20,7 +20,7 @@ public record ReactionResponse(
     public static ReactionResponse from(ReactionResult result) {
         return new ReactionResponse(
                 result.messageId(),
-                result.reactionCounts() != null ? result.reactionCounts() : Map.of(),
+                result.reactions() != null ? result.reactions() : Map.of(),
                 result.myReaction()
         );
     }

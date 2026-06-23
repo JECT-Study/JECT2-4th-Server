@@ -147,7 +147,6 @@ public enum ChatReactionType {
   "senderProfileIcon": "GREEN",
   "senderVoteOption": "B",
   "isMine": true,
-  "messageType": "TEXT",
 
   "replyTo": {                       // ★ 신규 (답글인 경우에만)
     "messageId": 1275,

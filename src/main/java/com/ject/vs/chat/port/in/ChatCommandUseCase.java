@@ -9,7 +9,6 @@ import com.ject.vs.chat.port.in.dto.SendMessageCommand;
 public interface ChatCommandUseCase {
     MessageResult sendMessage(SendMessageCommand command);
     void markAsRead(MarkAsReadCommand command);
-    void sendSystemMessage(Long voteId, String content);
 
     /**
      * 메시지에 반응(이모지)을 추가/변경/취소합니다.

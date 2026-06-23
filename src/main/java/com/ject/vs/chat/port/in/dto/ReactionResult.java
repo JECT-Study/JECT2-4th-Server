@@ -6,6 +6,6 @@ import java.util.Map;
 
 public record ReactionResult(
         Long messageId,
-        Map<ChatReactionType, Long> reactionCounts,
+        Map<ChatReactionType, Long> reactions,
         ChatReactionType myReaction
 ) {}

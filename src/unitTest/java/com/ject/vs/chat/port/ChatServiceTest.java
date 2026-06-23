@@ -212,7 +212,7 @@ class ChatServiceTest {
             assertThat(result.messages()).hasSize(1);
             assertThat(result.messages().getFirst().senderVoteOption()).isNull();
             assertThat(result.messages().getFirst().replyTo()).isNull();
-            assertThat(result.messages().getFirst().reactionCounts()).isEmpty();
+            assertThat(result.messages().getFirst().reactions()).isEmpty();
             assertThat(result.hasNext()).isFalse();
             verify(chatMessageRepository).findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class));
         }
@@ -300,7 +300,7 @@ class ChatServiceTest {
             ReactionResult result = chatService.reactToMessage(1L, 2L, 10L, ChatReactionType.THUMBS_UP);
 
             assertThat(result.myReaction()).isEqualTo(ChatReactionType.THUMBS_UP);
-            assertThat(result.reactionCounts().get(ChatReactionType.THUMBS_UP)).isEqualTo(1L);
+            assertThat(result.reactions().get(ChatReactionType.THUMBS_UP)).isEqualTo(1L);
             verify(chatMessageReactionRepository).save(any(ChatMessageReaction.class));
         }
 

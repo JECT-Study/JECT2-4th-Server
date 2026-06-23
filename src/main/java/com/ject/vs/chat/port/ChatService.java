@@ -7,7 +7,6 @@ import com.ject.vs.chat.domain.ChatMessageReactionRepository;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnread;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
-import com.ject.vs.chat.domain.MessageType;
 import com.ject.vs.chat.exception.ChatForbiddenException;
 import com.ject.vs.chat.exception.InvalidMessageException;
 import com.ject.vs.chat.port.in.ChatCommandUseCase;
@@ -21,7 +20,6 @@ import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,7 +79,6 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 voteOptionCode,
                 true,
                 isFirstMessage,
-                saved.getMessageType(),
                 replyInfo,
                 Map.of(),           // 신규 메시지는 반응 없음
                 null
@@ -193,7 +190,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 .toList();
 
         // 반응 집계 (messageId -> {emoji: count})
-        Map<Long, Map<ChatReactionType, Long>> reactionCountsMap = loadReactionCounts(messageIds);
+        Map<Long, Map<ChatReactionType, Long>> reactionsMap = loadReactions(messageIds);
 
         // 본인 반응
         Map<Long, ChatReactionType> myReactionMap = loadMyReactions(messageIds, userId);
@@ -203,26 +200,17 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
         List<MessageResult> results = pageMessages.stream()
                 .map(msg -> {
-                    MessageType mt = msg.getMessageType();
-                    VoteOptionCode voteOptionCode = null;
-                    String nick;
-                    ImageColor col;
                     Long sid = msg.getSenderId();
-                    if (sid == null || sid == 0L || mt == MessageType.SYSTEM) {
-                        nick = "시스템";
-                        col = null;
-                    } else {
-                        User sender = userQueryUseCase.getUser(sid);
-                        nick = sender.getNickname();
-                        col = sender.getImageColor();
-                        voteOptionCode = voteQueryUseCase.findSelectedOptionCode(voteId, sid).orElse(null);
-                    }
+                    User sender = userQueryUseCase.getUser(sid);
+                    String nick = sender.getNickname();
+                    ImageColor col = sender.getImageColor();
+                    VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(voteId, sid).orElse(null);
 
                     ReplyInfo replyInfo = msg.getParentMessageId() != null
                             ? parentInfoMap.get(msg.getParentMessageId())
                             : null;
 
-                    Map<ChatReactionType, Long> counts = reactionCountsMap.getOrDefault(msg.getId(), Map.of());
+                    Map<ChatReactionType, Long> counts = reactionsMap.getOrDefault(msg.getId(), Map.of());
                     ChatReactionType myReact = myReactionMap.get(msg.getId());
 
                     return new MessageResult(
@@ -235,7 +223,6 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                             voteOptionCode,
                             sid != null && sid.equals(userId),
                             false,
-                            mt,
                             replyInfo,
                             counts,
                             myReact
@@ -246,7 +233,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         return new MessagePageResult(results, nextCursor, hasNext);
     }
 
-    private Map<Long, Map<ChatReactionType, Long>> loadReactionCounts(List<Long> messageIds) {
+    private Map<Long, Map<ChatReactionType, Long>> loadReactions(List<Long> messageIds) {
         if (messageIds.isEmpty()) return Map.of();
         Map<Long, Map<ChatReactionType, Long>> result = new java.util.HashMap<>();
         for (ReactionCount rc : chatMessageReactionRepository.countReactionsByMessageIds(messageIds)) {
@@ -311,13 +298,6 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     }
 
     @Override
-    public void sendSystemMessage(Long voteId, String content) {
-        ChatMessage sys = ChatMessage.ofSystem(voteId, content);
-        chatMessageRepository.save(sys);
-        // event listener will broadcast
-    }
-
-    @Override
     public ReactionResult reactToMessage(Long voteId, Long userId, Long messageId, ChatReactionType emoji) {
         if (!voteParticipationQueryUseCase.isParticipant(voteId, userId)) {
             throw new ChatForbiddenException();
@@ -350,7 +330,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         }
 
         // 최신 카운트 + 본인 상태 조회
-        Map<ChatReactionType, Long> counts = loadSingleMessageReactionCounts(messageId);
+        Map<ChatReactionType, Long> counts = loadSingleMessageReactions(messageId);
         ChatReactionType myReaction = chatMessageReactionRepository
                 .findByMessageIdAndUserId(messageId, userId)
                 .map(ChatMessageReaction::getEmoji)
@@ -359,7 +339,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         return new ReactionResult(messageId, counts, myReaction);
     }
 
-    private Map<ChatReactionType, Long> loadSingleMessageReactionCounts(Long messageId) {
+    private Map<ChatReactionType, Long> loadSingleMessageReactions(Long messageId) {
         Map<ChatReactionType, Long> counts = new java.util.HashMap<>();
         for (ReactionCount rc : chatMessageReactionRepository.countReactionsByMessageIds(List.of(messageId))) {
             counts.put(rc.emoji(), rc.count());

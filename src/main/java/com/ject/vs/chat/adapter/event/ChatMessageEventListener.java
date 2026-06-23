@@ -1,11 +1,9 @@
 package com.ject.vs.chat.adapter.event;
 
-import com.ject.vs.chat.domain.*;
 import com.ject.vs.chat.domain.ChatMessage;
 import com.ject.vs.chat.domain.ChatMessageReactionRepository;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
-import com.ject.vs.chat.domain.MessageType;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.ReplyInfo;
@@ -19,7 +17,6 @@ import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -40,21 +37,12 @@ public class ChatMessageEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ChatMessageSentEvent event) {
         ChatMessage message = event.message();
-        MessageType mt = message.getMessageType();
         Long sid = message.getSenderId();
 
-        String nick;
-        ImageColor col;
-        VoteOptionCode voteOptionCode = null;
-        if (sid == null || sid == 0L || mt == MessageType.SYSTEM) {
-            nick = "시스템";
-            col = null;
-        } else {
-            User sender = userQueryUseCase.getUser(sid);
-            nick = sender.getNickname();
-            col = sender.getImageColor();
-            voteOptionCode = voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), sid).orElse(null);
-        }
+        User sender = userQueryUseCase.getUser(sid);
+        String nick = sender.getNickname();
+        ImageColor col = sender.getImageColor();
+        VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), sid).orElse(null);
 
         ReplyInfo replyInfo = buildReplyInfoForBroadcast(message.getParentMessageId());
         MessageResult messageResult = new MessageResult(
@@ -67,7 +55,6 @@ public class ChatMessageEventListener {
                 voteOptionCode,
                 false,
                 false,
-                mt,
                 replyInfo,
                 Map.of(),
                 null

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.chat.adapter.web.dto.*;
 import com.ject.vs.chat.domain.ChatReactionType;
-import com.ject.vs.chat.domain.MessageType;
 
 import static org.mockito.ArgumentMatchers.any;
 import com.ject.vs.chat.exception.ChatForbiddenException;
@@ -154,7 +153,7 @@ class ChatControllerTest {
         @WithMockUser
         void 정상이면_201을_반환한다() throws Exception {
             // given
-            MessageResult result = new MessageResult(1L, 1L, "hello", Instant.now(), "nick", null, VoteOptionCode.A, true, false, MessageType.TEXT, null, Map.of(), null);
+            MessageResult result = new MessageResult(1L, 1L, "hello", Instant.now(), "nick", null, VoteOptionCode.A, true, false, null, Map.of(), null);
             given(chatCommandUseCase.sendMessage(any(SendMessageCommand.class))).willReturn(result);
 
             // when & then
@@ -240,7 +239,7 @@ class ChatControllerTest {
         @Test
         @WithMockUser
         void replyToMessageId를_포함하여_전송하면_201() throws Exception {
-            MessageResult result = new MessageResult(10L, 2L, "reply content", Instant.now(), "nick", null, VoteOptionCode.A, true, false, MessageType.TEXT, null, Map.of(), null);
+            MessageResult result = new MessageResult(10L, 2L, "reply content", Instant.now(), "nick", null, VoteOptionCode.A, true, false, null, Map.of(), null);
             given(chatCommandUseCase.sendMessage(any(SendMessageCommand.class))).willReturn(result);
 
             SendMessageRequest req = new SendMessageRequest("reply", 5L);

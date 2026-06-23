@@ -1,7 +1,6 @@
 package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.domain.ChatReactionType;
-import com.ject.vs.chat.domain.MessageType;
 import com.ject.vs.chat.port.in.dto.MessageResult;
 import com.ject.vs.chat.port.in.dto.ReplyInfo;
 import com.ject.vs.user.domain.ImageColor;
@@ -37,20 +36,16 @@ public record MessageResponse(
         @Schema(description = "현재 로그인 사용자가 보낸 메시지인지 여부", example = "false")
         boolean isMine,
 
-        @Schema(description = "메시지 타입", example = "TEXT")
-        MessageType messageType,
-
         @Schema(description = "답글 대상 메시지 정보 (답글이 아닌 경우 null)", nullable = true)
         ReplyInfo replyTo,
 
         @Schema(description = "이모지 반응 카운트", example = "{\"THUMBS_UP\": 5, \"THUMBS_DOWN\": 1}")
-        Map<ChatReactionType, Long> reactionCounts,
+        Map<ChatReactionType, Long> reactions,
 
         @Schema(description = "현재 사용자가 선택한 반응 (없으면 null)", nullable = true)
         ChatReactionType myReaction
 ) {
     public static MessageResponse from(MessageResult result) {
-        MessageType type = result.messageType() != null ? result.messageType() : MessageType.TEXT;
         return new MessageResponse(
                 result.messageId(),
                 result.senderId(),
@@ -60,9 +55,8 @@ public record MessageResponse(
                 result.senderProfileIcon(),
                 result.senderVoteOption(),
                 result.isMine(),
-                type,
                 result.replyTo(),
-                result.reactionCounts() != null ? result.reactionCounts() : Map.of(),
+                result.reactions() != null ? result.reactions() : Map.of(),
                 result.myReaction()
         );
     }
