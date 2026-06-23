@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,7 +83,8 @@ class ChatServiceTest {
         void 공백_내용은_InvalidMessageException이_발생한다() {
             // given
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
-            given(userQueryUseCase.getUser(2L)).willReturn(mockUser(2L, "테스트유저", ImageColor.GREEN));
+            User sender = mockUser(2L, "테스트유저", ImageColor.GREEN);
+            given(userQueryUseCase.getUser(2L)).willReturn(sender);
 
             // when & then
             assertThatThrownBy(() -> chatService.sendMessage(new SendMessageCommand(1L, 2L, "   ")))
@@ -312,7 +314,7 @@ class ChatServiceTest {
             ChatMessage msg = ChatMessage.of(1L, mockUser(3L, "other", ImageColor.BLUE), "hi");
             given(chatMessageRepository.findById(10L)).willReturn(Optional.of(msg));
             given(chatMessageReactionRepository.findByMessageIdAndUserId(10L, 2L))
-                    .willReturn(Optional.of(ChatMessageReaction.of(10L, 2L, ChatReactionType.THUMBS_DOWN)), Optional.empty());
+                    .willReturn(Optional.empty());
             given(chatMessageReactionRepository.countByMessageIds(List.of(10L))).willReturn(List.of());
 
             ReactionResult result = chatService.reactToMessage(1L, 2L, 10L, null);
@@ -334,7 +336,7 @@ class ChatServiceTest {
             given(chatMessageRepository.findById(100L)).willReturn(Optional.of(parent));
 
             User sender = mockUser(2L, "답변자", ImageColor.BLUE);
-            ChatMessage saved = ChatMessage.of(1L, sender, "답글", parent);
+            ChatMessage saved = ChatMessage.of(1L, sender, "답글입니다", parent);
             given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(saved);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
@@ -355,7 +357,8 @@ class ChatServiceTest {
             User parentSender = mockUser(99L, "원작성자", ImageColor.YELLOW);
             ChatMessage parent = ChatMessage.of(999L, parentSender, "다른투표");
             given(chatMessageRepository.findById(100L)).willReturn(Optional.of(parent));
-            given(userQueryUseCase.getUser(2L)).willReturn(mockUser(2L, "답변자", ImageColor.BLUE));
+            User replier = mockUser(2L, "답변자", ImageColor.BLUE);
+            given(userQueryUseCase.getUser(2L)).willReturn(replier);
 
             assertThatThrownBy(() ->
                     chatService.sendMessage(new SendMessageCommand(1L, 2L, "답글", 100L))
@@ -365,9 +368,9 @@ class ChatServiceTest {
 
     private User mockUser(Long id, String nickname, ImageColor imageColor) {
         User user = mock(User.class);
-        given(user.getId()).willReturn(id);
-        given(user.getNickname()).willReturn(nickname);
-        given(user.getImageColor()).willReturn(imageColor);
+        lenient().when(user.getId()).thenReturn(id);
+        lenient().when(user.getNickname()).thenReturn(nickname);
+        lenient().when(user.getImageColor()).thenReturn(imageColor);
         return user;
     }
 }

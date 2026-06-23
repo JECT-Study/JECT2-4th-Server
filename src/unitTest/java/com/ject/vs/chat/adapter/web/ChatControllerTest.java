@@ -25,16 +25,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -69,6 +72,10 @@ class ChatControllerTest {
     @MockBean
     private AnalyticsEventLogger analytics;
 
+    private RequestPostProcessor asUser(Long userId) {
+        return authentication(new UsernamePasswordAuthenticationToken(userId, null, AuthorityUtils.NO_AUTHORITIES));
+    }
+
     @Nested
     class getChatList {
 
@@ -81,7 +88,7 @@ class ChatControllerTest {
             // when & then
             mockMvc.perform(get("/api/chats")
                             .param("status", "ONGOING")
-                            .with(user("1").roles("USER")))
+                            .with(asUser(1L)))
                     .andExpect(status().isOk());
         }
 
@@ -109,7 +116,7 @@ class ChatControllerTest {
             );
 
             // when & then
-            mockMvc.perform(get("/api/chats/1"))
+            mockMvc.perform(get("/api/chats/1").with(asUser(1L)))
                     .andExpect(status().isOk());
         }
     }
@@ -141,7 +148,7 @@ class ChatControllerTest {
 
             // when & then
             mockMvc.perform(get("/api/chats/1/messages")
-                            .with(user("1").roles("USER")))
+                            .with(asUser(1L)))
                     .andExpect(status().isOk());
         }
     }
@@ -158,7 +165,7 @@ class ChatControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/chats/1/messages")
-                            .with(user("1").roles("USER"))
+                            .with(asUser(1L))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new SendMessageRequest("hello"))))
@@ -174,7 +181,7 @@ class ChatControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/chats/1/messages")
-                            .with(user("1").roles("USER"))
+                            .with(asUser(1L))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new SendMessageRequest("hello"))))
@@ -193,7 +200,7 @@ class ChatControllerTest {
 
             // when & then
             mockMvc.perform(post("/api/chats/1/read")
-                            .with(user("1").roles("USER"))
+                            .with(asUser(1L))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new MarkAsReadRequest(10L))))
@@ -211,7 +218,7 @@ class ChatControllerTest {
             given(chatCommandUseCase.reactToMessage(anyLong(), anyLong(), anyLong(), any())).willReturn(rr);
 
             mockMvc.perform(put("/api/chats/1/messages/128/reactions")
-                            .with(user("1").roles("USER"))
+                            .with(asUser(1L))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new ReactMessageRequest(ChatReactionType.THUMBS_UP))))
@@ -225,7 +232,7 @@ class ChatControllerTest {
                     .willThrow(new ChatForbiddenException());
 
             mockMvc.perform(put("/api/chats/1/messages/128/reactions")
-                            .with(user("1").roles("USER"))
+                            .with(asUser(1L))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new ReactMessageRequest(ChatReactionType.THUMBS_UP))))
@@ -245,7 +252,7 @@ class ChatControllerTest {
             SendMessageRequest req = new SendMessageRequest("reply", 5L);
 
             mockMvc.perform(post("/api/chats/1/messages")
-                            .with(user("1").roles("USER"))
+                            .with(asUser(1L))
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(req)))
