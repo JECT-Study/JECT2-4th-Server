@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface ChatQueryUseCase {
     List<ChatListItemResult> getChatList(Long userId, VoteStatus status);
-    ChatRoomResult getChatRoom(Long voteId);
+    ChatRoomResult getChatRoom(Long voteId, Long userId);
     GaugeResult getGauge(Long voteId);
     MessagePageResult getMessages(Long voteId, Long userId, Long cursor, int size);
 }

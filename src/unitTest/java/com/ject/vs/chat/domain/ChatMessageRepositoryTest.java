@@ -37,12 +37,13 @@ class ChatMessageRepositoryTest {
 
     private Long voteId;
     private Long userId;
+    private User user;
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2025-01-01T00:00:00Z"), ZoneOffset.UTC);
 
     @BeforeEach
     void setUp() {
-        User user = entityManager.persistAndFlush(User.createWithSub("test-sub"));
+        user = entityManager.persistAndFlush(User.createWithSub("test-sub"));
         Vote vote = entityManager.persistAndFlush(
                 Vote.create("테스트", null, "thumb", null, Duration.ofHours(24), FIXED_CLOCK)
         );
@@ -56,9 +57,9 @@ class ChatMessageRepositoryTest {
         @Test
         void 최신순으로_정렬된다() {
             // given
-            chatMessageRepository.save(ChatMessage.of(voteId, userId, "첫번째"));
-            chatMessageRepository.save(ChatMessage.of(voteId, userId, "두번째"));
-            chatMessageRepository.save(ChatMessage.of(voteId, userId, "세번째"));
+            chatMessageRepository.save(ChatMessage.of(voteId, user, "첫번째"));
+            chatMessageRepository.save(ChatMessage.of(voteId, user, "두번째"));
+            chatMessageRepository.save(ChatMessage.of(voteId, user, "세번째"));
 
             // when
             List<ChatMessage> result = chatMessageRepository.findAllByVoteIdOrderByIdDesc(voteId, PageRequest.of(0, 10));
@@ -76,9 +77,9 @@ class ChatMessageRepositoryTest {
         @Test
         void cursor_기반으로_이전_메시지를_페이지네이션한다() {
             // given
-            chatMessageRepository.save(ChatMessage.of(voteId, userId, "첫번째"));
-            chatMessageRepository.save(ChatMessage.of(voteId, userId, "두번째"));
-            ChatMessage msg3 = chatMessageRepository.save(ChatMessage.of(voteId, userId, "세번째"));
+            chatMessageRepository.save(ChatMessage.of(voteId, user, "첫번째"));
+            chatMessageRepository.save(ChatMessage.of(voteId, user, "두번째"));
+            ChatMessage msg3 = chatMessageRepository.save(ChatMessage.of(voteId, user, "세번째"));
 
             // when
             List<ChatMessage> result = chatMessageRepository
@@ -97,9 +98,9 @@ class ChatMessageRepositoryTest {
         @Test
         void unread_count를_계산한다() {
             // given
-            ChatMessage msg1 = chatMessageRepository.save(ChatMessage.of(voteId, userId, "첫번째"));
-            chatMessageRepository.save(ChatMessage.of(voteId, userId, "두번째"));
-            chatMessageRepository.save(ChatMessage.of(voteId, userId, "세번째"));
+            ChatMessage msg1 = chatMessageRepository.save(ChatMessage.of(voteId, user, "첫번째"));
+            chatMessageRepository.save(ChatMessage.of(voteId, user, "두번째"));
+            chatMessageRepository.save(ChatMessage.of(voteId, user, "세번째"));
 
             // when
             long count = chatMessageRepository.countByVoteIdAndIdGreaterThan(voteId, msg1.getId());

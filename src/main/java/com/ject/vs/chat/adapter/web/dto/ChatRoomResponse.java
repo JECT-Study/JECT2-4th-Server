@@ -1,6 +1,7 @@
 package com.ject.vs.chat.adapter.web.dto;
 
 import com.ject.vs.chat.port.in.dto.ChatRoomResult;
+import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.domain.VoteStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -27,7 +28,10 @@ public record ChatRoomResponse(
         String optionB,
 
         @Schema(description = "투표 종료 시각. UTC 기준으로 내려가며 사용자 시간대에 맞춰 변환이 필요합니다.", example = "2026-05-02T15:00:00Z")
-        Instant endAt
+        Instant endAt,
+
+        @Schema(description = "현재 로그인 사용자가 선택한 투표 옵션 (배지 표시용)", example = "A", nullable = true)
+        VoteOptionCode myVoteOption
 ) {
     public static ChatRoomResponse from(ChatRoomResult result) {
         return new ChatRoomResponse(
@@ -37,7 +41,8 @@ public record ChatRoomResponse(
                 result.participantCount(),
                 result.optionA(),
                 result.optionB(),
-                result.endAt()
+                result.endAt(),
+                result.myVoteOption()
         );
     }
 }
