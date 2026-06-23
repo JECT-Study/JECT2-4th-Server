@@ -11,4 +11,8 @@ public record SendMessageRequest(
 
         @Schema(description = "답글 대상 메시지 ID (없으면 일반 메시지)", example = "1234", nullable = true)
         Long replyToMessageId
-) {}
+) {
+    public SendMessageRequest(String content) {
+        this(content, null);
+    }
+}

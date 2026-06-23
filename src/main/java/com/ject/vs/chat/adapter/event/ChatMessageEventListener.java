@@ -103,10 +103,10 @@ public class ChatMessageEventListener {
 
     private ReplyInfo buildReplyInfoForBroadcast(Long parentMessageId) {
         if (parentMessageId == null) return null;
+
         return chatMessageRepository.findById(parentMessageId)
                 .map(parent -> {
-                    String preview = parent.getContent();
-                    if (preview.length() > 60) preview = preview.substring(0, 57) + "...";
+                    String preview = parent.getContent();  // 프론트에서 말줄임 처리
                     String nick = "시스템";
                     Long sid = parent.getSenderId();
                     if (sid != null && sid != 0L) {
@@ -117,6 +117,10 @@ public class ChatMessageEventListener {
                     }
                     return new ReplyInfo(parent.getId(), nick, preview);
                 })
-                .orElse(null);
+                .orElseGet(() -> new ReplyInfo(
+                        parentMessageId,
+                        "알 수 없음",
+                        "(삭제된 메시지)"
+                ));
     }
 }

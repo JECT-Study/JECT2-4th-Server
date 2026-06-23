@@ -180,9 +180,9 @@ public enum ChatReactionType {
   ```
 - Map 으로 매핑 후 MessageResult 생성
 
-**contentPreview 생성 규칙 (서버 추천)**
-- 50~60자 cutoff + "..." (정확한 길이는 기획/디자인 확정 후 조정)
-- 원문이 짧으면 그대로
+**contentPreview**
+- 부모 메시지의 **전체 내용**을 그대로 내려줍니다.
+- 말줄임(ellipsis) 처리는 프론트엔드에서 담당합니다. (뷰의 관심사)
 
 ---
 
@@ -288,7 +288,7 @@ public enum ChatReactionType {
 ## 7. 검증 / 엣지 케이스
 
 - 자신의 메시지에 반응 → 거부
-- 삭제된 parent에 답글 → `replyTo.contentPreview = "(삭제된 메시지)"` 또는 `null` 처리
+- 삭제된 parent에 답글 → `replyTo.contentPreview = "(삭제된 메시지)"` (id는 유지하여 스크롤 이동 지원)
 - replyTo 메시지가 다른 vote → 400
 - 반응 99+ → 서버는 정확한 숫자 반환, 클라이언트에서 `count > 99 ? "99+" : count`
 - 시스템 메시지 (senderId=0) → 반응/답글 불가

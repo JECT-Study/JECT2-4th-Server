@@ -109,11 +109,7 @@ public class ChatController implements ChatDocs {
                                            @AuthenticationPrincipal Long userId,
                                            @PathVariable Long messageId,
                                            @RequestBody @Valid ReactMessageRequest request) {
-        ChatReactionType emoji = request.emoji() != null
-                ? ChatReactionType.valueOf(request.emoji())
-                : null;
-
-        ReactionResult result = chatCommandUseCase.reactToMessage(voteId, userId, messageId, emoji);
+        ReactionResult result = chatCommandUseCase.reactToMessage(voteId, userId, messageId, request.emoji());
 
         analytics.log(AnalyticsEvent.of("chat_message_reacted")
                 .put("vote_id", voteId)

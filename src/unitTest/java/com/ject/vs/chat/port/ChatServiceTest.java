@@ -1,17 +1,12 @@
 package com.ject.vs.chat.port;
 
-import com.ject.vs.chat.domain.ChatMessage;
-import com.ject.vs.chat.domain.ChatMessageRepository;
-import com.ject.vs.chat.domain.ChatRoomUnread;
-import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
+import com.ject.vs.chat.domain.*;
 import com.ject.vs.chat.exception.ChatForbiddenException;
 import com.ject.vs.chat.exception.InvalidMessageException;
-import com.ject.vs.chat.port.in.dto.ChatListItemResult;
-import com.ject.vs.chat.port.in.dto.MarkAsReadCommand;
-import com.ject.vs.chat.port.in.dto.MessagePageResult;
-import com.ject.vs.chat.port.in.dto.MessageResult;
-import com.ject.vs.chat.port.in.dto.SendMessageCommand;
+import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.vote.domain.VoteStatus;
+
+import java.util.Map;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.port.in.UserQueryUseCase;
@@ -34,8 +29,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -56,6 +50,9 @@ class ChatServiceTest {
 
     @Mock
     private ChatRoomUnreadRepository chatRoomUnreadRepository;
+
+    @Mock
+    private ChatMessageReactionRepository chatMessageReactionRepository;
 
     @Mock
     private UserQueryUseCase userQueryUseCase;
@@ -203,12 +200,19 @@ class ChatServiceTest {
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.empty());
 
+            // reaction / parent enrichment stubs
+            given(chatMessageReactionRepository.countReactionsByMessageIds(anyList())).willReturn(List.of());
+            given(chatMessageReactionRepository.findMyReactionsByMessageIds(anyList(), any())).willReturn(List.of());
+            given(chatMessageRepository.findAllById(anyList())).willReturn(List.of());
+
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, null, 30);
 
             // then
             assertThat(result.messages()).hasSize(1);
             assertThat(result.messages().getFirst().senderVoteOption()).isNull();
+            assertThat(result.messages().getFirst().replyTo()).isNull();
+            assertThat(result.messages().getFirst().reactionCounts()).isEmpty();
             assertThat(result.hasNext()).isFalse();
             verify(chatMessageRepository).findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class));
         }
@@ -225,6 +229,10 @@ class ChatServiceTest {
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
 
+            given(chatMessageReactionRepository.countReactionsByMessageIds(anyList())).willReturn(List.of());
+            given(chatMessageReactionRepository.findMyReactionsByMessageIds(anyList(), any())).willReturn(List.of());
+            given(chatMessageRepository.findAllById(anyList())).willReturn(List.of());
+
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, 100L, 30);
 
@@ -232,6 +240,126 @@ class ChatServiceTest {
             assertThat(result.messages()).hasSize(1);
             assertThat(result.hasNext()).isFalse();
             verify(chatMessageRepository).findAllByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class));
+        }
+    }
+
+    @Nested
+    class getChatRoom {
+
+        @Test
+        void myVoteOption을_포함하여_반환한다() {
+            // given
+            given(voteQueryUseCase.getVoteChatSummary(1L))
+                    .willReturn(new VoteQueryUseCase.VoteChatSummary(1L, "title", null, VoteStatus.ONGOING, Instant.now(), "A", "B"));
+            given(voteParticipationQueryUseCase.countParticipantsByVoteId(1L)).willReturn(10L);
+            given(voteQueryUseCase.findSelectedOptionCode(1L, 99L)).willReturn(Optional.of(VoteOptionCode.A));
+
+            // when
+            var result = chatService.getChatRoom(1L, 99L);
+
+            // then
+            assertThat(result.myVoteOption()).isEqualTo(VoteOptionCode.A);
+            assertThat(result.voteId()).isEqualTo(1L);
+        }
+    }
+
+    @Nested
+    class reactToMessage {
+
+        @Test
+        void 미참여자는_ChatForbiddenException() {
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(false);
+
+            assertThatThrownBy(() -> chatService.reactToMessage(1L, 2L, 10L, ChatReactionType.THUMBS_UP))
+                    .isInstanceOf(ChatForbiddenException.class);
+        }
+
+        @Test
+        void 자신의_메시지에는_반응할_수_없다() {
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
+            ChatMessage ownMsg = ChatMessage.of(1L, 2L, "hello");
+            // simulate id
+            // since of doesn't set id, we use reflection or just mock find
+            given(chatMessageRepository.findById(10L)).willReturn(Optional.of(ownMsg));
+
+            assertThatThrownBy(() -> chatService.reactToMessage(1L, 2L, 10L, ChatReactionType.THUMBS_UP))
+                    .isInstanceOf(ChatForbiddenException.class);
+        }
+
+        @Test
+        void 정상_새_반응_추가() {
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
+            ChatMessage msg = ChatMessage.of(1L, 3L, "hi");  // different sender
+            given(chatMessageRepository.findById(10L)).willReturn(Optional.of(msg));
+            given(chatMessageReactionRepository.findByMessageIdAndUserId(10L, 2L)).willReturn(Optional.empty());
+            given(chatMessageReactionRepository.countReactionsByMessageIds(List.of(10L)))
+                    .willReturn(List.of(new ReactionCount(10L, ChatReactionType.THUMBS_UP, 1L)));
+            given(chatMessageReactionRepository.save(any(ChatMessageReaction.class)))
+                    .willAnswer(inv -> inv.getArgument(0));
+
+            ReactionResult result = chatService.reactToMessage(1L, 2L, 10L, ChatReactionType.THUMBS_UP);
+
+            assertThat(result.myReaction()).isEqualTo(ChatReactionType.THUMBS_UP);
+            assertThat(result.reactionCounts().get(ChatReactionType.THUMBS_UP)).isEqualTo(1L);
+            verify(chatMessageReactionRepository).save(any(ChatMessageReaction.class));
+        }
+
+        @Test
+        void emoji_null이면_취소() {
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
+            ChatMessage msg = ChatMessage.of(1L, 3L, "hi");
+            given(chatMessageRepository.findById(10L)).willReturn(Optional.of(msg));
+            given(chatMessageReactionRepository.findByMessageIdAndUserId(10L, 2L))
+                    .willReturn(Optional.of(ChatMessageReaction.of(10L, 2L, ChatReactionType.THUMBS_DOWN)));
+            given(chatMessageReactionRepository.countReactionsByMessageIds(List.of(10L))).willReturn(List.of());
+
+            ReactionResult result = chatService.reactToMessage(1L, 2L, 10L, null);
+
+            assertThat(result.myReaction()).isNull();
+            verify(chatMessageReactionRepository).deleteByMessageIdAndUserId(10L, 2L);
+        }
+    }
+
+    @Nested
+    class sendMessageWithReply {
+
+        @Test
+        void 정상_답글_전송() {
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
+
+            ChatMessage parent = ChatMessage.of(1L, 99L, "원문");
+            given(chatMessageRepository.findById(100L)).willReturn(Optional.of(parent));
+
+            ChatMessage saved = ChatMessage.of(1L, 2L, "답글", 100L);
+            given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(saved);
+
+            User sender = mock(User.class);
+            given(sender.getNickname()).willReturn("답변자");
+            given(sender.getImageColor()).willReturn(ImageColor.BLUE);
+            given(userQueryUseCase.getUser(2L)).willReturn(sender);
+            given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
+
+            // parent lookup for replyInfo
+            User parentSender = mock(User.class);
+            given(parentSender.getNickname()).willReturn("원작성자");
+            given(userQueryUseCase.getUser(99L)).willReturn(parentSender);
+
+            MessageResult result = chatService.sendMessage(new SendMessageCommand(1L, 2L, "답글입니다", 100L));
+
+            assertThat(result.replyTo()).isNotNull();
+            assertThat(result.replyTo().messageId()).isEqualTo(100L);
+            assertThat(result.content()).isEqualTo("답글입니다");
+        }
+
+        @Test
+        void 다른_투표의_메시지에_답글_불가() {
+            given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
+            ChatMessage parent = ChatMessage.of(999L, 99L, "다른투표");
+            given(chatMessageRepository.findById(100L)).willReturn(Optional.of(parent));
+
+            assertThatThrownBy(() ->
+                    chatService.sendMessage(new SendMessageCommand(1L, 2L, "답글", 100L))
+            ).isInstanceOf(InvalidMessageException.class);
         }
     }
 }

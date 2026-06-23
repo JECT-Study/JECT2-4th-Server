@@ -2,12 +2,17 @@ package com.ject.vs.chat.adapter.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ject.vs.analytics.AnalyticsEventLogger;
-import com.ject.vs.chat.adapter.web.dto.MarkAsReadRequest;
-import com.ject.vs.chat.adapter.web.dto.SendMessageRequest;
+import com.ject.vs.chat.adapter.web.dto.*;
+import com.ject.vs.chat.domain.ChatReactionType;
+import com.ject.vs.chat.domain.MessageType;
+
+import static org.mockito.ArgumentMatchers.any;
 import com.ject.vs.chat.exception.ChatForbiddenException;
 import com.ject.vs.chat.port.in.*;
 import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.config.OAuth2LoginSuccessHandler;
+
+import java.util.Map;
 import com.ject.vs.auth.port.CustomOAuth2UserService;
 import com.ject.vs.config.TestPropertiesConfig;
 import org.springframework.context.annotation.Import;
@@ -149,7 +154,7 @@ class ChatControllerTest {
         @WithMockUser
         void 정상이면_201을_반환한다() throws Exception {
             // given
-            MessageResult result = new MessageResult(1L, "hello", Instant.now(), "nick", null, VoteOptionCode.A, true, false);
+            MessageResult result = new MessageResult(1L, "hello", Instant.now(), "nick", null, VoteOptionCode.A, true, false, MessageType.TEXT, null, Map.of(), null);
             given(chatCommandUseCase.sendMessage(any(SendMessageCommand.class))).willReturn(result);
 
             // when & then
@@ -194,6 +199,58 @@ class ChatControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new MarkAsReadRequest(10L))))
                     .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    class reactToMessage {
+
+        @Test
+        @WithMockUser
+        void 정상_반응이면_200을_반환한다() throws Exception {
+            ReactionResult rr = new ReactionResult(128L, Map.of(ChatReactionType.THUMBS_UP, 3L), ChatReactionType.THUMBS_UP);
+            given(chatCommandUseCase.reactToMessage(anyLong(), anyLong(), anyLong(), any())).willReturn(rr);
+
+            mockMvc.perform(put("/api/chats/1/messages/128/reactions")
+                            .with(user("1").roles("USER"))
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new ReactMessageRequest(ChatReactionType.THUMBS_UP))))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @WithMockUser
+        void 자신의_메시지_반응은_403() throws Exception {
+            given(chatCommandUseCase.reactToMessage(anyLong(), anyLong(), anyLong(), any()))
+                    .willThrow(new ChatForbiddenException());
+
+            mockMvc.perform(put("/api/chats/1/messages/128/reactions")
+                            .with(user("1").roles("USER"))
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new ReactMessageRequest(ChatReactionType.THUMBS_UP))))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    class sendMessageWithReply {
+
+        @Test
+        @WithMockUser
+        void replyToMessageId를_포함하여_전송하면_201() throws Exception {
+            MessageResult result = new MessageResult(10L, "reply content", Instant.now(), "nick", null, VoteOptionCode.A, true, false, MessageType.TEXT, null, Map.of(), null);
+            given(chatCommandUseCase.sendMessage(any(SendMessageCommand.class))).willReturn(result);
+
+            SendMessageRequest req = new SendMessageRequest("reply", 5L);
+
+            mockMvc.perform(post("/api/chats/1/messages")
+                            .with(user("1").roles("USER"))
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isCreated());
         }
     }
 }

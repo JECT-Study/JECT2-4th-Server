@@ -89,12 +89,10 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
     private ReplyInfo buildReplyInfo(Long parentMessageId) {
         if (parentMessageId == null) return null;
+
         return chatMessageRepository.findById(parentMessageId)
                 .map(parent -> {
-                    String preview = parent.getContent();
-                    if (preview.length() > 60) {
-                        preview = preview.substring(0, 57) + "...";
-                    }
+                    String preview = parent.getContent();  // 프론트에서 말줄임 처리
                     String nick = "시스템";
                     if (parent.getSenderId() != null && parent.getSenderId() != 0L) {
                         try {
@@ -104,7 +102,11 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                     }
                     return new ReplyInfo(parent.getId(), nick, preview);
                 })
-                .orElse(null);
+                .orElseGet(() -> new ReplyInfo(
+                        parentMessageId,
+                        "알 수 없음",
+                        "(삭제된 메시지)"
+                ));
     }
 
     @Override
@@ -266,8 +268,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         Map<Long, ReplyInfo> map = new java.util.HashMap<>();
         List<ChatMessage> parents = chatMessageRepository.findAllById(parentIds);
         for (ChatMessage p : parents) {
-            String preview = p.getContent();
-            if (preview.length() > 60) preview = preview.substring(0, 57) + "...";
+            String preview = p.getContent();  // 프론트에서 말줄임 처리
             String nick = "시스템";
             Long sid = p.getSenderId();
             if (sid != null && sid != 0L) {
@@ -277,6 +278,13 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 } catch (Exception ignored) {}
             }
             map.put(p.getId(), new ReplyInfo(p.getId(), nick, preview));
+        }
+
+        // 부모를 찾지 못한 경우 (삭제된 메시지)도 id는 유지해서 반환
+        for (Long pid : parentIds) {
+            if (!map.containsKey(pid)) {
+                map.put(pid, new ReplyInfo(pid, "알 수 없음", "(삭제된 메시지)"));
+            }
         }
         return map;
     }
