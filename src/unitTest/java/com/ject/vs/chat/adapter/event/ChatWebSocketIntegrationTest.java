@@ -100,7 +100,8 @@ class ChatWebSocketIntegrationTest {
         session.subscribe("/topic/chat/" + fixture.voteId(), handler(MessageResult.class, messages));
 
         // when
-        ChatMessage message = chatMessageRepository.saveAndFlush(ChatMessage.of(fixture.voteId(), fixture.senderId(), "hello websocket"));
+        User sender = userRepository.findById(fixture.senderId()).orElseThrow();
+        ChatMessage message = chatMessageRepository.saveAndFlush(ChatMessage.of(fixture.voteId(), sender, "hello websocket"));
         listener.handle(new com.ject.vs.chat.domain.event.ChatMessageSentEvent(message));
 
         // then
@@ -116,7 +117,8 @@ class ChatWebSocketIntegrationTest {
     void 인증_쿠키로_연결하면_user_destination_unreadCount를_사용자별로_분리해_수신한다() throws Exception {
         // given
         TestFixture fixture = createFixture();
-        ChatMessage previousMessage = chatMessageRepository.saveAndFlush(ChatMessage.of(fixture.voteId(), fixture.senderId(), "previous message"));
+        User sender = userRepository.findById(fixture.senderId()).orElseThrow();
+        ChatMessage previousMessage = chatMessageRepository.saveAndFlush(ChatMessage.of(fixture.voteId(), sender, "previous message"));
         chatRoomUnreadRepository.saveAndFlush(ChatRoomUnread.of(fixture.receiverId(), fixture.voteId(), previousMessage.getId()));
         StompSession receiverSession = connectWithAccessToken(fixture.receiverId());
         BlockingQueue<UnreadPayload> receiverUnread = new LinkedBlockingQueue<>();
@@ -127,7 +129,7 @@ class ChatWebSocketIntegrationTest {
         senderSession.subscribe("/user/topic/chat/" + fixture.voteId() + "/unread", handler(UnreadPayload.class, senderUnread));
 
         // when
-        ChatMessage message = chatMessageRepository.saveAndFlush(ChatMessage.of(fixture.voteId(), fixture.senderId(), "unread websocket"));
+        ChatMessage message = chatMessageRepository.saveAndFlush(ChatMessage.of(fixture.voteId(), sender, "unread websocket"));
         listener.handle(new com.ject.vs.chat.domain.event.ChatMessageSentEvent(message));
 
         // then
@@ -149,7 +151,8 @@ class ChatWebSocketIntegrationTest {
         session.subscribe("/topic/chat/" + otherVote.getId(), handler(MessageResult.class, otherMessages));
 
         // when
-        ChatMessage message = chatMessageRepository.saveAndFlush(ChatMessage.of(fixture.voteId(), fixture.senderId(), "only target vote"));
+        User sender = userRepository.findById(fixture.senderId()).orElseThrow();
+        ChatMessage message = chatMessageRepository.saveAndFlush(ChatMessage.of(fixture.voteId(), sender, "only target vote"));
         listener.handle(new com.ject.vs.chat.domain.event.ChatMessageSentEvent(message));
 
         // then

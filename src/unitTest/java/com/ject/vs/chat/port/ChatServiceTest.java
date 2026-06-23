@@ -82,6 +82,7 @@ class ChatServiceTest {
         void 공백_내용은_InvalidMessageException이_발생한다() {
             // given
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
+            given(userQueryUseCase.getUser(2L)).willReturn(mockUser(2L, "테스트유저", ImageColor.GREEN));
 
             // when & then
             assertThatThrownBy(() -> chatService.sendMessage(new SendMessageCommand(1L, 2L, "   ")))
@@ -92,12 +93,9 @@ class ChatServiceTest {
         void 정상_메시지는_저장되고_MessageResult를_반환한다() {
             // given
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
-            ChatMessage savedMessage = ChatMessage.of(1L, 2L, "hello");
+            User sender = mockUser(2L, "테스트유저", ImageColor.GREEN);
+            ChatMessage savedMessage = ChatMessage.of(1L, sender, "hello");
             given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(savedMessage);
-
-            User sender = mock(User.class);
-            given(sender.getNickname()).willReturn("테스트유저");
-            given(sender.getImageColor()).willReturn(ImageColor.GREEN);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.A));
 
@@ -199,14 +197,10 @@ class ChatServiceTest {
         @Test
         void cursor가_null이면_최신부터_조회한다() {
             // given
-            ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
+            User sender = mockUser(2L, "", ImageColor.GREEN);
+            ChatMessage msg = ChatMessage.of(1L, sender, "hello");
             given(chatMessageRepository.findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
-            User sender = mock(User.class);
-            given(sender.getId()).willReturn(2L);
-            given(sender.getNickname()).willReturn("");
-            given(sender.getImageColor()).willReturn(ImageColor.GREEN);
-            given(userQueryUseCase.findAllById(anyList())).willReturn(List.of(sender));
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.empty());
 
             // reaction / parent enrichment stubs
@@ -229,14 +223,10 @@ class ChatServiceTest {
         @Test
         void cursor가_있으면_cursor_이전_메시지를_조회한다() {
             // given
-            ChatMessage msg = ChatMessage.of(1L, 2L, "hello");
+            User sender = mockUser(2L, "", ImageColor.GREEN);
+            ChatMessage msg = ChatMessage.of(1L, sender, "hello");
             given(chatMessageRepository.findAllByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
-            User sender = mock(User.class);
-            given(sender.getId()).willReturn(2L);
-            given(sender.getNickname()).willReturn("");
-            given(sender.getImageColor()).willReturn(ImageColor.GREEN);
-            given(userQueryUseCase.findAllById(anyList())).willReturn(List.of(sender));
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
 
             given(chatMessageReactionRepository.countByMessageIds(anyList())).willReturn(List.of());
@@ -287,7 +277,7 @@ class ChatServiceTest {
         @Test
         void 자신의_메시지에는_반응할_수_없다() {
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
-            ChatMessage ownMsg = ChatMessage.of(1L, 2L, "hello");
+            ChatMessage ownMsg = ChatMessage.of(1L, mockUser(2L, "me", ImageColor.GREEN), "hello");
             // simulate id
             // since of doesn't set id, we use reflection or just mock find
             given(chatMessageRepository.findById(10L)).willReturn(Optional.of(ownMsg));
@@ -299,7 +289,7 @@ class ChatServiceTest {
         @Test
         void 정상_새_반응_추가() {
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
-            ChatMessage msg = ChatMessage.of(1L, 3L, "hi");  // different sender
+            ChatMessage msg = ChatMessage.of(1L, mockUser(3L, "other", ImageColor.BLUE), "hi");
             given(chatMessageRepository.findById(10L)).willReturn(Optional.of(msg));
             ChatMessageReaction savedReaction = ChatMessageReaction.of(10L, 2L, ChatReactionType.THUMBS_UP);
             given(chatMessageReactionRepository.findByMessageIdAndUserId(10L, 2L))
@@ -319,7 +309,7 @@ class ChatServiceTest {
         @Test
         void emoji_null이면_취소() {
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
-            ChatMessage msg = ChatMessage.of(1L, 3L, "hi");
+            ChatMessage msg = ChatMessage.of(1L, mockUser(3L, "other", ImageColor.BLUE), "hi");
             given(chatMessageRepository.findById(10L)).willReturn(Optional.of(msg));
             given(chatMessageReactionRepository.findByMessageIdAndUserId(10L, 2L))
                     .willReturn(Optional.of(ChatMessageReaction.of(10L, 2L, ChatReactionType.THUMBS_DOWN)), Optional.empty());
@@ -339,20 +329,18 @@ class ChatServiceTest {
         void 정상_답글_전송() {
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
 
-            ChatMessage parent = ChatMessage.of(1L, 99L, "원문");
+            User parentSender = mockUser(99L, "원작성자", ImageColor.YELLOW);
+            ChatMessage parent = ChatMessage.of(1L, parentSender, "원문");
             given(chatMessageRepository.findById(100L)).willReturn(Optional.of(parent));
 
-            ChatMessage saved = ChatMessage.of(1L, 2L, "답글", 100L);
+            User sender = mockUser(2L, "답변자", ImageColor.BLUE);
+            ChatMessage saved = ChatMessage.of(1L, sender, "답글", parent);
             given(chatMessageRepository.save(any(ChatMessage.class))).willReturn(saved);
-
-            User sender = mock(User.class);
-            given(sender.getNickname()).willReturn("답변자");
-            given(sender.getImageColor()).willReturn(ImageColor.BLUE);
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
 
             ReplyInfo replyInfo = new ReplyInfo(100L, "원작성자", "원문");
-            given(replyInfoResolver.resolve(100L)).willReturn(replyInfo);
+            given(replyInfoResolver.from(parent)).willReturn(replyInfo);
 
             MessageResult result = chatService.sendMessage(new SendMessageCommand(1L, 2L, "답글입니다", 100L));
 
@@ -364,12 +352,22 @@ class ChatServiceTest {
         @Test
         void 다른_투표의_메시지에_답글_불가() {
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
-            ChatMessage parent = ChatMessage.of(999L, 99L, "다른투표");
+            User parentSender = mockUser(99L, "원작성자", ImageColor.YELLOW);
+            ChatMessage parent = ChatMessage.of(999L, parentSender, "다른투표");
             given(chatMessageRepository.findById(100L)).willReturn(Optional.of(parent));
+            given(userQueryUseCase.getUser(2L)).willReturn(mockUser(2L, "답변자", ImageColor.BLUE));
 
             assertThatThrownBy(() ->
                     chatService.sendMessage(new SendMessageCommand(1L, 2L, "답글", 100L))
             ).isInstanceOf(InvalidMessageException.class);
         }
+    }
+
+    private User mockUser(Long id, String nickname, ImageColor imageColor) {
+        User user = mock(User.class);
+        given(user.getId()).willReturn(id);
+        given(user.getNickname()).willReturn(nickname);
+        given(user.getImageColor()).willReturn(imageColor);
+        return user;
     }
 }

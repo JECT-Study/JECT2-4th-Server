@@ -3,16 +3,12 @@ package com.ject.vs.chat.port;
 import com.ject.vs.chat.domain.ChatMessage;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.port.in.dto.ReplyInfo;
-import com.ject.vs.user.domain.User;
-import com.ject.vs.user.port.in.UserQueryUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -22,16 +18,22 @@ public class ReplyInfoResolver {
     private static final String DELETED_CONTENT = "(삭제된 메시지)";
 
     private final ChatMessageRepository chatMessageRepository;
-    private final UserQueryUseCase userQueryUseCase;
 
     public ReplyInfo resolve(Long parentMessageId) {
         if (parentMessageId == null) {
             return null;
         }
 
-        return chatMessageRepository.findById(parentMessageId)
+        return chatMessageRepository.findByIdWithSender(parentMessageId)
                 .map(this::toReplyInfo)
                 .orElseGet(() -> deletedReplyInfo(parentMessageId));
+    }
+
+    public ReplyInfo from(ChatMessage parentMessage) {
+        if (parentMessage == null) {
+            return null;
+        }
+        return toReplyInfo(parentMessage);
     }
 
     public Map<Long, ReplyInfo> resolveAll(List<Long> parentMessageIds) {
@@ -39,17 +41,9 @@ public class ReplyInfoResolver {
             return Map.of();
         }
 
-        List<ChatMessage> parents = chatMessageRepository.findAllById(parentMessageIds);
-        Map<Long, User> usersById = loadUsersById(parents);
-
         Map<Long, ReplyInfo> result = new HashMap<>();
-        for (ChatMessage parent : parents) {
-            User sender = usersById.get(parent.getSenderId());
-            result.put(parent.getId(), new ReplyInfo(
-                    parent.getId(),
-                    sender.getNickname(),
-                    parent.getContent()
-            ));
+        for (ChatMessage parent : chatMessageRepository.findAllByIdWithSender(parentMessageIds)) {
+            result.put(parent.getId(), toReplyInfo(parent));
         }
 
         for (Long parentMessageId : parentMessageIds) {
@@ -60,18 +54,11 @@ public class ReplyInfoResolver {
     }
 
     private ReplyInfo toReplyInfo(ChatMessage parent) {
-        User sender = userQueryUseCase.getUser(parent.getSenderId());
-        return new ReplyInfo(parent.getId(), sender.getNickname(), parent.getContent());
-    }
-
-    private Map<Long, User> loadUsersById(List<ChatMessage> messages) {
-        List<Long> senderIds = messages.stream()
-                .map(ChatMessage::getSenderId)
-                .distinct()
-                .toList();
-
-        return userQueryUseCase.findAllById(senderIds).stream()
-                .collect(Collectors.toMap(User::getId, Function.identity()));
+        return new ReplyInfo(
+                parent.getId(),
+                parent.getSender().getNickname(),
+                parent.getContent()
+        );
     }
 
     private ReplyInfo deletedReplyInfo(Long parentMessageId) {

@@ -14,7 +14,6 @@ import com.ject.vs.chat.port.in.dto.UnreadPayload;
 import java.util.Map;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
-import com.ject.vs.user.port.in.UserQueryUseCase;
 import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
@@ -33,20 +32,18 @@ public class ChatMessageEventListener {
     private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
-    private final UserQueryUseCase userQueryUseCase;
     private final ReplyInfoResolver replyInfoResolver;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ChatMessageSentEvent event) {
         ChatMessage message = event.message();
-        Long sid = message.getSenderId();
-
-        User sender = userQueryUseCase.getUser(sid);
+        User sender = message.getSender();
+        Long sid = sender.getId();
         String nick = sender.getNickname();
         ImageColor col = sender.getImageColor();
         VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), sid).orElse(null);
 
-        ReplyInfo replyInfo = replyInfoResolver.resolve(message.getParentMessageId());
+        ReplyInfo replyInfo = replyInfoResolver.from(message.getParentMessage());
         MessageResult messageResult = new MessageResult(
                 message.getId(),
                 sid,

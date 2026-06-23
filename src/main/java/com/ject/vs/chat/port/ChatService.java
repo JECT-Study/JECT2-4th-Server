@@ -28,8 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -51,17 +49,19 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
             throw new ChatForbiddenException();
         }
 
+        User sender = userQueryUseCase.getUser(command.senderId());
+
+        ChatMessage parentMessage = null;
         Long parentId = command.replyToMessageId();
         if (parentId != null) {
-            // 답글 대상 메시지가 동일 투표에 속하는지 검증
-            ChatMessage parent = chatMessageRepository.findById(parentId)
+            parentMessage = chatMessageRepository.findById(parentId)
                     .orElseThrow(ChatMessageNotFoundException::new);
-            if (!parent.getVoteId().equals(command.voteId())) {
+            if (!parentMessage.getVoteId().equals(command.voteId())) {
                 throw new InvalidMessageException("답글 대상 메시지가 해당 채팅방에 속하지 않습니다.");
             }
         }
 
-        ChatMessage message = ChatMessage.of(command.voteId(), command.senderId(), command.content(), parentId);
+        ChatMessage message = ChatMessage.of(command.voteId(), sender, command.content(), parentMessage);
         if (message.isBlank()) {
             throw new InvalidMessageException("메시지 내용이 비어 있습니다.");
         }
@@ -70,11 +70,10 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         boolean isFirstMessage = chatMessageRepository.countByVoteId(command.voteId()) == 0;
 
         ChatMessage saved = chatMessageRepository.save(message);
-        User sender = userQueryUseCase.getUser(command.senderId());
         VoteOptionCode voteOptionCode =
                 voteQueryUseCase.findSelectedOptionCode(command.voteId(), command.senderId()).orElse(null);
 
-        ReplyInfo replyInfo = replyInfoResolver.resolve(saved.getParentMessageId());
+        ReplyInfo replyInfo = replyInfoResolver.from(parentMessage);
 
         return new MessageResult(
                 saved.getId(),
@@ -181,12 +180,11 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         Map<Long, ChatReactionType> myReactionMap = loadMyReactions(messageIds, userId);
 
         Map<Long, ReplyInfo> parentInfoMap = replyInfoResolver.resolveAll(parentIds);
-        Map<Long, User> sendersById = loadSenders(pageMessages);
 
         List<MessageResult> results = pageMessages.stream()
                 .map(msg -> {
-                    Long sid = msg.getSenderId();
-                    User sender = sendersById.get(sid);
+                    User sender = msg.getSender();
+                    Long sid = sender.getId();
                     String nick = sender.getNickname();
                     ImageColor col = sender.getImageColor();
                     VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(voteId, sid).orElse(null);
@@ -297,16 +295,6 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         eventPublisher.publishEvent(new ChatReactionUpdatedEvent(voteId, messageId, counts));
 
         return new ReactionResult(messageId, counts, myReaction);
-    }
-
-    private Map<Long, User> loadSenders(List<ChatMessage> messages) {
-        List<Long> senderIds = messages.stream()
-                .map(ChatMessage::getSenderId)
-                .distinct()
-                .toList();
-
-        return userQueryUseCase.findAllById(senderIds).stream()
-                .collect(Collectors.toMap(User::getId, Function.identity()));
     }
 
     private Map<ChatReactionType, Long> loadSingleMessageReactions(Long messageId) {

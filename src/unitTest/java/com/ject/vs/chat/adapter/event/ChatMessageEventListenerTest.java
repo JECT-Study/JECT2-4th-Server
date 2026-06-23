@@ -13,7 +13,6 @@ import com.ject.vs.chat.port.in.dto.ReactionUpdatedPayload;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
-import com.ject.vs.user.port.in.UserQueryUseCase;
 import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
@@ -62,15 +61,11 @@ class ChatMessageEventListenerTest {
     private ChatRoomUnreadRepository chatRoomUnreadRepository;
 
     @Mock
-    private UserQueryUseCase userQueryUseCase;
-
-    @Mock
     private ReplyInfoResolver replyInfoResolver;
 
     @BeforeEach
     void setUpDefaults() {
-        lenient().when(userQueryUseCase.getUser(any())).thenReturn(mock(User.class));
-        lenient().when(replyInfoResolver.resolve(any())).thenReturn(null);
+        lenient().when(replyInfoResolver.from(any())).thenReturn(null);
 
         lenient().when(voteQueryUseCase.findSelectedOptionCode(anyLong(), anyLong()))
                 .thenReturn(Optional.of(VoteOptionCode.A));
@@ -81,36 +76,27 @@ class ChatMessageEventListenerTest {
 
         @Test
         void 메시지를_채팅방_토픽으로_broadcast한다() {
-            // given
-            ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userQueryUseCase.getUser(any())).willReturn(mock(User.class));
+            ChatMessage message = ChatMessage.of(1L, mockSender(2L), "hello");
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(1L)).willReturn(0L);
 
-            // when
             listener.handle(new ChatMessageSentEvent(message));
 
-            // then
             verify(messagingTemplate).convertAndSend(eq("/topic/chat/1"), any(Object.class));
         }
 
         @Test
         void 채팅_broadcast_payload는_메시지_정보를_담고_수신자_관점_isMine은_false다() {
-            // given
-            ChatMessage message = ChatMessage.of(7L, 2L, "hello payload");
-
-            User sender = mock(User.class);
+            User sender = mockSender(2L);
             given(sender.getNickname()).willReturn("슈퍼강아지_485");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
-            given(userQueryUseCase.getUser(2L)).willReturn(sender);
+            ChatMessage message = ChatMessage.of(7L, sender, "hello payload");
 
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(7L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(7L)).willReturn(0L);
 
-            // when
             listener.handle(new ChatMessageSentEvent(message));
 
-            // then
             ArgumentCaptor<MessageResult> captor = ArgumentCaptor.forClass(MessageResult.class);
             verify(messagingTemplate).convertAndSend(eq("/topic/chat/7"), captor.capture());
             MessageResult payload = captor.getValue();
@@ -121,16 +107,12 @@ class ChatMessageEventListenerTest {
 
         @Test
         void voteId별로_다른_topic에_broadcast한다() {
-            // given
-            ChatMessage message = ChatMessage.of(2L, 9L, "vote 2 message");
-            given(userQueryUseCase.getUser(any())).willReturn(mock(User.class));
+            ChatMessage message = ChatMessage.of(2L, mockSender(9L), "vote 2 message");
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(2L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(2L)).willReturn(0L);
 
-            // when
             listener.handle(new ChatMessageSentEvent(message));
 
-            // then
             verify(messagingTemplate).convertAndSend(eq("/topic/chat/2"), any(MessageResult.class));
             verify(messagingTemplate, never()).convertAndSend(eq("/topic/chat/1"), any(Object.class));
         }
@@ -163,17 +145,13 @@ class ChatMessageEventListenerTest {
 
         @Test
         void 읽음_기록이_없는_참여자에게는_전체_메시지_수를_전송한다() {
-            // given
-            ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userQueryUseCase.getUser(any())).willReturn(mock(User.class));
+            ChatMessage message = ChatMessage.of(1L, mockSender(2L), "hello");
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of(3L));
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(3L, 1L)).willReturn(Optional.empty());
             given(chatMessageRepository.countByVoteId(1L)).willReturn(5L);
 
-            // when
             listener.handle(new ChatMessageSentEvent(message));
 
-            // then
             ArgumentCaptor<UnreadPayload> captor = ArgumentCaptor.forClass(UnreadPayload.class);
             verify(messagingTemplate).convertAndSendToUser(eq("3"), eq("/topic/chat/1/unread"), captor.capture());
             assertThat(captor.getValue().unreadCount()).isEqualTo(5L);
@@ -181,19 +159,15 @@ class ChatMessageEventListenerTest {
 
         @Test
         void 읽음_기록이_있으면_lastReadMessageId_이후_메시지_수를_전송한다() {
-            // given
-            ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userQueryUseCase.getUser(any())).willReturn(mock(User.class));
+            ChatMessage message = ChatMessage.of(1L, mockSender(2L), "hello");
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of(3L));
             ChatRoomUnread unread = ChatRoomUnread.of(3L, 1L, 10L);
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(3L, 1L)).willReturn(Optional.of(unread));
             given(chatMessageRepository.countByVoteId(1L)).willReturn(10L);
             given(chatMessageRepository.countByVoteIdAndIdGreaterThan(1L, 10L)).willReturn(2L);
 
-            // when
             listener.handle(new ChatMessageSentEvent(message));
 
-            // then
             ArgumentCaptor<UnreadPayload> captor = ArgumentCaptor.forClass(UnreadPayload.class);
             verify(messagingTemplate).convertAndSendToUser(eq("3"), eq("/topic/chat/1/unread"), captor.capture());
             assertThat(captor.getValue().unreadCount()).isEqualTo(2L);
@@ -201,9 +175,7 @@ class ChatMessageEventListenerTest {
 
         @Test
         void 참여자가_여러_명이면_각_user_destination으로_개별_unreadCount를_전송한다() {
-            // given
-            ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userQueryUseCase.getUser(any())).willReturn(mock(User.class));
+            ChatMessage message = ChatMessage.of(1L, mockSender(2L), "hello");
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of(3L, 4L));
             given(chatMessageRepository.countByVoteId(1L)).willReturn(7L);
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(3L, 1L)).willReturn(Optional.empty());
@@ -211,10 +183,8 @@ class ChatMessageEventListenerTest {
             given(chatRoomUnreadRepository.findByIdUserIdAndIdVoteId(4L, 1L)).willReturn(Optional.of(unread));
             given(chatMessageRepository.countByVoteIdAndIdGreaterThan(1L, 20L)).willReturn(1L);
 
-            // when
             listener.handle(new ChatMessageSentEvent(message));
 
-            // then
             verify(messagingTemplate).convertAndSendToUser(
                     eq("3"),
                     eq("/topic/chat/1/unread"),
@@ -229,17 +199,19 @@ class ChatMessageEventListenerTest {
 
         @Test
         void 참여자가_없으면_개인_unreadCount는_전송하지_않는다() {
-            // given
-            ChatMessage message = ChatMessage.of(1L, 2L, "hello");
-            given(userQueryUseCase.getUser(any())).willReturn(mock(User.class));
+            ChatMessage message = ChatMessage.of(1L, mockSender(2L), "hello");
             given(voteParticipationQueryUseCase.findAllUserIdsByVoteId(1L)).willReturn(List.of());
             given(chatMessageRepository.countByVoteId(1L)).willReturn(0L);
 
-            // when
             listener.handle(new ChatMessageSentEvent(message));
 
-            // then
             verify(messagingTemplate, never()).convertAndSendToUser(anyString(), anyString(), any(UnreadPayload.class));
         }
+    }
+
+    private User mockSender(Long id) {
+        User sender = mock(User.class);
+        given(sender.getId()).willReturn(id);
+        return sender;
     }
 }
