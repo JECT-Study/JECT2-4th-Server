@@ -10,6 +10,7 @@ import com.ject.vs.user.adapter.web.dto.UserExtraInfo;
 import com.ject.vs.user.adapter.web.dto.UserProfileResponse;
 import com.ject.vs.user.domain.Gender;
 import com.ject.vs.user.domain.ImageColor;
+import com.ject.vs.user.port.UserProfileQueryService;
 import com.ject.vs.user.port.UserService;
 import com.ject.vs.util.CookieUtil;
 import com.ject.vs.util.JwtProvider;
@@ -42,6 +43,9 @@ class UserControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private UserProfileQueryService userProfileQueryService;
 
     @MockitoBean
     private CookieUtil cookieUtil;

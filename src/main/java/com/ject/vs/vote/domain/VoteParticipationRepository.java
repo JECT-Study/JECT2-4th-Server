@@ -33,6 +33,25 @@ public interface VoteParticipationRepository extends JpaRepository<VoteParticipa
 
     long countByUserId(Long userId);
 
+    @Query(value = """
+            SELECT vp.vote_id
+            FROM vote_participation vp
+            WHERE vp.user_id = :userId
+            ORDER BY GREATEST(
+                vp.updated_at,
+                COALESCE(
+                    (SELECT MAX(cm.created_at)
+                     FROM chat_message cm
+                     WHERE cm.sender_id = :userId AND cm.vote_id = vp.vote_id),
+                    vp.created_at
+                )
+            ) DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Long> findTopVoteIdsByRecentActivity(
+            @Param("userId") Long userId,
+            @Param("limit") int limit);
+
     @Query("""
             SELECT new com.ject.vs.vote.domain.GenderCount(u.gender, COUNT(p))
             FROM VoteParticipation p, com.ject.vs.user.domain.User u
