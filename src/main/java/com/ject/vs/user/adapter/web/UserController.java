@@ -2,7 +2,9 @@ package com.ject.vs.user.adapter.web;
 
 import com.ject.vs.config.CookieProperties;
 import com.ject.vs.user.adapter.web.dto.*;
+import com.ject.vs.user.port.UserProfileQueryService;
 import com.ject.vs.user.port.UserService;
+import com.ject.vs.vote.exception.UnauthorizedException;
 import com.ject.vs.util.CookieUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class UserController {
     private final UserService userService;
+    private final UserProfileQueryService userProfileQueryService;
     private final CookieProperties cookieProperties;
 
     @Operation(summary = "추가 정보 설정", description = "사용자 추가 정보(닉네임, 성별, 생년월일)를 설정합니다.")
@@ -60,6 +63,20 @@ public class UserController {
         UserProfileResponse response = userService.getUserProfile(userId);
 
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "다른 유저 프로필 바텀시트 조회",
+            description = "채팅 화면에서 닉네임/프로필 탭 시 노출되는 다른 유저 프로필 정보를 조회합니다. 회원 전용입니다."
+    )
+    @GetMapping("/{userId}/profile-sheet")
+    public ResponseEntity<UserProfileBottomSheetResponse> getProfileBottomSheet(
+            @AuthenticationPrincipal Long viewerUserId,
+            @PathVariable Long userId) {
+        if (viewerUserId == null) {
+            throw new UnauthorizedException();
+        }
+        return ResponseEntity.ok(userProfileQueryService.getProfileBottomSheet(userId, viewerUserId));
     }
 
     @Operation(summary = "기본 프로필 초기화", description = "사용자 기본 프로필 정보를 초기화합니다.")
