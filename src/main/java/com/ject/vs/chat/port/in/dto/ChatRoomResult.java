@@ -1,5 +1,6 @@
 package com.ject.vs.chat.port.in.dto;
 
+import com.ject.vs.vote.domain.VoteOptionCode;
 import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.vote.port.in.VoteQueryUseCase.VoteChatSummary;
 
@@ -12,9 +13,10 @@ public record ChatRoomResult(
         int participantCount,
         String optionA,
         String optionB,
-        Instant endAt
+        Instant endAt,
+        VoteOptionCode myVoteOption
 ) {
-    public static ChatRoomResult of(VoteChatSummary vote, int participantCount) {
+    public static ChatRoomResult of(VoteChatSummary vote, int participantCount, VoteOptionCode myVoteOption) {
         return new ChatRoomResult(
                 vote.voteId(),
                 vote.title(),
@@ -22,7 +24,8 @@ public record ChatRoomResult(
                 participantCount,
                 vote.optionA(),
                 vote.optionB(),
-                vote.endAt()
+                vote.endAt(),
+                myVoteOption
         );
     }
 }

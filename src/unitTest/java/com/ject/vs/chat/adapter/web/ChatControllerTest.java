@@ -100,8 +100,8 @@ class ChatControllerTest {
         @WithMockUser
         void 정상_요청이면_200을_반환한다() throws Exception {
             // given
-            given(chatQueryUseCase.getChatRoom(1L)).willReturn(
-                    new ChatRoomResult(1L, "투표 #1", VoteStatus.ONGOING, 5, "옵션 A", "옵션 B", Instant.now().plus(java.time.Duration.ofDays(1)))
+            given(chatQueryUseCase.getChatRoom(1L, 1L)).willReturn(
+                    new ChatRoomResult(1L, "투표 #1", VoteStatus.ONGOING, 5, "옵션 A", "옵션 B", Instant.now().plus(java.time.Duration.ofDays(1)), null)
             );
 
             // when & then

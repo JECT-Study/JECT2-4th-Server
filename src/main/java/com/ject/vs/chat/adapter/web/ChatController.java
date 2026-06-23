@@ -3,6 +3,7 @@ package com.ject.vs.chat.adapter.web;
 import com.ject.vs.analytics.AnalyticsEvent;
 import com.ject.vs.analytics.AnalyticsEventLogger;
 import com.ject.vs.chat.adapter.web.dto.*;
+import com.ject.vs.chat.domain.ChatReactionType;
 import com.ject.vs.chat.port.in.*;
 import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.vote.domain.VoteStatus;
@@ -48,7 +49,7 @@ public class ChatController implements ChatDocs {
     @Override
     public ChatRoomResponse getChatRoom(@AuthenticationPrincipal Long userId,
                                         @PathVariable Long voteId) {
-        ChatRoomResponse response = ChatRoomResponse.from(chatQueryUseCase.getChatRoom(voteId));
+        ChatRoomResponse response = ChatRoomResponse.from(chatQueryUseCase.getChatRoom(voteId, userId));
 
         analytics.log(AnalyticsEvent.of("chat_room_entered")
                 .put("vote_id", response.voteId())
@@ -88,7 +89,7 @@ public class ChatController implements ChatDocs {
     public MessageResponse sendMessage(@PathVariable Long voteId,
                                        @AuthenticationPrincipal Long userId,
                                        @RequestBody @Valid SendMessageRequest request) {
-        SendMessageCommand command = new SendMessageCommand(voteId, userId, request.content());
+        SendMessageCommand command = new SendMessageCommand(voteId, userId, request.content(), request.replyToMessageId());
         MessageResult result = chatCommandUseCase.sendMessage(command);
 
         analytics.log(AnalyticsEvent.of("chat_message_sent")
@@ -100,6 +101,26 @@ public class ChatController implements ChatDocs {
                 .put("is_first_message", result.isFirstMessage()));
 
         return MessageResponse.from(result);
+    }
+
+    @PutMapping("/{voteId}/messages/{messageId}/reactions")
+    @Override
+    public ReactionResponse reactToMessage(@PathVariable Long voteId,
+                                           @AuthenticationPrincipal Long userId,
+                                           @PathVariable Long messageId,
+                                           @RequestBody @Valid ReactMessageRequest request) {
+        ChatReactionType emoji = request.emoji() != null
+                ? ChatReactionType.valueOf(request.emoji())
+                : null;
+
+        ReactionResult result = chatCommandUseCase.reactToMessage(voteId, userId, messageId, emoji);
+
+        analytics.log(AnalyticsEvent.of("chat_message_reacted")
+                .put("vote_id", voteId)
+                .put("message_id", messageId)
+                .put("emoji", request.emoji()));
+
+        return ReactionResponse.from(result);
     }
 
     @PostMapping("/{voteId}/read")

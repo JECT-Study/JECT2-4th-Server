@@ -1,11 +1,17 @@
 package com.ject.vs.chat.adapter.event;
 
+import com.ject.vs.chat.domain.*;
 import com.ject.vs.chat.domain.ChatMessage;
+import com.ject.vs.chat.domain.ChatMessageReactionRepository;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
+import com.ject.vs.chat.domain.MessageType;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
 import com.ject.vs.chat.port.in.dto.MessageResult;
+import com.ject.vs.chat.port.in.dto.ReplyInfo;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
+
+import java.util.Map;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
 import com.ject.vs.user.port.in.UserQueryUseCase;
@@ -28,25 +34,42 @@ public class ChatMessageEventListener {
     private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
+    private final ChatMessageReactionRepository chatMessageReactionRepository;
     private final UserQueryUseCase userQueryUseCase;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ChatMessageSentEvent event) {
         ChatMessage message = event.message();
+        MessageType mt = message.getMessageType();
+        Long sid = message.getSenderId();
 
-        User sender = userQueryUseCase.getUser(message.getSenderId());
-        VoteOptionCode voteOptionCode =
-                voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), message.getSenderId()).orElse(null);
+        String nick;
+        ImageColor col;
+        VoteOptionCode voteOptionCode = null;
+        if (sid == null || sid == 0L || mt == MessageType.SYSTEM) {
+            nick = "시스템";
+            col = null;
+        } else {
+            User sender = userQueryUseCase.getUser(sid);
+            nick = sender.getNickname();
+            col = sender.getImageColor();
+            voteOptionCode = voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), sid).orElse(null);
+        }
 
+        ReplyInfo replyInfo = buildReplyInfoForBroadcast(message.getParentMessageId());
         MessageResult messageResult = new MessageResult(
                 message.getId(),
                 message.getContent(),
                 message.getCreatedAt(),
-                sender.getNickname(),
-                sender.getImageColor(),
+                nick,
+                col,
                 voteOptionCode,
                 false,
-                false
+                false,
+                mt,
+                replyInfo,
+                Map.of(),
+                null
         );
 
         messagingTemplate.convertAndSend("/topic/chat/" + message.getVoteId(), messageResult);
@@ -76,5 +99,24 @@ public class ChatMessageEventListener {
                     new UnreadPayload(message.getVoteId(), unreadCount)
             );
         }
+    }
+
+    private ReplyInfo buildReplyInfoForBroadcast(Long parentMessageId) {
+        if (parentMessageId == null) return null;
+        return chatMessageRepository.findById(parentMessageId)
+                .map(parent -> {
+                    String preview = parent.getContent();
+                    if (preview.length() > 60) preview = preview.substring(0, 57) + "...";
+                    String nick = "시스템";
+                    Long sid = parent.getSenderId();
+                    if (sid != null && sid != 0L) {
+                        try {
+                            User u = userQueryUseCase.getUser(sid);
+                            nick = u.getNickname();
+                        } catch (Exception ignored) {}
+                    }
+                    return new ReplyInfo(parent.getId(), nick, preview);
+                })
+                .orElse(null);
     }
 }
