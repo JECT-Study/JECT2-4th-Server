@@ -94,7 +94,6 @@ public class UserProfileQueryService implements UserProfileQueryUseCase {
                 voteId,
                 vote.getTitle(),
                 vote.getStatus(clock),
-                VoteType.from(vote),
                 selectedOptionLabel,
                 voteParticipationRepository.existsByVoteIdAndUserId(voteId, viewerUserId)
         );

@@ -95,12 +95,10 @@ class UserProfileQueryServiceTest {
 
             assertThat(response.recentParticipatedVotes().get(0).voteId()).isEqualTo(1L);
             assertThat(response.recentParticipatedVotes().get(0).status()).isEqualTo(VoteStatus.ONGOING);
-            assertThat(response.recentParticipatedVotes().get(0).voteType()).isEqualTo(VoteType.GENERAL);
             assertThat(response.recentParticipatedVotes().get(0).selectedOptionLabel()).isEqualTo("옵션 A");
             assertThat(response.recentParticipatedVotes().get(0).viewerParticipated()).isTrue();
 
             assertThat(response.recentParticipatedVotes().get(1).voteId()).isEqualTo(2L);
-            assertThat(response.recentParticipatedVotes().get(1).voteType()).isEqualTo(VoteType.IMMERSIVE);
             assertThat(response.recentParticipatedVotes().get(1).selectedOptionLabel()).isEqualTo("옵션 B");
             assertThat(response.recentParticipatedVotes().get(1).viewerParticipated()).isFalse();
         }

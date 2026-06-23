@@ -2,7 +2,6 @@ package com.ject.vs.user.adapter.web.dto;
 
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.vote.domain.VoteStatus;
-import com.ject.vs.vote.domain.VoteType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -34,9 +33,6 @@ public record UserProfileBottomSheetResponse(
 
             @Schema(description = "투표 상태", example = "ONGOING")
             VoteStatus status,
-
-            @Schema(description = "투표 타입", example = "GENERAL")
-            VoteType voteType,
 
             @Schema(description = "프로필 대상 유저가 선택한 선택지 텍스트", example = "혼밥이 편하다")
             String selectedOptionLabel,

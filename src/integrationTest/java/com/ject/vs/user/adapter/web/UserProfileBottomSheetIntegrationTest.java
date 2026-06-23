@@ -65,7 +65,6 @@ class UserProfileBottomSheetIntegrationTest extends ChatIntegrationTestSupport {
                     .andExpect(jsonPath("$.recentParticipatedVotes[0].voteId").value(vote3.vote().getId()))
                     .andExpect(jsonPath("$.recentParticipatedVotes[0].title").value("투표3"))
                     .andExpect(jsonPath("$.recentParticipatedVotes[0].status").value("ONGOING"))
-                    .andExpect(jsonPath("$.recentParticipatedVotes[0].voteType").value("GENERAL"))
                     .andExpect(jsonPath("$.recentParticipatedVotes[0].selectedOptionLabel").value("선택3-A"))
                     .andExpect(jsonPath("$.recentParticipatedVotes[0].viewerParticipated").value(false))
                     .andExpect(jsonPath("$.recentParticipatedVotes[1].voteId").exists())
