@@ -182,33 +182,33 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         Map<Long, ReplyInfo> parentInfoMap = replyInfoResolver.resolveAll(parentIds);
 
         List<MessageResult> results = pageMessages.stream()
-                .map(msg -> {
-                    User sender = msg.getSender();
-                    Long sid = sender.getId();
-                    String nick = sender.getNickname();
-                    ImageColor col = sender.getImageColor();
-                    VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(voteId, sid).orElse(null);
+                .map(message -> {
+                    User sender = message.getSender();
+                    Long senderId = sender.getId();
+                    String senderNickname = sender.getNickname();
+                    ImageColor senderProfileIcon = sender.getImageColor();
+                    VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(voteId, senderId).orElse(null);
 
-                    ReplyInfo replyInfo = msg.getParentMessageId() != null
-                            ? parentInfoMap.get(msg.getParentMessageId())
+                    ReplyInfo replyInfo = message.getParentMessageId() != null
+                            ? parentInfoMap.get(message.getParentMessageId())
                             : null;
 
-                    Map<ChatReactionType, Long> counts = reactionsMap.getOrDefault(msg.getId(), Map.of());
-                    ChatReactionType myReact = myReactionMap.get(msg.getId());
+                    Map<ChatReactionType, Long> counts = reactionsMap.getOrDefault(message.getId(), Map.of());
+                    ChatReactionType myReaction = myReactionMap.get(message.getId());
 
                     return new MessageResult(
-                            msg.getId(),
-                            sid,
-                            msg.getContent(),
-                            msg.getCreatedAt(),
-                            nick,
-                            col,
+                            message.getId(),
+                            senderId,
+                            message.getContent(),
+                            message.getCreatedAt(),
+                            senderNickname,
+                            senderProfileIcon,
                             voteOptionCode,
-                            sid != null && sid.equals(userId),
+                            senderId.equals(userId),
                             false,
                             replyInfo,
                             counts,
-                            myReact
+                            myReaction
                     );
                 })
                 .toList();

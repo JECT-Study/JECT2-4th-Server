@@ -38,19 +38,19 @@ public class ChatMessageEventListener {
     public void handle(ChatMessageSentEvent event) {
         ChatMessage message = event.message();
         User sender = message.getSender();
-        Long sid = sender.getId();
-        String nick = sender.getNickname();
-        ImageColor col = sender.getImageColor();
-        VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), sid).orElse(null);
+        Long senderId = sender.getId();
+        String senderNickname = sender.getNickname();
+        ImageColor senderProfileIcon = sender.getImageColor();
+        VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), senderId).orElse(null);
 
         ReplyInfo replyInfo = replyInfoResolver.from(message.getParentMessage());
         MessageResult messageResult = new MessageResult(
                 message.getId(),
-                sid,
+                senderId,
                 message.getContent(),
                 message.getCreatedAt(),
-                nick,
-                col,
+                senderNickname,
+                senderProfileIcon,
                 voteOptionCode,
                 false,
                 false,
