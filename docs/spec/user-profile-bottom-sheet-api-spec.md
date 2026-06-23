@@ -62,18 +62,7 @@ lastActivityAt = GREATEST(
 
 ---
 
-## 3. 투표 타입 판별
-
-| 조건 | voteType |
-|------|----------|
-| `vote.image_url IS NOT NULL` | `IMMERSIVE` |
-| `vote.image_url IS NULL` | `GENERAL` |
-
-> 기존 도메인 관례와 동일 (`ImmersiveVoteQueryService` 폴백 로직 참고)
-
----
-
-## 4. REST API
+## 3. REST API
 
 ### GET `/api/users/{userId}/profile-sheet` — 다른 유저 프로필 바텀시트 조회
 
@@ -98,7 +87,6 @@ lastActivityAt = GREATEST(
       "voteId": 101,
       "title": "직장인 점심시간 혼밥 vs 같이 먹기",
       "status": "ONGOING",
-      "voteType": "GENERAL",
       "selectedOptionLabel": "혼밥이 편하다",
       "viewerParticipated": true
     },
@@ -106,7 +94,6 @@ lastActivityAt = GREATEST(
       "voteId": 88,
       "title": "주말엔 집콕 vs 나들이",
       "status": "ENDED",
-      "voteType": "IMMERSIVE",
       "selectedOptionLabel": "나들이가 좋다",
       "viewerParticipated": false
     }
@@ -126,7 +113,6 @@ lastActivityAt = GREATEST(
 | `recentParticipatedVotes[].voteId` | `Long` | 투표 ID (카드 탭 시 랜딩용) |
 | `recentParticipatedVotes[].title` | `String` | 투표 제목 |
 | `recentParticipatedVotes[].status` | `ONGOING \| ENDED` | 투표 상태 |
-| `recentParticipatedVotes[].voteType` | `GENERAL \| IMMERSIVE` | 투표 타입 (랜딩 분기용) |
 | `recentParticipatedVotes[].selectedOptionLabel` | `String` | **대상 유저** 선택지 텍스트 |
 | `recentParticipatedVotes[].viewerParticipated` | `boolean` | **조회자(본인)** 참여 여부 (종료 투표 랜딩 분기용) |
 
@@ -139,7 +125,7 @@ lastActivityAt = GREATEST(
 
 ---
 
-## 5. 구현 구조
+## 4. 구현 구조
 
 ```
 user/
@@ -152,9 +138,8 @@ user/
 │   └── in/
 │       └── UserProfileQueryUseCase.java
 vote/
-├── domain/
-│   ├── VoteType.java                # GENERAL | IMMERSIVE
-│   └── VoteParticipationRepository.java  # findTop3VoteIdsByRecentActivity
+└── domain/
+    └── VoteParticipationRepository.java  # findTopVoteIdsByRecentActivity
 ```
 
 **서비스 흐름**
@@ -166,7 +151,7 @@ vote/
 
 ---
 
-## 6. FE 연동 가이드
+## 5. FE 연동 가이드
 
 ### 바텀시트 오픈
 ```
@@ -177,9 +162,9 @@ Authorization: Bearer {accessToken}
 
 ### 카드 탭 랜딩 분기 (클라이언트)
 ```typescript
-function resolveLanding(vote: RecentParticipatedVote, currentScreenType: VoteScreenType) {
+function resolveLanding(vote: RecentParticipatedVote, entryScreen: VoteEntryScreen) {
   if (vote.status === 'ONGOING') {
-    return vote.voteType === 'IMMERSIVE' ? 'IMMERSIVE_MEMBER' : 'GENERAL_MEMBER';
+    return entryScreen; // 프로필 진입 전 머무르던 투표 화면으로 복귀
   }
   return vote.viewerParticipated ? 'RESULT_MEMBER_JOINED' : 'RESULT_MEMBER_NOT_JOINED';
 }
