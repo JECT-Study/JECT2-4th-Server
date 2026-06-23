@@ -73,6 +73,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
         return new MessageResult(
                 saved.getId(),
+                saved.getSenderId(),
                 saved.getContent(),
                 saved.getCreatedAt(),
                 sender.getNickname(),
@@ -226,6 +227,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
 
                     return new MessageResult(
                             msg.getId(),
+                            sid,
                             msg.getContent(),
                             msg.getCreatedAt(),
                             nick,

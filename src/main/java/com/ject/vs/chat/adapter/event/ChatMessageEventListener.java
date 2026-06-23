@@ -59,6 +59,7 @@ public class ChatMessageEventListener {
         ReplyInfo replyInfo = buildReplyInfoForBroadcast(message.getParentMessageId());
         MessageResult messageResult = new MessageResult(
                 message.getId(),
+                sid,
                 message.getContent(),
                 message.getCreatedAt(),
                 nick,

@@ -10,6 +10,7 @@ import java.util.Map;
 
 public record MessageResult(
         Long messageId,
+        Long senderId,
         String content,
         Instant sentAt,
         String senderNickname,

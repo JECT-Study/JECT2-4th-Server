@@ -16,6 +16,9 @@ public record MessageResponse(
         @Schema(description = "채팅 메시지 ID", example = "128")
         Long messageId,
 
+        @Schema(description = "메시지를 보낸 사용자의 ID", example = "42")
+        Long senderId,
+
         @Schema(description = "메시지 내용", example = "저는 A가 좋아요")
         String content,
 
@@ -50,6 +53,7 @@ public record MessageResponse(
         MessageType type = result.messageType() != null ? result.messageType() : MessageType.TEXT;
         return new MessageResponse(
                 result.messageId(),
+                result.senderId(),
                 result.content(),
                 result.sentAt(),
                 result.senderNickname(),
