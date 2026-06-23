@@ -7,5 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 public record SendMessageRequest(
         @Schema(description = "전송할 메시지 내용", example = "저는 A가 좋아요", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank
-        String content
-) {}
+        String content,
+
+        @Schema(description = "답글 대상 메시지 ID (없으면 일반 메시지)", example = "1234", nullable = true)
+        Long replyToMessageId
+) {
+    public SendMessageRequest(String content) {
+        this(content, null);
+    }
+}

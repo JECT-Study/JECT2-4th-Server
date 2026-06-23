@@ -1,5 +1,6 @@
 package com.ject.vs.chat.adapter.web;
 
+import com.ject.vs.chat.adapter.web.dto.*;
 import com.ject.vs.chat.adapter.web.dto.ChatListResponse;
 import com.ject.vs.chat.adapter.web.dto.ChatRoomResponse;
 import com.ject.vs.chat.adapter.web.dto.GaugeResponse;
@@ -123,5 +124,29 @@ public interface ChatDocs {
                     content = @Content(schema = @Schema(implementation = MarkAsReadRequest.class))
             )
             MarkAsReadRequest request
+    );
+
+    @Operation(
+            summary = "메시지 반응(이모지) 추가/변경/취소",
+            description = "👍(THUMBS_UP) 또는 👎(THUMBS_DOWN) 반응. emoji=null 또는 생략 시 기존 반응 취소. 본인 메시지에는 불가."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "반응 처리 성공",
+                    content = @Content(schema = @Schema(implementation = ReactionResponse.class))),
+            @ApiResponse(responseCode = "400", description = "유효하지 않은 이모지", content = @Content),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content),
+            @ApiResponse(responseCode = "403", description = "자신의 메시지이거나 채팅방 접근 권한 없음", content = @Content),
+            @ApiResponse(responseCode = "404", description = "메시지가 존재하지 않음", content = @Content)
+    })
+    ReactionResponse reactToMessage(
+            @Parameter(description = "투표 ID", required = true, example = "1") Long voteId,
+            @Parameter(hidden = true) Long userId,
+            @Parameter(description = "메시지 ID", required = true, example = "128") Long messageId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "반응할 이모지 (THUMBS_UP | THUMBS_DOWN | null)",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ReactMessageRequest.class))
+            )
+            ReactMessageRequest request
     );
 }

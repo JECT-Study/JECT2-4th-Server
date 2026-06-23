@@ -6,6 +6,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 public class InvalidMessageException extends RuntimeException {
     public InvalidMessageException() {
-        super("메시지 내용이 비어 있습니다.");
+        super("유효하지 않은 메시지 요청입니다.");
+    }
+
+    public InvalidMessageException(String message) {
+        super(message);
     }
 }
