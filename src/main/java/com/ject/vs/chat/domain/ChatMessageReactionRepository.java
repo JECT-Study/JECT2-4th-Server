@@ -19,16 +19,7 @@ public interface ChatMessageReactionRepository extends JpaRepository<ChatMessage
         WHERE r.messageId IN :messageIds
         GROUP BY r.messageId, r.emoji
     """)
-    List<ReactionCount> countReactionsByMessageIds(@Param("messageIds") List<Long> messageIds);
-
-    // 사용자가 제시한 쿼리 형태 (messageId 없이 조회하고 싶을 때 참고용)
-    // @Query("""
-    //     SELECT r.emoji, COUNT(r)
-    //     FROM ChatMessageReaction r
-    //     WHERE r.messageId IN :messageIds
-    //     GROUP BY r.messageId, r.emoji
-    // """)
-    // List<Object[]> countByMessageIds(@Param("messageIds") List<Long> messageIds);
+    List<ReactionCount> countByMessageIds(@Param("messageIds") List<Long> messageIds);
 
     @Query("""
         SELECT new com.ject.vs.chat.domain.MyReaction(r.messageId, r.emoji)

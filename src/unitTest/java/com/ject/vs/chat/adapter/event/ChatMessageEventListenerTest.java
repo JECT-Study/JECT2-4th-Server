@@ -5,7 +5,11 @@ import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnread;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
+import com.ject.vs.chat.domain.ChatReactionType;
+import com.ject.vs.chat.domain.event.ChatReactionUpdatedEvent;
+import com.ject.vs.chat.port.ReplyInfoResolver;
 import com.ject.vs.chat.port.in.dto.MessageResult;
+import com.ject.vs.chat.port.in.dto.ReactionUpdatedPayload;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
 import com.ject.vs.user.domain.ImageColor;
 import com.ject.vs.user.domain.User;
@@ -27,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,9 +64,13 @@ class ChatMessageEventListenerTest {
     @Mock
     private UserQueryUseCase userQueryUseCase;
 
+    @Mock
+    private ReplyInfoResolver replyInfoResolver;
+
     @BeforeEach
     void setUpDefaults() {
         lenient().when(userQueryUseCase.getUser(any())).thenReturn(mock(User.class));
+        lenient().when(replyInfoResolver.resolve(any())).thenReturn(null);
 
         lenient().when(voteQueryUseCase.findSelectedOptionCode(anyLong(), anyLong()))
                 .thenReturn(Optional.of(VoteOptionCode.A));
@@ -126,6 +135,27 @@ class ChatMessageEventListenerTest {
             verify(messagingTemplate, never()).convertAndSend(eq("/topic/chat/1"), any(Object.class));
         }
 
+    }
+
+    @Nested
+    class handleReactionUpdated {
+
+        @Test
+        void 반응_업데이트를_REACTION_UPDATED_payload로_broadcast한다() {
+            Map<ChatReactionType, Long> reactions = Map.of(
+                    ChatReactionType.THUMBS_UP, 3L,
+                    ChatReactionType.THUMBS_DOWN, 1L
+            );
+
+            listener.handleReactionUpdated(new ChatReactionUpdatedEvent(1L, 128L, reactions));
+
+            ArgumentCaptor<ReactionUpdatedPayload> captor = ArgumentCaptor.forClass(ReactionUpdatedPayload.class);
+            verify(messagingTemplate).convertAndSend(eq("/topic/chat/1"), captor.capture());
+            ReactionUpdatedPayload payload = captor.getValue();
+            assertThat(payload.event()).isEqualTo("REACTION_UPDATED");
+            assertThat(payload.messageId()).isEqualTo(128L);
+            assertThat(payload.reactions()).isEqualTo(reactions);
+        }
     }
 
     @Nested

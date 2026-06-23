@@ -2,6 +2,7 @@ package com.ject.vs.chat.port;
 
 import com.ject.vs.chat.domain.*;
 import com.ject.vs.chat.exception.ChatForbiddenException;
+import com.ject.vs.chat.exception.ChatMessageNotFoundException;
 import com.ject.vs.chat.exception.InvalidMessageException;
 import com.ject.vs.chat.port.in.dto.*;
 import com.ject.vs.vote.domain.VoteStatus;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
@@ -56,6 +58,12 @@ class ChatServiceTest {
 
     @Mock
     private UserQueryUseCase userQueryUseCase;
+
+    @Mock
+    private ReplyInfoResolver replyInfoResolver;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Nested
     class sendMessage {
@@ -195,15 +203,16 @@ class ChatServiceTest {
             given(chatMessageRepository.findAllByVoteIdOrderByIdDesc(eq(1L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
             User sender = mock(User.class);
+            given(sender.getId()).willReturn(2L);
             given(sender.getNickname()).willReturn("");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
-            given(userQueryUseCase.getUser(2L)).willReturn(sender);
+            given(userQueryUseCase.findAllById(anyList())).willReturn(List.of(sender));
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.empty());
 
             // reaction / parent enrichment stubs
-            given(chatMessageReactionRepository.countReactionsByMessageIds(anyList())).willReturn(List.of());
+            given(chatMessageReactionRepository.countByMessageIds(anyList())).willReturn(List.of());
             given(chatMessageReactionRepository.findMyReactionsByMessageIds(anyList(), any())).willReturn(List.of());
-            given(chatMessageRepository.findAllById(anyList())).willReturn(List.of());
+            given(replyInfoResolver.resolveAll(anyList())).willReturn(Map.of());
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, null, 30);
@@ -224,14 +233,15 @@ class ChatServiceTest {
             given(chatMessageRepository.findAllByVoteIdAndIdLessThanOrderByIdDesc(eq(1L), eq(100L), any(PageRequest.class)))
                     .willReturn(List.of(msg));
             User sender = mock(User.class);
+            given(sender.getId()).willReturn(2L);
             given(sender.getNickname()).willReturn("");
             given(sender.getImageColor()).willReturn(ImageColor.GREEN);
-            given(userQueryUseCase.getUser(2L)).willReturn(sender);
+            given(userQueryUseCase.findAllById(anyList())).willReturn(List.of(sender));
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
 
-            given(chatMessageReactionRepository.countReactionsByMessageIds(anyList())).willReturn(List.of());
+            given(chatMessageReactionRepository.countByMessageIds(anyList())).willReturn(List.of());
             given(chatMessageReactionRepository.findMyReactionsByMessageIds(anyList(), any())).willReturn(List.of());
-            given(chatMessageRepository.findAllById(anyList())).willReturn(List.of());
+            given(replyInfoResolver.resolveAll(anyList())).willReturn(Map.of());
 
             // when
             MessagePageResult result = chatService.getMessages(1L, 2L, 100L, 30);
@@ -291,11 +301,13 @@ class ChatServiceTest {
             given(voteParticipationQueryUseCase.isParticipant(1L, 2L)).willReturn(true);
             ChatMessage msg = ChatMessage.of(1L, 3L, "hi");  // different sender
             given(chatMessageRepository.findById(10L)).willReturn(Optional.of(msg));
-            given(chatMessageReactionRepository.findByMessageIdAndUserId(10L, 2L)).willReturn(Optional.empty());
-            given(chatMessageReactionRepository.countReactionsByMessageIds(List.of(10L)))
+            ChatMessageReaction savedReaction = ChatMessageReaction.of(10L, 2L, ChatReactionType.THUMBS_UP);
+            given(chatMessageReactionRepository.findByMessageIdAndUserId(10L, 2L))
+                    .willReturn(Optional.empty(), Optional.of(savedReaction));
+            given(chatMessageReactionRepository.countByMessageIds(List.of(10L)))
                     .willReturn(List.of(new ReactionCount(10L, ChatReactionType.THUMBS_UP, 1L)));
             given(chatMessageReactionRepository.save(any(ChatMessageReaction.class)))
-                    .willAnswer(inv -> inv.getArgument(0));
+                    .willReturn(savedReaction);
 
             ReactionResult result = chatService.reactToMessage(1L, 2L, 10L, ChatReactionType.THUMBS_UP);
 
@@ -310,8 +322,8 @@ class ChatServiceTest {
             ChatMessage msg = ChatMessage.of(1L, 3L, "hi");
             given(chatMessageRepository.findById(10L)).willReturn(Optional.of(msg));
             given(chatMessageReactionRepository.findByMessageIdAndUserId(10L, 2L))
-                    .willReturn(Optional.of(ChatMessageReaction.of(10L, 2L, ChatReactionType.THUMBS_DOWN)));
-            given(chatMessageReactionRepository.countReactionsByMessageIds(List.of(10L))).willReturn(List.of());
+                    .willReturn(Optional.of(ChatMessageReaction.of(10L, 2L, ChatReactionType.THUMBS_DOWN)), Optional.empty());
+            given(chatMessageReactionRepository.countByMessageIds(List.of(10L))).willReturn(List.of());
 
             ReactionResult result = chatService.reactToMessage(1L, 2L, 10L, null);
 
@@ -339,14 +351,12 @@ class ChatServiceTest {
             given(userQueryUseCase.getUser(2L)).willReturn(sender);
             given(voteQueryUseCase.findSelectedOptionCode(1L, 2L)).willReturn(Optional.of(VoteOptionCode.B));
 
-            // parent lookup for replyInfo
-            User parentSender = mock(User.class);
-            given(parentSender.getNickname()).willReturn("원작성자");
-            given(userQueryUseCase.getUser(99L)).willReturn(parentSender);
+            ReplyInfo replyInfo = new ReplyInfo(100L, "원작성자", "원문");
+            given(replyInfoResolver.resolve(100L)).willReturn(replyInfo);
 
             MessageResult result = chatService.sendMessage(new SendMessageCommand(1L, 2L, "답글입니다", 100L));
 
-            assertThat(result.replyTo()).isNotNull();
+            assertThat(result.replyTo()).isEqualTo(replyInfo);
             assertThat(result.replyTo().messageId()).isEqualTo(100L);
             assertThat(result.content()).isEqualTo("답글입니다");
         }

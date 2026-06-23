@@ -7,7 +7,9 @@ import com.ject.vs.chat.domain.ChatMessageReactionRepository;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnread;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
+import com.ject.vs.chat.domain.event.ChatReactionUpdatedEvent;
 import com.ject.vs.chat.exception.ChatForbiddenException;
+import com.ject.vs.chat.exception.ChatMessageNotFoundException;
 import com.ject.vs.chat.exception.InvalidMessageException;
 import com.ject.vs.chat.port.in.ChatCommandUseCase;
 import com.ject.vs.chat.port.in.ChatQueryUseCase;
@@ -20,11 +22,14 @@ import com.ject.vs.vote.domain.VoteStatus;
 import com.ject.vs.vote.port.in.VoteParticipationQueryUseCase;
 import com.ject.vs.vote.port.in.VoteQueryUseCase;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +42,8 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
     private final ChatMessageReactionRepository chatMessageReactionRepository;
     private final UserQueryUseCase userQueryUseCase;
+    private final ReplyInfoResolver replyInfoResolver;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public MessageResult sendMessage(SendMessageCommand command) {
@@ -48,15 +55,15 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         if (parentId != null) {
             // 답글 대상 메시지가 동일 투표에 속하는지 검증
             ChatMessage parent = chatMessageRepository.findById(parentId)
-                    .orElseThrow(() -> new InvalidMessageException());
+                    .orElseThrow(ChatMessageNotFoundException::new);
             if (!parent.getVoteId().equals(command.voteId())) {
-                throw new InvalidMessageException();
+                throw new InvalidMessageException("답글 대상 메시지가 해당 채팅방에 속하지 않습니다.");
             }
         }
 
         ChatMessage message = ChatMessage.of(command.voteId(), command.senderId(), command.content(), parentId);
         if (message.isBlank()) {
-            throw new InvalidMessageException();
+            throw new InvalidMessageException("메시지 내용이 비어 있습니다.");
         }
 
         // 행동 로그(is_first_message)용: 저장 전 기존 메시지 존재 여부로 첫 메시지인지 판단
@@ -67,7 +74,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         VoteOptionCode voteOptionCode =
                 voteQueryUseCase.findSelectedOptionCode(command.voteId(), command.senderId()).orElse(null);
 
-        ReplyInfo replyInfo = buildReplyInfo(saved.getParentMessageId());
+        ReplyInfo replyInfo = replyInfoResolver.resolve(saved.getParentMessageId());
 
         return new MessageResult(
                 saved.getId(),
@@ -83,28 +90,6 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 Map.of(),           // 신규 메시지는 반응 없음
                 null
         );
-    }
-
-    private ReplyInfo buildReplyInfo(Long parentMessageId) {
-        if (parentMessageId == null) return null;
-
-        return chatMessageRepository.findById(parentMessageId)
-                .map(parent -> {
-                    String preview = parent.getContent();  // 프론트에서 말줄임 처리
-                    String nick = "시스템";
-                    if (parent.getSenderId() != null && parent.getSenderId() != 0L) {
-                        try {
-                            User pUser = userQueryUseCase.getUser(parent.getSenderId());
-                            nick = pUser.getNickname();
-                        } catch (Exception ignored) {}
-                    }
-                    return new ReplyInfo(parent.getId(), nick, preview);
-                })
-                .orElseGet(() -> new ReplyInfo(
-                        parentMessageId,
-                        "알 수 없음",
-                        "(삭제된 메시지)"
-                ));
     }
 
     @Override
@@ -195,13 +180,13 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         // 본인 반응
         Map<Long, ChatReactionType> myReactionMap = loadMyReactions(messageIds, userId);
 
-        // parent preview 미리 로드 (간단히 findAllById)
-        Map<Long, ReplyInfo> parentInfoMap = loadParentInfos(parentIds);
+        Map<Long, ReplyInfo> parentInfoMap = replyInfoResolver.resolveAll(parentIds);
+        Map<Long, User> sendersById = loadSenders(pageMessages);
 
         List<MessageResult> results = pageMessages.stream()
                 .map(msg -> {
                     Long sid = msg.getSenderId();
-                    User sender = userQueryUseCase.getUser(sid);
+                    User sender = sendersById.get(sid);
                     String nick = sender.getNickname();
                     ImageColor col = sender.getImageColor();
                     VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(voteId, sid).orElse(null);
@@ -236,7 +221,7 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
     private Map<Long, Map<ChatReactionType, Long>> loadReactions(List<Long> messageIds) {
         if (messageIds.isEmpty()) return Map.of();
         Map<Long, Map<ChatReactionType, Long>> result = new java.util.HashMap<>();
-        for (ReactionCount rc : chatMessageReactionRepository.countReactionsByMessageIds(messageIds)) {
+        for (ReactionCount rc : chatMessageReactionRepository.countByMessageIds(messageIds)) {
             result.computeIfAbsent(rc.messageId(), k -> new java.util.HashMap<>())
                   .put(rc.emoji(), rc.count());
         }
@@ -250,32 +235,6 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
             result.put(mr.messageId(), mr.emoji());
         }
         return result;
-    }
-
-    private Map<Long, ReplyInfo> loadParentInfos(List<Long> parentIds) {
-        if (parentIds.isEmpty()) return Map.of();
-        Map<Long, ReplyInfo> map = new java.util.HashMap<>();
-        List<ChatMessage> parents = chatMessageRepository.findAllById(parentIds);
-        for (ChatMessage p : parents) {
-            String preview = p.getContent();  // 프론트에서 말줄임 처리
-            String nick = "시스템";
-            Long sid = p.getSenderId();
-            if (sid != null && sid != 0L) {
-                try {
-                    User u = userQueryUseCase.getUser(sid);
-                    if (u.getNickname() != null) nick = u.getNickname();
-                } catch (Exception ignored) {}
-            }
-            map.put(p.getId(), new ReplyInfo(p.getId(), nick, preview));
-        }
-
-        // 부모를 찾지 못한 경우 (삭제된 메시지)도 id는 유지해서 반환
-        for (Long pid : parentIds) {
-            if (!map.containsKey(pid)) {
-                map.put(pid, new ReplyInfo(pid, "알 수 없음", "(삭제된 메시지)"));
-            }
-        }
-        return map;
     }
 
     /**
@@ -304,14 +263,13 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
         }
 
         ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new InvalidMessageException());
+                .orElseThrow(ChatMessageNotFoundException::new);
 
         if (!message.getVoteId().equals(voteId)) {
-            throw new InvalidMessageException();
+            throw new ChatMessageNotFoundException();
         }
 
-        // 자신의 메시지에는 반응 불가
-        if (message.getSenderId() != null && message.getSenderId().equals(userId)) {
+        if (message.getSenderId().equals(userId)) {
             throw new ChatForbiddenException();
         }
 
@@ -336,12 +294,24 @@ public class ChatService implements ChatCommandUseCase, ChatQueryUseCase {
                 .map(ChatMessageReaction::getEmoji)
                 .orElse(null);
 
+        eventPublisher.publishEvent(new ChatReactionUpdatedEvent(voteId, messageId, counts));
+
         return new ReactionResult(messageId, counts, myReaction);
+    }
+
+    private Map<Long, User> loadSenders(List<ChatMessage> messages) {
+        List<Long> senderIds = messages.stream()
+                .map(ChatMessage::getSenderId)
+                .distinct()
+                .toList();
+
+        return userQueryUseCase.findAllById(senderIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
     }
 
     private Map<ChatReactionType, Long> loadSingleMessageReactions(Long messageId) {
         Map<ChatReactionType, Long> counts = new java.util.HashMap<>();
-        for (ReactionCount rc : chatMessageReactionRepository.countReactionsByMessageIds(List.of(messageId))) {
+        for (ReactionCount rc : chatMessageReactionRepository.countByMessageIds(List.of(messageId))) {
             counts.put(rc.emoji(), rc.count());
         }
         return counts;

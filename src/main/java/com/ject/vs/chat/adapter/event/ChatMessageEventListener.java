@@ -1,11 +1,13 @@
 package com.ject.vs.chat.adapter.event;
 
 import com.ject.vs.chat.domain.ChatMessage;
-import com.ject.vs.chat.domain.ChatMessageReactionRepository;
 import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.chat.domain.ChatRoomUnreadRepository;
 import com.ject.vs.chat.domain.event.ChatMessageSentEvent;
+import com.ject.vs.chat.domain.event.ChatReactionUpdatedEvent;
+import com.ject.vs.chat.port.ReplyInfoResolver;
 import com.ject.vs.chat.port.in.dto.MessageResult;
+import com.ject.vs.chat.port.in.dto.ReactionUpdatedPayload;
 import com.ject.vs.chat.port.in.dto.ReplyInfo;
 import com.ject.vs.chat.port.in.dto.UnreadPayload;
 
@@ -31,8 +33,8 @@ public class ChatMessageEventListener {
     private final VoteQueryUseCase voteQueryUseCase;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomUnreadRepository chatRoomUnreadRepository;
-    private final ChatMessageReactionRepository chatMessageReactionRepository;
     private final UserQueryUseCase userQueryUseCase;
+    private final ReplyInfoResolver replyInfoResolver;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(ChatMessageSentEvent event) {
@@ -44,7 +46,7 @@ public class ChatMessageEventListener {
         ImageColor col = sender.getImageColor();
         VoteOptionCode voteOptionCode = voteQueryUseCase.findSelectedOptionCode(message.getVoteId(), sid).orElse(null);
 
-        ReplyInfo replyInfo = buildReplyInfoForBroadcast(message.getParentMessageId());
+        ReplyInfo replyInfo = replyInfoResolver.resolve(message.getParentMessageId());
         MessageResult messageResult = new MessageResult(
                 message.getId(),
                 sid,
@@ -63,6 +65,14 @@ public class ChatMessageEventListener {
         messagingTemplate.convertAndSend("/topic/chat/" + message.getVoteId(), messageResult);
 
         broadcastUnreadCount(message);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleReactionUpdated(ChatReactionUpdatedEvent event) {
+        messagingTemplate.convertAndSend(
+                "/topic/chat/" + event.voteId(),
+                ReactionUpdatedPayload.of(event.messageId(), event.reactions())
+        );
     }
 
     private void broadcastUnreadCount(ChatMessage message) {
@@ -89,26 +99,4 @@ public class ChatMessageEventListener {
         }
     }
 
-    private ReplyInfo buildReplyInfoForBroadcast(Long parentMessageId) {
-        if (parentMessageId == null) return null;
-
-        return chatMessageRepository.findById(parentMessageId)
-                .map(parent -> {
-                    String preview = parent.getContent();  // 프론트에서 말줄임 처리
-                    String nick = "시스템";
-                    Long sid = parent.getSenderId();
-                    if (sid != null && sid != 0L) {
-                        try {
-                            User u = userQueryUseCase.getUser(sid);
-                            nick = u.getNickname();
-                        } catch (Exception ignored) {}
-                    }
-                    return new ReplyInfo(parent.getId(), nick, preview);
-                })
-                .orElseGet(() -> new ReplyInfo(
-                        parentMessageId,
-                        "알 수 없음",
-                        "(삭제된 메시지)"
-                ));
-    }
 }
