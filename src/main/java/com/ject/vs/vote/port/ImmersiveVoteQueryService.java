@@ -90,20 +90,37 @@ public class ImmersiveVoteQueryService implements ImmersiveVoteQueryUseCase {
     }
 
     @Override
-    public ImmersiveNextResult getNextRandom(List<Long> excludeIds, int size, Long userId, String anonymousId) {
+    public ImmersiveNextResult getNextRandom(List<Long> excludeIds, Long startVoteId, int size, Long userId, String anonymousId) {
         Instant now = Instant.now(clock);
-        PageRequest pageable = PageRequest.of(0, size);
 
-        Slice<Vote> slice;
-        if (excludeIds == null || excludeIds.isEmpty()) {
-            slice = voteRepository.findRandom(now, pageable);
-        } else {
-            slice = voteRepository.findRandomExcluding(now, excludeIds, pageable);
+        List<Long> exclude = excludeIds == null ? new ArrayList<>() : new ArrayList<>(excludeIds);
+
+        // startVoteId가 지정되면 진행 중인 해당 투표를 맨 앞에 배치하고 나머지를 랜덤으로 채운다.
+        Vote startVote = null;
+        if (startVoteId != null && !exclude.contains(startVoteId)) {
+            Vote candidate = voteRepository.findById(startVoteId).orElse(null);
+            if (candidate != null && !candidate.isEnded(clock)) {
+                startVote = candidate;
+                exclude.add(startVoteId);
+            }
         }
 
-        List<ImmersiveFeedItem> items = slice.getContent().stream()
-                .map(v -> toFeedItem(v, userId, anonymousId))
-                .toList();
+        int remaining = startVote != null ? size - 1 : size;
+
+        List<ImmersiveFeedItem> items = new ArrayList<>();
+        if (startVote != null) {
+            items.add(toFeedItem(startVote, userId, anonymousId));
+        }
+
+        if (remaining > 0) {
+            PageRequest pageable = PageRequest.of(0, remaining);
+            Slice<Vote> slice = exclude.isEmpty()
+                    ? voteRepository.findRandom(now, pageable)
+                    : voteRepository.findRandomExcluding(now, exclude, pageable);
+            slice.getContent().stream()
+                    .map(v -> toFeedItem(v, userId, anonymousId))
+                    .forEach(items::add);
+        }
 
         return new ImmersiveNextResult(items);
     }
