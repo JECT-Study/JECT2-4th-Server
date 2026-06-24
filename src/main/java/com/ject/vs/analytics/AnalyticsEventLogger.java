@@ -45,6 +45,7 @@ public class AnalyticsEventLogger {
     private final Clock clock;
     private final AnalyticsEventRepository analyticsEventRepository;
     private final GoogleAnalyticsClient googleAnalytics;
+    private final AmplitudeClient amplitude;
 
     public void log(AnalyticsEvent event) {
         try {
@@ -71,9 +72,10 @@ public class AnalyticsEventLogger {
                     Instant.now(clock),
                     properties));
 
-            // 같은 이벤트를 GA4로도 전송(PM·디자이너 대시보드용). 비동기 fire-and-forget이라
-            // 실패/지연이 위 RDB 적재나 요청 처리에 영향을 주지 않는다. 미설정이면 no-op.
+            // 같은 이벤트를 GA4·Amplitude로도 전송(PM·디자이너 대시보드용). 비동기 fire-and-forget이라
+            // 실패/지연이 위 RDB 적재나 요청 처리에 영향을 주지 않는다. 미설정이면 각각 no-op.
             googleAnalytics.send(event.name(), userId, anonymousId, member, platform, event.properties());
+            amplitude.send(event.name(), userId, anonymousId, member, platform, event.properties());
         } catch (Exception e) {
             // 로깅 실패가 요청 처리에 영향을 주지 않도록 흡수
             AnalyticsEventLogger.log.warn("analytics event logging failed for '{}': {}", event.name(), e.getMessage());
