@@ -106,14 +106,15 @@ public class ImmersiveVoteController {
         return response;
     }
 
-    @Operation(summary = "랜덤 다음 투표 조회", description = "excludeIds를 제외한 진행 중인 투표를 랜덤으로 조회합니다. 모든 투표 소진 시 빈 배열 반환 → 클라이언트에서 excludeIds 초기화 후 재요청 (무한 순환)")
+    @Operation(summary = "랜덤 다음 투표 조회", description = "excludeIds를 제외한 진행 중인 투표를 랜덤으로 조회합니다. 모든 투표 소진 시 빈 배열 반환 → 클라이언트에서 excludeIds 초기화 후 재요청 (무한 순환). startVoteId를 지정하면 진행 중인 해당 투표가 맨 앞에 배치되고 나머지가 랜덤으로 채워집니다.")
     @PostMapping("/next")
     public ImmersiveNextResponse getNextRandom(
             @RequestBody @Valid ImmersiveNextRequest request,
             @AuthenticationPrincipal Long userId,
             @Parameter(hidden = true) @AnonymousId String anonymousId) {
         return ImmersiveNextResponse.from(
-                immersiveVoteQueryUseCase.getNextRandom(request.excludeIds(), request.size(), userId, anonymousId)
+                immersiveVoteQueryUseCase.getNextRandom(
+                        request.excludeIds(), request.startVoteId(), request.size(), userId, anonymousId)
         );
     }
 }

@@ -8,6 +8,8 @@ import java.util.List;
 public record ImmersiveNextRequest(
         List<Long> excludeIds,
 
+        Long startVoteId,
+
         @Min(1)
         @Max(50)
         Integer size
