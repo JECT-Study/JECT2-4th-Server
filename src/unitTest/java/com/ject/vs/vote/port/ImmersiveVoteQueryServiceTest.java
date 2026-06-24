@@ -4,6 +4,7 @@ import com.ject.vs.chat.domain.ChatMessageRepository;
 import com.ject.vs.vote.domain.*;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase.ImmersiveFeedResult;
 import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase.ImmersiveLiveResult;
+import com.ject.vs.vote.port.in.ImmersiveVoteQueryUseCase.ImmersiveNextResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -181,6 +182,77 @@ class ImmersiveVoteQueryServiceTest {
             ImmersiveFeedResult result = service.getFeed(null, null, 10, null, null);
 
             assertThat(result.items().get(0).mySelectedOptionId()).isNull();
+        }
+    }
+
+    @Nested
+    class getNextRandom {
+
+        @BeforeEach
+        void setUp() {
+            given(clock.instant()).willReturn(FIXED_CLOCK.instant());
+        }
+
+        @Test
+        void startVoteId_지정시_진행중인_해당_투표가_맨앞에_배치된다() {
+            Vote startVote = Vote.create("시작투표", null, "t", "img.png", Duration.ofHours(24), FIXED_CLOCK);
+            Vote other = makeVote(Duration.ofHours(24));
+            given(voteRepository.findById(5L)).willReturn(Optional.of(startVote));
+            given(voteRepository.findRandomExcluding(any(), eq(List.of(5L)), any()))
+                    .willReturn(new SliceImpl<>(List.of(other), PageRequest.of(0, 9), false));
+            given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
+            given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
+            given(voteParticipationRepository.countByVoteId(any())).willReturn(0L);
+
+            ImmersiveNextResult result = service.getNextRandom(List.of(), 5L, 10, null, null);
+
+            assertThat(result.items()).hasSize(2);
+            assertThat(result.items().get(0).title()).isEqualTo("시작투표");
+        }
+
+        @Test
+        void startVoteId_없으면_기존_랜덤_조회() {
+            Vote vote = makeVote(Duration.ofHours(24));
+            given(voteRepository.findRandom(any(), any()))
+                    .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
+            given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
+            given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
+            given(voteParticipationRepository.countByVoteId(any())).willReturn(0L);
+
+            ImmersiveNextResult result = service.getNextRandom(null, null, 10, null, null);
+
+            assertThat(result.items()).hasSize(1);
+        }
+
+        @Test
+        void startVoteId가_excludeIds에_있으면_무시하고_랜덤_조회() {
+            Vote vote = makeVote(Duration.ofHours(24));
+            given(voteRepository.findRandomExcluding(any(), eq(List.of(5L)), any()))
+                    .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
+            given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
+            given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
+            given(voteParticipationRepository.countByVoteId(any())).willReturn(0L);
+
+            ImmersiveNextResult result = service.getNextRandom(List.of(5L), 5L, 10, null, null);
+
+            assertThat(result.items()).hasSize(1);
+        }
+
+        @Test
+        void startVoteId가_종료된_투표면_무시하고_랜덤_조회() {
+            Vote endedVote = mock(Vote.class);
+            given(endedVote.isEnded(any())).willReturn(true);
+            Vote vote = makeVote(Duration.ofHours(24));
+            given(voteRepository.findById(5L)).willReturn(Optional.of(endedVote));
+            given(voteRepository.findRandom(any(), any()))
+                    .willReturn(new SliceImpl<>(List.of(vote), PageRequest.of(0, 10), false));
+            given(voteOptionRepository.findByVoteIdOrderByPosition(any())).willReturn(List.of());
+            given(emojiReactionRepository.countByEmojiForVote(any())).willReturn(List.of());
+            given(voteParticipationRepository.countByVoteId(any())).willReturn(0L);
+
+            ImmersiveNextResult result = service.getNextRandom(List.of(), 5L, 10, null, null);
+
+            assertThat(result.items()).hasSize(1);
         }
     }
 

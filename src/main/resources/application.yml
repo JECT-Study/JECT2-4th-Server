@@ -25,6 +25,14 @@ google:
     api-secret: ${GA_API_SECRET:}
     endpoint: ${GA_ENDPOINT:https://www.google-analytics.com/mp/collect}
 
+# Amplitude HTTP V2 API (행동 로그를 Amplitude 대시보드로도 전송 — PM/디자이너용)
+# enabled=true + API Key가 있어야 실제 전송. 없으면 no-op(RDB 적재는 그대로).
+# API Key는 Amplitude 콘솔에서 발급: Settings → Projects → 해당 프로젝트의 API Key
+amplitude:
+  enabled: ${AMPLITUDE_ENABLED:false}
+  api-key: ${AMPLITUDE_API_KEY:}
+  endpoint: ${AMPLITUDE_ENDPOINT:https://api2.amplitude.com/2/httpapi}
+
 gemini:
   project-id: ${GEMINI_PROJECT_ID:}
   # 서울(asia-northeast3)은 Gemini 모델 미지원 → us-central1 사용. GEMINI_LOCATION으로 override 가능

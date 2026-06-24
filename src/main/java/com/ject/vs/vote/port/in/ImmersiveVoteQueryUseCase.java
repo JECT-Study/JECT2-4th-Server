@@ -14,8 +14,9 @@ public interface ImmersiveVoteQueryUseCase {
 
     /**
      * 랜덤 다음 투표 조회 (excludeIds 제외, 무한 순환)
+     * startVoteId가 지정되면 진행 중인 해당 투표를 맨 앞에 배치하고 나머지를 랜덤으로 채운다.
      */
-    ImmersiveNextResult getNextRandom(List<Long> excludeIds, int size, Long userId, String anonymousId);
+    ImmersiveNextResult getNextRandom(List<Long> excludeIds, Long startVoteId, int size, Long userId, String anonymousId);
 
     record ImmersiveFeedResult(List<ImmersiveFeedItem> items, Long nextCursor, boolean hasNext) {
     }
