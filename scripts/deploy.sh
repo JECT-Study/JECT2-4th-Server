@@ -169,6 +169,17 @@ if [ -n "${GA_MEASUREMENT_ID:-}" ]; then
   log "GA4 설정 추가됨"
 fi
 
+# Amplitude HTTP V2 설정 (선택적)
+# API Key가 있을 때만 전달. 없으면 앱은 no-op으로 동작(RDB 적재는 그대로).
+if [ -n "${AMPLITUDE_API_KEY:-}" ]; then
+  DOCKER_OPTS+=(
+    -e AMPLITUDE_ENABLED
+    -e AMPLITUDE_API_KEY
+    -e AMPLITUDE_ENDPOINT
+  )
+  log "Amplitude 설정 추가됨"
+fi
+
 docker run "${DOCKER_OPTS[@]}" "$IMAGE" >/dev/null
 
 # 헬스체크 (docker inspect로 healthy 상태 확인)
