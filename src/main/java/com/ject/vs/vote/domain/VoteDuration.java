@@ -16,7 +16,8 @@ public enum VoteDuration {
     HOURS_12(Duration.ofHours(12)),
     HOURS_24(Duration.ofHours(24)),
     HOURS_48(Duration.ofHours(48)),
-    HOURS_72(Duration.ofHours(72));
+    HOURS_72(Duration.ofHours(72)),
+    HOURS_96(Duration.ofHours(96));
 
     private final Duration value;
 
